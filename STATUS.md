@@ -39,8 +39,8 @@ This is still a strong competitive advantage — no other agent in Zaragoza is m
 | B7 GitHub Actions | Done | .github/workflows/daily.yml, 07:00 UTC |
 | QA | Done | 73 tests, 75% coverage, lint clean |
 | Setup guide | Done | docs/SETUP_GOOGLE_SHEETS.md |
-| README.md | TODO | |
-| MANUAL_NADIA.md | TODO | |
+| README.md | Done | English, dev-facing |
+| MANUAL_NADIA.md | Done | Spanish, agent-facing, includes Art. 14 GDPR letter template |
 
 ## Decisions Made
 

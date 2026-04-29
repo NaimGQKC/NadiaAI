@@ -240,7 +240,7 @@ def _send_smtp(to: str, subject: str, body_text: str, body_html: str) -> None:
     msg.attach(MIMEText(body_text, "plain", "utf-8"))
     msg.attach(MIMEText(body_html, "html", "utf-8"))
 
-    with smtplib.SMTP("smtp.gmail.com", 587) as server:
-        server.starttls()
+    # Port 465 (SSL) preferred over 587 (STARTTLS) — more reliable from GitHub Actions runners
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
         server.login(SMTP_USER, SMTP_PASSWORD)
         server.send_message(msg)
