@@ -1,0 +1,60 @@
+{
+  "totalCount": 4,
+  "start": 0,
+  "rows": 50,
+  "result": [
+    {
+      "id": "4150",
+      "title": "Acta notoriedad para declaraci\u00f3n herederos abintestato, por el fallecimiento de DON BENITO ARTAL ARTAL",
+      "author": "NOTARIO:  LUIS DE CODES DIAZ-QUETCUTI",
+      "publicationDate": "2026-04-29T00:10:01",
+      "expirationDate": "2026-05-29T00:00:00",
+      "status": 3,
+      "tipo": {
+        "id": 29,
+        "title": "Acta de notoriedad/Declaraci\u00f3n de herederos"
+      },
+      "document": "https://www.zaragoza.es/sede/servicio/tablon-edicto/4150/document"
+    },
+    {
+      "id": "4146",
+      "title": "Acta de declaraci\u00f3n de herederos abintestato de DO\u00d1A JOAQUINA ORTIZ GARC\u00c9S",
+      "author": "NOTARIO: D. DIEGO DE VELASCO MAR\u00cdN.CON RESIDENCIA EN HUESCA",
+      "publicationDate": "2026-04-22T00:10:01",
+      "expirationDate": "2026-05-22T00:00:00",
+      "status": 3,
+      "tipo": {
+        "id": 29,
+        "title": "Acta de notoriedad/Declaraci\u00f3n de herederos"
+      },
+      "document": "https://www.zaragoza.es/sede/servicio/tablon-edicto/4146/document"
+    },
+    {
+      "id": "4136",
+      "title": "Herencia Yacen de D. Ram\u00f3n Jos\u00e9 Chueca Alonso",
+      "description": "Ref.: A006000/00002/2026",
+      "author": "GESERLOCAL SL",
+      "publicationDate": "2026-04-20T00:10:02",
+      "expirationDate": "2026-05-20T00:00:00",
+      "status": 3,
+      "tipo": {
+        "id": 29,
+        "title": "Acta de notoriedad/Declaraci\u00f3n de herederos"
+      },
+      "document": "https://www.zaragoza.es/sede/servicio/tablon-edicto/4136/document"
+    },
+    {
+      "id": "4131",
+      "title": "Declaraci\u00f3n de fallecimiento de D. TOM\u00c1S OTERO VAZQUEZ",
+      "author": "SECCI\u00d3N CIVIL DEL TRIBUNAL DE INSTANCIA DE ZARAGOZA. PLAZA N\u00ba 23",
+      "publicationDate": "2026-04-13T10:02:03",
+      "expirationDate": "2026-05-13T00:00:00",
+      "status": 3,
+      "tipo": {
+        "id": 29,
+        "title": "Acta de notoriedad/Declaraci\u00f3n de herederos"
+      },
+      "document": "https://www.zaragoza.es/sede/servicio/tablon-edicto/4131/document"
+    }
+  ]
+}

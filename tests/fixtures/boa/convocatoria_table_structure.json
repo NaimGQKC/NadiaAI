@@ -1,0 +1,47 @@
+{
+  "description": "Structure of the causante table found in pre-meeting convocatoria announcements (Art. 18)",
+  "note": "This is the PRIMARY data source for NadiaAI. These tables list deceased persons whose estates will be distributed.",
+  "columns": [
+    {
+      "name": "Causante",
+      "description": "Full name of deceased person in SURNAME, NAME format",
+      "example": "GUTIERREZ RUBIO, FRANCISCO"
+    },
+    {
+      "name": "Tipo de liquidacion",
+      "description": "GENERAL (full estate liquidated) or PARCIAL (partial liquidation, more may follow)",
+      "example": "GENERAL"
+    },
+    {
+      "name": "Cantidad propuesta",
+      "description": "Amount in EUR proposed for distribution from this estate",
+      "example": "320.466,16"
+    },
+    {
+      "name": "Localidad",
+      "description": "Municipality of last residence of deceased. Province abbreviation in parentheses for non-Zaragoza: (HU) = Huesca, (TE) = Teruel",
+      "example": "Torres de Barbues (HU)"
+    }
+  ],
+  "critical_finding": "These convocatoria announcements do NOT contain referencia catastral or property inventories. They only contain monetary amounts after liquidation. Real estate assets are sold at public auction BEFORE the Junta meeting, and only the net cash proceeds appear here.",
+  "sample_data": [
+    {
+      "causante": "ANDRES SALESA, PEDRO JOSE",
+      "tipo_liquidacion": "GENERAL",
+      "cantidad_propuesta": 11093.26,
+      "localidad": "Teruel"
+    },
+    {
+      "causante": "GUTIERREZ RUBIO, FRANCISCO",
+      "tipo_liquidacion": "GENERAL",
+      "cantidad_propuesta": 320466.16,
+      "localidad": "Zaragoza"
+    },
+    {
+      "causante": "BASTARAS FERRER, CONCEPCION",
+      "tipo_liquidacion": "PARCIAL",
+      "cantidad_propuesta": 650000.00,
+      "localidad": "Zaragoza"
+    }
+  ]
+}

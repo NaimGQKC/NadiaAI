@@ -1,0 +1,85 @@
+{
+  "search_url": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VERLST&BASE=BZHT&DOCS=1-100&SEC=BUSQUEDA_AVANZADA&SORT=-PUBL&SEPARADOR=&TITU=Junta+Distribuidora+de+Herencias",
+  "total_results": 49,
+  "note": "Two types of announcements: convocatoria (Art.18, pre-meeting) and distribucion (Art.24, post-meeting)",
+  "results": [
+    {
+      "index": 1,
+      "title": "ANUNCIO de la Junta Distribuidora de Herencias de la Comunidad Autonoma de Aragon por el que se hace publica la distribucion de los patrimonios procedentes de sucesion legal acordada en su reunion del 4 de septiembre de 2024",
+      "type": "distribucion_post_meeting",
+      "article": "Art. 24",
+      "date": "2024-09-19",
+      "boa_number": 183,
+      "section": "V. Anuncios",
+      "department": "Departamento de Hacienda, Interior y Administracion Publica",
+      "pdf_url": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1351751241313&type=pdf",
+      "sig_url": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1351752251313",
+      "csv_code": "BOA20240919xxx"
+    },
+    {
+      "index": 2,
+      "title": "ANUNCIO de la Junta Distribuidora de Herencias de la Comunidad Autonoma de Aragon, relativo a la distribucion del patrimonio procedente de la sucesion legal de causantes",
+      "type": "convocatoria_pre_meeting",
+      "article": "Art. 18",
+      "date": "2024-06-18",
+      "boa_number": 117,
+      "section": "V. Anuncios",
+      "department": "Departamento de Hacienda y Administracion Publica",
+      "pdf_url": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1338472961414&type=pdf",
+      "sig_url": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1338473971414",
+      "csv_code": "BOA20240618026"
+    },
+    {
+      "index": 3,
+      "title": "ANUNCIO de la Junta Distribuidora de Herencias de la Comunidad Autonoma de Aragon, por el que se hace publica la distribucion de los patrimonios hereditarios, acordada en su reunion del dia 28 de abril de 2023",
+      "type": "distribucion_post_meeting",
+      "article": "Art. 24",
+      "date": "2023-06-07",
+      "boa_number": 107,
+      "section": "V. Anuncios",
+      "department": "Departamento de Hacienda y Administracion Publica",
+      "pdf_url": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1280545820707&type=pdf",
+      "sig_url": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1280546830707",
+      "csv_code": "BOA20230607xxx"
+    },
+    {
+      "index": 4,
+      "title": "ANUNCIO de la Junta Distribuidora de Herencias de la Comunidad Autonoma de Aragon, relativo a la distribucion del patrimonio procedente de la sucesion legal de causantes",
+      "type": "convocatoria_pre_meeting",
+      "article": "Art. 18",
+      "date": "2023-03-21",
+      "boa_number": 55,
+      "section": "V. Anuncios",
+      "department": "Departamento de Hacienda y Administracion Publica",
+      "pdf_url": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1267376041111&type=pdf",
+      "sig_url": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1267377051111",
+      "csv_code": "BOA20230321034"
+    },
+    {
+      "index": 5,
+      "title": "ANUNCIO de la Junta Distribuidora de Herencias de la Comunidad Autonoma de Aragon, por el que se hace publica la distribucion de los patrimonios hereditarios acordada en su reunion del dia 16 de junio de 2022",
+      "type": "distribucion_post_meeting",
+      "article": "Art. 24",
+      "date": "2022-06-28",
+      "boa_number": null,
+      "section": "V. Anuncios",
+      "department": "Departamento de Hacienda y Administracion Publica",
+      "pdf_url": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1228164063838&type=pdf",
+      "sig_url": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1228165073838",
+      "csv_code": null
+    },
+    {
+      "index": 6,
+      "title": "ANUNCIO de la Junta Distribuidora de Herencias de la Comunidad Autonoma de Aragon relativo a la distribucion del patrimonio procedente de la sucesion legal de causantes",
+      "type": "convocatoria_pre_meeting",
+      "article": "Art. 18",
+      "date": "2022-04-29",
+      "boa_number": null,
+      "section": "V. Anuncios",
+      "department": "Departamento de Hacienda y Administracion Publica",
+      "pdf_url": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1218112565050&type=pdf",
+      "sig_url": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1218113575050",
+      "csv_code": null
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+name: NadiaAI Daily Pipeline
+
+on:
+  schedule:
+    # 07:00 UTC = 08:00 CET / 09:00 CEST
+    # Note: during DST (last Sunday of March → last Sunday of October),
+    # this runs at 09:00 local. Acceptable for a morning summary.
+    - cron: '0 7 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Write service account JSON
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON_B64 }}" | base64 -d > /tmp/sa.json
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON_B64: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON_B64 }}
+
+      - name: Run pipeline
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: /tmp/sa.json
+          LEADS_SHEET_ID: ${{ secrets.LEADS_SHEET_ID }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAMA_EMAIL: ${{ secrets.MAMA_EMAIL }}
+          DEV_ALERT_EMAIL: ${{ secrets.DEV_ALERT_EMAIL }}
+        run: python -m nadia_ai --cron
+
+      - name: Clean up service account
+        if: always()
+        run: rm -f /tmp/sa.json
+
+  on-failure:
+    needs: run-pipeline
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create failure issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `Pipeline failure — ${new Date().toISOString().split('T')[0]}`;
+            const body = `The daily NadiaAI pipeline failed.\n\n[View run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['bug', 'pipeline'],
+            });
