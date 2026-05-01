@@ -1,11 +1,11 @@
 """Scraper for Tablón de Edictos del Ayuntamiento de Zaragoza.
 
 Uses the public JSON API (open data, no auth required) to discover
-'declaración de herederos abintestato' records — inheritance events
-that signal future property listings.
+inheritance-related records — declaración de herederos abintestato,
+actas de notoriedad, herencias yacentes — that signal future property listings.
 
 API docs: https://www.zaragoza.es/sede/portal/datos-abiertos/api
-Category filter: tipo.id=29 ("Acta de notoriedad/Declaracion de herederos")
+Queries both tipo-based and text-based searches for maximum coverage.
 """
 
 import logging
@@ -21,8 +21,8 @@ logger = logging.getLogger("nadia_ai.scrapers.tablon")
 # JSON API endpoint — open data, no auth required
 TABLON_API_URL = "https://www.zaragoza.es/sede/servicio/tablon-edicto.json"
 
-# Category ID for herederos declarations
-TIPO_HEREDEROS = 29
+# Category IDs for herederos declarations
+TIPO_IDS = [29, 26]  # 29=Acta notoriedad/Declaracion herederos, 26=Declaraciones de herederos
 
 HEADERS = {
     "User-Agent": "NadiaAI/0.1 (lead-generation research; contact: dev@example.com)",
@@ -32,52 +32,109 @@ HEADERS = {
 SESSION = requests.Session()
 SESSION.headers.update(HEADERS)
 
-# Pattern to extract deceased name from title field
-# Titles look like: "Acta notoriedad para declaracion herederos abintestato,
-# por el fallecimiento de DON GARCIA LOPEZ MARIA"
-NAME_PATTERN = re.compile(
-    r"(?:fallecimiento|defunci[oó]n)\s+de\s+(?:(?:DO[NÑ]A?|D\.?)\s+)?"
-    r"(.+?)(?:\s*[,.]|\s+en\s+|\s+de\s+fecha|\s*$)",
-    re.IGNORECASE,
-)
+# Patterns to extract deceased name from title field — ordered most-specific first
+NAME_PATTERNS = [
+    # "fallecimiento de DON/DOÑA NAME" or "defuncion de D. NAME"
+    re.compile(
+        r"(?:fallecimiento|defunci[oó]n)\s+de\s+(?:(?:DO[NÑ]A?|D\.?a?)\s+)?"
+        r"(.+?)(?:\s*[,.]|\s+en\s+|\s+de\s+fecha|\s*$)",
+        re.IGNORECASE,
+    ),
+    # "declaracion de herederos abintestato de DOÑA NAME" / "herederos de D. NAME"
+    re.compile(
+        r"herederos\s+(?:abintestato\s+)?de\s+(?:(?:DO[NÑ]A?|D\.?a?)\s+)?"
+        r"(.+?)(?:\s*[,.]|\s*$)",
+        re.IGNORECASE,
+    ),
+    # "Herencia Yacen(te) de D./Dña. NAME"
+    re.compile(
+        r"[Hh]erencia\s+[Yy]acen(?:te)?\s+de\s+(?:(?:DO[NÑ]A?|D\.?a?|D[ñÑ]a\.?)\s+)?"
+        r"(.+?)(?:\s*[,.]|\s*$)",
+        re.IGNORECASE,
+    ),
+    # "Acta de notoriedad ... DON/DOÑA NAME" (at end of title)
+    re.compile(
+        r"(?:acta\s+(?:de\s+)?notoriedad).+?(?:DO[NÑ]A?|D\.?a?)\s+"
+        r"(.+?)(?:\s*[,.]|\s*$)",
+        re.IGNORECASE,
+    ),
+]
+
+# FIQL text query to catch inheritance edicts that may be miscategorized
+TEXT_QUERY = "title==*herederos*,title==*herencia*,title==*abintestato*,title==*notoriedad*"
 
 
-def fetch_herederos_edicts(since: datetime | None = None, max_rows: int = 50) -> list[dict]:
+def fetch_herederos_edicts(since: datetime | None = None, max_rows: int = 200) -> list[dict]:
     """Fetch herederos edicts from the Tablón JSON API.
+
+    Runs multiple queries (by tipo IDs + text search) and deduplicates by record ID
+    for maximum coverage.
 
     Args:
         since: Only return records published after this datetime.
-        max_rows: Maximum records to return (API max is 500).
+        max_rows: Maximum records per query (API max is 500).
 
     Returns:
-        List of raw API records (dicts).
+        Deduplicated list of raw API records (dicts).
     """
-    params = {
-        "tipo.id": TIPO_HEREDEROS,
-        "rows": min(max_rows, 500),
-        "sort": "publicationDate desc",
-    }
+    seen_ids = set()
+    all_results = []
 
+    queries = []
+
+    # Query 1: FIQL OR on tipo IDs
+    tipo_fiql = ",".join(f"tipo.id=={t}" for t in TIPO_IDS)
     if since:
-        params["q"] = f"publicationDate=ge={since.strftime('%Y-%m-%dT%H:%M:%S')}"
+        since_str = since.strftime("%Y-%m-%dT%H:%M:%S")
+        tipo_fiql = f"({tipo_fiql});publicationDate=ge={since_str}"
+    queries.append({"q": tipo_fiql, "rows": min(max_rows, 500), "sort": "publicationDate desc"})
 
-    response = SESSION.get(TABLON_API_URL, params=params, timeout=30)
-    response.raise_for_status()
-    data = response.json()
+    # Query 2: text-based catch-all (catches miscategorized edicts)
+    text_q = TEXT_QUERY
+    if since:
+        text_q = f"({TEXT_QUERY});publicationDate=ge={since.strftime('%Y-%m-%dT%H:%M:%S')}"
+    queries.append({"q": text_q, "rows": min(max_rows, 500), "sort": "publicationDate desc"})
 
-    total = data.get("totalCount", 0)
-    results = data.get("result", [])
-    logger.info("Tablón API returned %d records (total available: %d)", len(results), total)
-    return results
+    for params in queries:
+        try:
+            response = SESSION.get(TABLON_API_URL, params=params, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+            total = data.get("totalCount", 0)
+            results = data.get("result", [])
+            logger.info(
+                "Tablón query returned %d records (total: %d) [q=%s]",
+                len(results),
+                total,
+                params.get("q", ""),
+            )
+            for r in results:
+                rid = r.get("id")
+                if rid and rid not in seen_ids:
+                    seen_ids.add(rid)
+                    all_results.append(r)
+        except requests.RequestException as e:
+            logger.error("Tablón query failed [q=%s]: %s", params.get("q", ""), e)
+
+    logger.info("Tablón total unique records: %d", len(all_results))
+    return all_results
 
 
 def extract_name_from_title(title: str) -> str | None:
-    """Extract the deceased person's name from the edict title."""
-    match = NAME_PATTERN.search(title)
-    if match:
-        name = match.group(1).strip()
-        # Normalize: titles are often ALL CAPS
-        return name.title() if name.isupper() else name
+    """Extract the deceased person's name from the edict title.
+
+    Tries multiple patterns to handle varied title formats:
+    - "por el fallecimiento de DON GARCIA LOPEZ MARIA"
+    - "declaracion herederos abintestato de DOÑA JOAQUINA ORTIZ GARCES"
+    - "Herencia Yacen de D. Ramon Jose Chueca Alonso"
+    - "Acta notoriedad ... DON BENITO ARTAL ARTAL"
+    """
+    for pattern in NAME_PATTERNS:
+        match = pattern.search(title)
+        if match:
+            name = match.group(1).strip()
+            # Normalize: titles are often ALL CAPS
+            return name.title() if name.isupper() else name
     return None
 
 

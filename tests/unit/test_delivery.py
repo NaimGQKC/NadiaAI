@@ -8,7 +8,8 @@ from nadia_ai.delivery import (
     send_email,
     write_csv_fallback,
 )
-from nadia_ai.models import LeadRow
+from nadia_ai.merge import merge_leads
+from nadia_ai.models import EdictRecord, LeadRow
 
 
 class TestComputeTodaysLeads:
@@ -29,7 +30,7 @@ class TestComputeTodaysLeads:
                 "enrichment_pending": 0,
             },
         )
-        edict_id = insert_edict(
+        insert_edict(
             db_conn,
             {
                 "source": "tablon",
@@ -38,14 +39,26 @@ class TestComputeTodaysLeads:
                 "edict_type": "declaracion_herederos_abintestato",
                 "published_at": None,
                 "source_url": "https://example.com/1",
+                "address": None,
             },
         )
-        insert_person(db_conn, edict_id, "causante", "García López")
+
+        # Merge through the pipeline
+        records = [
+            EdictRecord(
+                source="tablon",
+                source_id="E001",
+                referencia_catastral="RC001",
+                causante="García López",
+                source_url="https://example.com/1",
+            )
+        ]
+        merge_leads(db_conn, records)
 
         leads = compute_todays_leads(db_conn)
         assert len(leads) == 1
         assert leads[0].causante == "García López"
-        assert leads[0].fuente == "Tablón"
+        assert "Tablón" in leads[0].fuentes
 
     def test_boa_source_label(self, db_conn):
         upsert_parcel(
@@ -69,19 +82,32 @@ class TestComputeTodaysLeads:
                 "edict_type": "junta_distribuidora",
                 "published_at": None,
                 "source_url": "",
+                "address": None,
             },
         )
+
+        records = [
+            EdictRecord(
+                source="boa",
+                source_id="B001",
+                referencia_catastral="RC002",
+                causante="Test Person",
+            )
+        ]
+        merge_leads(db_conn, records)
+
         leads = compute_todays_leads(db_conn)
         assert len(leads) == 1
-        assert leads[0].fuente == "BOA"
+        assert "BOA" in leads[0].fuentes
 
 
 class TestWriteCsvFallback:
     def test_creates_csv(self, tmp_path):
         leads = [
             LeadRow(
+                tier="B",
                 fecha_deteccion="2026-04-28",
-                fuente="Tablón",
+                fuentes="Tablón",
                 causante="García López",
                 localidad="Zaragoza",
             ),
@@ -116,17 +142,21 @@ class TestSendEmail:
     def test_sends_leads_email(self, mock_smtp):
         leads = [
             LeadRow(
+                tier="A",
                 fecha_deteccion="2026-04-28",
-                fuente="Tablón",
+                fuentes="Tablón",
                 causante="García López María",
+                direccion="Calle Test 1",
             ),
             LeadRow(
+                tier="B",
                 fecha_deteccion="2026-04-28",
-                fuente="BOA",
+                fuentes="BOA",
                 causante="Pérez Sánchez Juan",
             ),
         ]
         send_email(leads, sheet_ok=True)
         mock_smtp.assert_called_once()
         subject = mock_smtp.call_args[0][1]
-        assert "2 nuevos" in subject
+        assert "1 nuevos accionables" in subject
+        assert "2 totales" in subject

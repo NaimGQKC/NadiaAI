@@ -16,8 +16,10 @@ def db_conn():
     conn.row_factory = sqlite3.Row
 
     from nadia_ai.db import init_db
+    from nadia_ai.merge import init_leads_schema
 
     init_db(conn)
+    init_leads_schema(conn)
 
     yield conn
     conn.close()

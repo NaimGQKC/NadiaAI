@@ -2,7 +2,7 @@ name: NadiaAI Daily Pipeline
 
 on:
   schedule:
-    # 07:00 UTC = 08:00 CET / 09:00 CEST
+    # 07:00 UTC = 08:00 CET / 09:00 CEST (main daily run)
     # Note: during DST (last Sunday of March → last Sunday of October),
     # this runs at 09:00 local. Acceptable for a morning summary.
     - cron: '0 7 * * *'

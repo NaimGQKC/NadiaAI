@@ -242,6 +242,7 @@ def enrich_and_persist(conn: sqlite3.Connection, records: list[EdictRecord]) -> 
             "edict_type": record.edict_type,
             "published_at": record.published_at.isoformat() if record.published_at else None,
             "source_url": record.source_url,
+            "address": record.address,
         }
         edict_id = insert_edict(conn, edict_data)
         if edict_id is None:

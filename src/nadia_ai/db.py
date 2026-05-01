@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS edicts (
     edict_type TEXT,
     published_at TEXT,
     source_url TEXT,
+    address TEXT,
     ingested_at TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE(source, source_id),
     FOREIGN KEY (referencia_catastral) REFERENCES parcels(referencia_catastral)
@@ -111,9 +112,9 @@ def insert_edict(conn: sqlite3.Connection, data: dict) -> int | None:
         cursor = conn.execute(
             """
             INSERT INTO edicts (source, source_id, referencia_catastral,
-                                edict_type, published_at, source_url)
+                                edict_type, published_at, source_url, address)
             VALUES (:source, :source_id, :referencia_catastral,
-                    :edict_type, :published_at, :source_url)
+                    :edict_type, :published_at, :source_url, :address)
             """,
             data,
         )
@@ -148,7 +149,8 @@ def get_todays_leads(conn: sqlite3.Connection) -> list[dict]:
         """
         SELECT e.source, e.referencia_catastral, e.edict_type, e.published_at,
                e.source_url, e.ingested_at,
-               p.address, p.neighborhood, p.m2, p.year_built, p.use_class,
+               COALESCE(p.address, e.address) as address,
+               p.neighborhood, p.m2, p.year_built, p.use_class,
                p.enrichment_pending,
                (SELECT full_name FROM edict_persons ep
                 WHERE ep.edict_id = e.id AND ep.role = 'causante'

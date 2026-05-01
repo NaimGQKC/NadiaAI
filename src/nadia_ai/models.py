@@ -17,7 +17,15 @@ class EdictRecord(BaseModel):
     published_at: datetime | None = Field(default=None)
     source_url: str = Field(default="")
     causante: str | None = Field(default=None, description="Deceased person's name")
+    address: str | None = Field(default=None, description="Property address extracted from source")
     petitioners: list[str] = Field(default_factory=list, description="Names of petitioners/heirs")
+    # Extended extraction fields
+    fecha_fallecimiento: str | None = Field(default=None, description="Death date")
+    fecha_nacimiento: str | None = Field(default=None, description="Birth date")
+    lugar_nacimiento: str | None = Field(default=None, description="Birth place")
+    lugar_fallecimiento: str | None = Field(default=None, description="Death place")
+    localidad: str | None = Field(default=None, description="Last domicile city")
+    juzgado: str | None = Field(default=None, description="Court or notary handling the case")
 
 
 class ParcelInfo(BaseModel):
@@ -32,55 +40,72 @@ class ParcelInfo(BaseModel):
 
 
 class LeadRow(BaseModel):
-    """A single row to be written to the Google Sheet.
+    """A single row for Google Sheet output.
 
-    Note: referencia_catastral and property data (m², year, use_class) are
-    often empty in v1 — the Tablón and BOA provide lead discovery (deceased
-    name, location) but not property-level data. Nadia fills in property
-    details manually as she works each lead.
+    Phase 2: includes tier classification, multi-source tracking,
+    outreach legality, and extended person data (dates, places).
     """
 
+    tier: str = Field(default="C", description="A/B/C/X actionability tier")
     fecha_deteccion: str = Field(description="Detection date (YYYY-MM-DD)")
-    fuente: str = Field(description="Source: Tablón / BOA")
+    fuentes: str = Field(default="", description="Comma-separated source list")
     causante: str = ""
+    fecha_fallecimiento: str = ""
     localidad: str = ""
-    referencia_catastral: str = ""
     direccion: str = ""
+    referencia_catastral: str = ""
     m2: float | None = None
     tipo_inmueble: str = ""
     estado: str = "Nuevo"
+    outreach_ok: str = "Sí"
+    notas_sistema: str = ""
     notas: str = ""
     link_edicto: str = ""
+    # Enrichment fields (hidden by default in Sheet, expandable)
+    subasta_activa: str = ""
+    obras_recientes: str = ""
 
     def to_row(self) -> list[str]:
         """Convert to a list of strings for Sheet append."""
         return [
+            self.tier,
             self.fecha_deteccion,
-            self.fuente,
+            self.fuentes,
             self.causante,
+            self.fecha_fallecimiento,
             self.localidad,
-            self.referencia_catastral,
             self.direccion,
+            self.referencia_catastral,
             str(self.m2) if self.m2 is not None else "",
             self.tipo_inmueble,
             self.estado,
+            self.outreach_ok,
+            self.notas_sistema,
             self.notas,
             self.link_edicto,
+            self.subasta_activa,
+            self.obras_recientes,
         ]
 
     @classmethod
     def sheet_headers(cls) -> list[str]:
         """Column headers for the Google Sheet (Spanish)."""
         return [
+            "Tier",
             "Fecha detección",
-            "Fuente",
+            "Fuentes",
             "Causante",
+            "Fecha fallecimiento",
             "Localidad",
-            "Ref. catastral",
             "Dirección",
+            "Ref. catastral",
             "m²",
             "Tipo inmueble",
             "Estado",
-            "Notas",
+            "Outreach OK?",
+            "Notas sistema",
+            "Notas Nadia",
             "Link edicto",
+            "Subasta activa",
+            "Obras recientes",
         ]

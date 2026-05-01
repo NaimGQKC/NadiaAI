@@ -21,7 +21,7 @@ from nadia_ai.config import (
     SMTP_PASSWORD,
     SMTP_USER,
 )
-from nadia_ai.db import get_todays_leads
+from nadia_ai.merge import get_todays_leads
 from nadia_ai.models import LeadRow
 
 logger = logging.getLogger("nadia_ai.delivery")
@@ -30,26 +30,47 @@ SHEET_URL_TEMPLATE = "https://docs.google.com/spreadsheets/d/{sheet_id}"
 
 
 def compute_todays_leads(conn: sqlite3.Connection) -> list[LeadRow]:
-    """Query today's leads from the database and convert to LeadRow objects."""
+    """Query today's leads from the merged leads table.
+
+    Reads from the deduplicated, tier-classified leads table.
+    Only returns leads first seen today (daily delta — no re-emission).
+    """
+    import json
+
     rows = get_todays_leads(conn)
     leads = []
     for row in rows:
-        source_label = "Tablón" if row["source"] == "tablon" else "BOA"
+        sources = json.loads(row["sources"])
+        source_urls = json.loads(row["source_urls"])
         leads.append(
             LeadRow(
-                fecha_deteccion=datetime.now(UTC).strftime("%Y-%m-%d"),
-                fuente=source_label,
+                tier=row["tier"],
+                fecha_deteccion=row["first_seen_at"][:10],
+                fuentes=", ".join(sources),
                 causante=row["causante"] or "",
-                localidad="Zaragoza",
+                fecha_fallecimiento=row["fecha_fallecimiento"] or "",
+                localidad=row["localidad"] or "",
+                direccion=row["direccion"] or "",
                 referencia_catastral=row["referencia_catastral"] or "",
-                direccion=row["address"] or "",
                 m2=row["m2"],
                 tipo_inmueble=row["use_class"] or "",
-                estado="Nuevo",
-                notas="Pendiente enriquecimiento" if row.get("enrichment_pending") else "",
-                link_edicto=row["source_url"] or "",
+                estado=row["estado"] or "Nuevo",
+                outreach_ok="Sí" if row["outreach_allowed"] else "No",
+                notas_sistema=row["outreach_notes"] or "",
+                notas=row["notas"] or "",
+                link_edicto=source_urls[0] if source_urls else "",
+                subasta_activa=row.get("subasta_activa") or "",
+                obras_recientes=row.get("obras_recientes") or "",
             )
         )
+
+    logger.info("Today's leads: %d (A=%d, B=%d, C=%d, X=%d)",
+        len(leads),
+        sum(1 for l in leads if l.tier == "A"),
+        sum(1 for l in leads if l.tier == "B"),
+        sum(1 for l in leads if l.tier == "C"),
+        sum(1 for l in leads if l.tier == "X"),
+    )
     return leads
 
 
@@ -111,9 +132,11 @@ def write_to_sheets(leads: list[LeadRow]) -> None:
     try:
         ws = sh.worksheet("Leads")
     except gspread.WorksheetNotFound:
-        ws = sh.add_worksheet(title="Leads", rows=1000, cols=12)
-        # Write headers
-        ws.update("A1:L1", [LeadRow.sheet_headers()])
+        ws = sh.add_worksheet(title="Leads", rows=1000, cols=20)
+        # Write headers (15 columns for Phase 2)
+        headers = LeadRow.sheet_headers()
+        end_col = chr(ord("A") + len(headers) - 1)
+        ws.update(f"A1:{end_col}1", [headers])
         # Freeze header row
         ws.freeze(rows=1)
         logger.info("Created 'Leads' worksheet with headers")
@@ -146,12 +169,95 @@ def write_to_sheets(leads: list[LeadRow]) -> None:
 
 
 def _apply_formatting(ws) -> None:
-    """Apply conditional formatting to the Sheet."""
+    """Apply conditional formatting to the Sheet for tier-based coloring."""
+    from gspread_formatting import (
+        BooleanCondition,
+        BooleanRule,
+        CellFormat,
+        Color,
+        ConditionalFormatRule,
+        GridRange,
+        get_conditional_format_rules,
+        set_conditional_format_rules,
+    )
 
-    # Auto-resize columns
-    # Note: gspread doesn't support auto-resize directly, but we can set widths
-    # This is best-effort formatting
-    pass
+    rules = get_conditional_format_rules(ws)
+
+    # Tier X rows → gray background (column A = "X")
+    rules.append(
+        ConditionalFormatRule(
+            ranges=[GridRange.from_a1_range("A2:O1000", ws)],
+            booleanRule=BooleanRule(
+                condition=BooleanCondition("CUSTOM_FORMULA", ['=$A2="X"']),
+                format=CellFormat(backgroundColor=Color(0.85, 0.85, 0.85)),
+            ),
+        )
+    )
+
+    # Tier A rows → light green background
+    rules.append(
+        ConditionalFormatRule(
+            ranges=[GridRange.from_a1_range("A2:O1000", ws)],
+            booleanRule=BooleanRule(
+                condition=BooleanCondition("CUSTOM_FORMULA", ['=$A2="A"']),
+                format=CellFormat(backgroundColor=Color(0.85, 0.94, 0.85)),
+            ),
+        )
+    )
+
+    set_conditional_format_rules(ws, rules)
+
+
+def write_calibracion_tab(calibration_rows: list[dict]) -> None:
+    """Write INE calibration data to the 'Calibracion' tab in Google Sheets.
+
+    This tab is a read-only dashboard for the dev to monitor pipeline health.
+    """
+    if not GOOGLE_SERVICE_ACCOUNT_JSON or not LEADS_SHEET_ID:
+        logger.warning("Google Sheets not configured — skipping Calibración tab")
+        return
+
+    import gspread
+    from google.oauth2.service_account import Credentials
+
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ]
+    creds = Credentials.from_service_account_file(GOOGLE_SERVICE_ACCOUNT_JSON, scopes=scopes)
+    gc = gspread.authorize(creds)
+    sh = gc.open_by_key(LEADS_SHEET_ID)
+
+    headers = [
+        "Periodo",
+        "Defunciones Zaragoza",
+        "ETDP Herencias Zaragoza",
+        "Leads pipeline",
+        "Cobertura %",
+        "Alerta",
+    ]
+
+    try:
+        ws = sh.worksheet("Calibración")
+    except gspread.WorksheetNotFound:
+        ws = sh.add_worksheet(title="Calibración", rows=100, cols=len(headers))
+        ws.freeze(rows=1)
+        logger.info("Created 'Calibración' worksheet")
+
+    # Clear and rewrite (small dataset, idempotent)
+    ws.clear()
+    rows = [headers]
+    for row in calibration_rows:
+        rows.append([
+            row.get("periodo", ""),
+            row.get("defunciones_zaragoza", ""),
+            row.get("etdp_herencias_zaragoza", ""),
+            row.get("leads_pipeline", ""),
+            f"{row.get('reach_pct', 0):.1f}%" if row.get("reach_pct") else "",
+            row.get("outage_flag", ""),
+        ])
+    ws.update(f"A1:F{len(rows)}", rows, value_input_option="USER_ENTERED")
+    logger.info("Calibración tab updated with %d rows", len(calibration_rows))
 
 
 def write_csv_fallback(leads: list[LeadRow]) -> Path:
@@ -189,31 +295,47 @@ def send_email(leads: list[LeadRow], sheet_ok: bool) -> None:
             f"<p>¡Buen día!<br>NadiaAI</p>"
         )
     else:
-        # Show top 3 leads (all leads are interesting — sorted as-is)
-        top3 = leads[:3]
-        top3_text = "\n".join(
-            f"  • {ld.causante or 'Sin nombre'} — {ld.fuente} — {ld.localidad or 'Zaragoza'}"
-            for ld in top3
+        tier_a = [ld for ld in leads if ld.tier == "A"]
+        tier_b = [ld for ld in leads if ld.tier == "B"]
+
+        # Show top Tier A leads, then top B
+        top_leads = (tier_a + tier_b)[:5]
+        top_text = "\n".join(
+            f"  [{ld.tier}] {ld.causante or 'Sin nombre'} — {ld.fuentes} — {ld.localidad or 'Zaragoza'}"
+            + (f" — {ld.direccion}" if ld.direccion else "")
+            for ld in top_leads
         )
-        top3_html = "".join(
-            f"<li><strong>{ld.causante or 'Sin nombre'}</strong>"
-            f" — {ld.fuente} — {ld.localidad or 'Zaragoza'}</li>"
-            for ld in top3
+        top_html = "".join(
+            f"<li><span style='color:{'#2e7d32' if ld.tier == 'A' else '#f57c00'}'>[{ld.tier}]</span> "
+            f"<strong>{ld.causante or 'Sin nombre'}</strong>"
+            f" — {ld.fuentes} — {ld.localidad or 'Zaragoza'}"
+            + (f" — <em>{ld.direccion}</em>" if ld.direccion else "")
+            + "</li>"
+            for ld in top_leads
         )
 
-        subject = f"NadiaAI — Leads del día — {n_new} nuevos"
+        # Collect active source names
+        all_sources = set()
+        for ld in leads:
+            all_sources.update(s.strip() for s in ld.fuentes.split(",") if s.strip())
+        fuentes_line = ", ".join(sorted(all_sources))
+
+        subject = f"NadiaAI — {len(tier_a)} nuevos accionables ({n_new} totales)"
         body_text = (
             f"Hola Nadia,\n\n"
-            f"Hoy ({today}) hay {n_new} nuevos leads de herencia:\n\n"
-            f"Nuevos leads:\n{top3_text}\n\n"
+            f"Hoy ({today}) hay {n_new} nuevos leads"
+            f" ({len(tier_a)} Tier A, {len(tier_b)} Tier B):\n\n"
+            f"Top leads:\n{top_text}\n\n"
+            f"Fuentes activas: {fuentes_line}\n\n"
             f"Tu hoja de leads: {sheet_url}\n\n"
             f"¡Buen día!\nNadiaAI"
         )
         body_html = (
             f"<p>Hola Nadia,</p>"
-            f"<p>Hoy ({today}) hay <strong>{n_new}</strong> nuevos leads de herencia:</p>"
-            f"<p><strong>Top {min(3, n_new)} por tamaño:</strong></p>"
-            f"<ul>{top3_html}</ul>"
+            f"<p>Hoy ({today}) hay <strong>{n_new}</strong> nuevos leads"
+            f" (<strong>{len(tier_a)}</strong> Tier A, {len(tier_b)} Tier B):</p>"
+            f"<ul>{top_html}</ul>"
+            f"<p style='color:#666'>Fuentes activas: {fuentes_line}</p>"
             f'<p><a href="{sheet_url}">Abrir hoja de leads</a></p>'
             f"<p>¡Buen día!<br>NadiaAI</p>"
         )
