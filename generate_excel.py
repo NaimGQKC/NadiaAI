@@ -35,6 +35,9 @@ TIPO_MAP = {
     "edicto_judicial_herederos": "Declaración de herederos",
     "sucesion_legal_boa": "Sucesión legal",
     "defuncion_esquela": "Defunción reciente",
+    "solar_vacante": "Solar vacante",
+    "licencia_obra": "Licencia de obra",
+    "licencia_derribo": "Licencia de derribo",
 }
 for l in leads:
     l["tipo"] = TIPO_MAP.get(l.get("edict_type", ""), "Sucesión legal")
@@ -58,8 +61,12 @@ leads = [
     and (l["causante"] or l["direccion"])
 ]
 
+# Separate solares into their own tab (too many for main leads view)
+solares_leads = [l for l in leads if l.get("tipo") == "Solar vacante"]
+main_leads = [l for l in leads if l.get("tipo") != "Solar vacante"]
+
 # Clean locality
-for l in leads:
+for l in main_leads:
     loc = l.get("localidad", "")
     if loc and loc.startswith(("la ", "el ")):
         l["localidad"] = "Zaragoza"
@@ -70,7 +77,7 @@ def sort_key(l):
     has_name = 0 if l["causante"] else 1
     return (tier_order, has_name, l["causante"] or "")
 
-leads.sort(key=sort_key)
+main_leads.sort(key=sort_key)
 
 # === BUILD EXCEL ===
 wb = Workbook()
@@ -100,8 +107,8 @@ for col, (h, w) in enumerate(zip(headers, widths), 1):
     cell.alignment = Alignment(horizontal="center")
     ws.column_dimensions[get_column_letter(col)].width = w
 
-src_map = {"boa": "BOA", "tablon": "Tablón", "boe_teju": "BOE", "esquelas": "Esquelas", "defunciones": "Defunciones"}
-for i, l in enumerate(leads, 2):
+src_map = {"boa": "BOA", "tablon": "Tablón", "boe_teju": "BOE", "esquelas": "Esquelas", "defunciones": "Defunciones", "iesquelas": "iEsquelas", "solares": "Solares", "licencias": "Licencias"}
+for i, l in enumerate(main_leads, 2):
     sources = json.loads(l.get("sources", "[]"))
     source_urls = json.loads(l.get("source_urls", "[]"))
     fill = a_fill if l["tier"] == "A" else b_fill
@@ -128,7 +135,40 @@ for i, l in enumerate(leads, 2):
             cell.value = "Ver edicto"
 
 ws.freeze_panes = "A2"
-ws.auto_filter.ref = f"A1:J{len(leads)+1}"
+ws.auto_filter.ref = f"A1:J{len(main_leads)+1}"
+
+# --- SOLARES TAB ---
+if solares_leads:
+    sol_ws = wb.create_sheet("Solares vacantes")
+    sol_ws.sheet_properties.tabColor = "27AE60"
+    sol_headers = ["Dirección/Coordenadas", "Ref. Catastral", "m²", "Link"]
+    sol_widths = [55, 22, 10, 45]
+    for col, (h, w) in enumerate(zip(sol_headers, sol_widths), 1):
+        cell = sol_ws.cell(row=1, column=col, value=h)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center")
+        sol_ws.column_dimensions[get_column_letter(col)].width = w
+
+    for i, l in enumerate(solares_leads, 2):
+        source_urls = json.loads(l.get("source_urls", "[]"))
+        vals = [
+            l.get("direccion", "") or "",
+            l.get("referencia_catastral", "") or "",
+            l.get("m2", "") or "",
+            source_urls[0] if source_urls else "",
+        ]
+        for col, v in enumerate(vals, 1):
+            cell = sol_ws.cell(row=i, column=col, value=v)
+            cell.border = thin_border
+            cell.font = normal_font
+            if col == 4 and v:
+                cell.font = link_font
+                cell.hyperlink = v
+                cell.value = "Ver solar"
+
+    sol_ws.freeze_panes = "A2"
+    sol_ws.auto_filter.ref = f"A1:D{len(solares_leads)+1}"
 
 # --- LEYENDA TAB ---
 lg = wb.create_sheet("Leyenda")
@@ -205,6 +245,24 @@ for label, desc in [
         "investigar si la persona tenía propiedades en Catastro y "
         "contactar a herederos ofreciendo tus servicios.",
     ),
+    (
+        "Solar vacante",
+        "Parcela urbana vacía registrada en el censo de solares del "
+        "Ayuntamiento de Zaragoza. Es suelo urbano sin edificar — "
+        "oportunidad de inversión o desarrollo.\n\n"
+        "→ Cómo actuar: Busca la referencia catastral de la parcela, "
+        "identifica al propietario y ofrécele tus servicios para vender "
+        "o colaborar en la promoción del solar.",
+    ),
+    (
+        "Licencia de obra / derribo",
+        "Licencia municipal de obra o derribo concedida por el "
+        "Ayuntamiento de Zaragoza. Indica actividad constructiva "
+        "o demolición inminente en una parcela con ref. catastral.\n\n"
+        "→ Cómo actuar: Si es derribo, puede haber solar disponible "
+        "próximamente. Si es obra, el propietario puede necesitar "
+        "servicios inmobiliarios. Busca la ref. catastral en Catastro.",
+    ),
 ]:
     lg.cell(row=row, column=2, value=label).font = bold11
     c = lg.cell(row=row, column=3, value=desc)
@@ -235,6 +293,26 @@ for label, desc in [
         "Esquelas",
         "Esquelas funerarias de Memora (principal funeraria de Zaragoza). "
         "Señal temprana de fallecimiento reciente.",
+    ),
+    (
+        "Solares",
+        "Censo de solares del Ayuntamiento de Zaragoza (datos abiertos). "
+        "Parcelas urbanas vacías — oportunidades de inversión/desarrollo.",
+    ),
+    (
+        "Licencias",
+        "Licencias de obra y derribo del Ayuntamiento de Zaragoza (datos abiertos). "
+        "Señales de actividad constructiva con referencia catastral.",
+    ),
+    (
+        "Defunciones",
+        "defunciones.es — agregador de obituarios con datos de municipio. "
+        "Complementa las esquelas de Memora con localidad precisa.",
+    ),
+    (
+        "iEsquelas",
+        "iesquelas.com — agregador nacional de esquelas. "
+        "Tercera fuente de obituarios con datos de tanatorio.",
     ),
 ]:
     lg.cell(row=row, column=2, value=label).font = bold11
@@ -271,7 +349,7 @@ for label, desc in [
 out = "leads_2026-05-02.xlsx"
 wb.save(out)
 
-tier_a = sum(1 for l in leads if l["tier"] == "A")
-named = sum(1 for l in leads if l["causante"])
-print(f"{len(leads)} leads | {tier_a} Tier A | {named} named")
+tier_a = sum(1 for l in main_leads if l["tier"] == "A")
+named = sum(1 for l in main_leads if l["causante"])
+print(f"{len(main_leads)} leads + {len(solares_leads)} solares | {tier_a} Tier A | {named} named")
 print(f"File: {out}")

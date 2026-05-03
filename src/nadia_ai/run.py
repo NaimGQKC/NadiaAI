@@ -35,6 +35,9 @@ def run_pipeline() -> dict:
         "borme_new": 0,
         "esquelas_new": 0,
         "defunciones_new": 0,
+        "iesquelas_new": 0,
+        "solares_new": 0,
+        "licencias_new": 0,
         "enriched": 0,
         "subastas_enriched": 0,
         "obras_enriched": 0,
@@ -126,7 +129,43 @@ def run_pipeline() -> dict:
         logger.error("Defunciones scraper failed: %s", e)
         summary["errors"].append(f"defunciones: {e}")
 
-    all_records = tablon_records + boa_records + bop_records + boe_records + borme_records + esquelas_records + defunciones_records
+    # Step 3g: Scrape iEsquelas.com (third obituary source — aggregator)
+    iesquelas_records = []
+    try:
+        from nadia_ai.scrapers.iesquelas import scrape_iesquelas
+
+        iesquelas_records = scrape_iesquelas()
+        summary["iesquelas_new"] = len(iesquelas_records)
+        logger.info("iEsquelas: %d new records", len(iesquelas_records))
+    except Exception as e:
+        logger.error("iEsquelas scraper failed: %s", e)
+        summary["errors"].append(f"iesquelas: {e}")
+
+    # Step 3h: Scrape Zaragoza vacant plots (solares open data)
+    solares_records = []
+    try:
+        from nadia_ai.scrapers.solares import scrape_solares
+
+        solares_records = scrape_solares()
+        summary["solares_new"] = len(solares_records)
+        logger.info("Solares: %d new records", len(solares_records))
+    except Exception as e:
+        logger.error("Solares scraper failed: %s", e)
+        summary["errors"].append(f"solares: {e}")
+
+    # Step 3i: Scrape Zaragoza building permits (licencias de obra)
+    licencias_records = []
+    try:
+        from nadia_ai.scrapers.licencias import scrape_licencias
+
+        licencias_records = scrape_licencias()
+        summary["licencias_new"] = len(licencias_records)
+        logger.info("Licencias: %d new records", len(licencias_records))
+    except Exception as e:
+        logger.error("Licencias scraper failed: %s", e)
+        summary["errors"].append(f"licencias: {e}")
+
+    all_records = tablon_records + boa_records + bop_records + boe_records + borme_records + esquelas_records + defunciones_records + iesquelas_records + solares_records + licencias_records
 
     # Step 4: Enrich via Catastro and persist
     try:

@@ -83,6 +83,11 @@ SOURCE_LABELS = {
     "borme_i": "BORME-I",
     "borme_ii": "BORME-II",
     "subastas": "Subastas BOE",
+    "esquelas": "Esquelas",
+    "defunciones": "Defunciones",
+    "iesquelas": "iEsquelas",
+    "solares": "Solares",
+    "licencias": "Licencias",
 }
 
 # Maps source to subsource code for finer-grained tracking
@@ -94,6 +99,11 @@ SUBSOURCE_CODES = {
     "boe_secv": "BOE-V.B",
     "borme_i": "BORME-I",
     "borme_ii": "BORME-II",
+    "esquelas": "Esquelas",
+    "defunciones": "Defunciones",
+    "iesquelas": "iEsquelas",
+    "solares": "Solares",
+    "licencias": "Licencias",
 }
 
 
