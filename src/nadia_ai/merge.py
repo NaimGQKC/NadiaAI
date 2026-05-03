@@ -88,6 +88,7 @@ SOURCE_LABELS = {
     "iesquelas": "iEsquelas",
     "solares": "Solares",
     "licencias": "Licencias",
+    "servihabitat": "Servihabitat",
 }
 
 # Maps source to subsource code for finer-grained tracking
@@ -104,6 +105,7 @@ SUBSOURCE_CODES = {
     "iesquelas": "iEsquelas",
     "solares": "Solares",
     "licencias": "Licencias",
+    "servihabitat": "Servihabitat",
 }
 
 

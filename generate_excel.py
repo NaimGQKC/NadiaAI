@@ -38,6 +38,8 @@ TIPO_MAP = {
     "solar_vacante": "Solar vacante",
     "licencia_obra": "Licencia de obra",
     "licencia_derribo": "Licencia de derribo",
+    "subasta_municipal": "Subasta municipal",
+    "banco_inmueble": "Inmueble bancario",
 }
 for l in leads:
     l["tipo"] = TIPO_MAP.get(l.get("edict_type", ""), "Sucesión legal")
@@ -107,7 +109,7 @@ for col, (h, w) in enumerate(zip(headers, widths), 1):
     cell.alignment = Alignment(horizontal="center")
     ws.column_dimensions[get_column_letter(col)].width = w
 
-src_map = {"boa": "BOA", "tablon": "Tablón", "boe_teju": "BOE", "esquelas": "Esquelas", "defunciones": "Defunciones", "iesquelas": "iEsquelas", "solares": "Solares", "licencias": "Licencias"}
+src_map = {"boa": "BOA", "tablon": "Tablón", "boe_teju": "BOE", "esquelas": "Esquelas", "defunciones": "Defunciones", "iesquelas": "iEsquelas", "solares": "Solares", "licencias": "Licencias", "servihabitat": "Servihabitat"}
 for i, l in enumerate(main_leads, 2):
     sources = json.loads(l.get("sources", "[]"))
     source_urls = json.loads(l.get("source_urls", "[]"))
@@ -263,6 +265,20 @@ for label, desc in [
         "próximamente. Si es obra, el propietario puede necesitar "
         "servicios inmobiliarios. Busca la ref. catastral en Catastro.",
     ),
+    (
+        "Subasta municipal",
+        "Subasta de inmueble publicada en el Tablón de Edictos "
+        "del Ayuntamiento de Zaragoza. Propiedad en venta forzosa.\n\n"
+        "→ Cómo actuar: Informa a clientes inversores. Revisa el "
+        "pliego de condiciones en el enlace del edicto.",
+    ),
+    (
+        "Inmueble bancario",
+        "Propiedad de cartera bancaria (CaixaBank/Servihabitat). "
+        "Inmueble recuperado por impago, en venta con descuento.\n\n"
+        "→ Cómo actuar: Estas propiedades suelen venderse con "
+        "descuento del 15-20%. Ideal para clientes inversores.",
+    ),
 ]:
     lg.cell(row=row, column=2, value=label).font = bold11
     c = lg.cell(row=row, column=3, value=desc)
@@ -313,6 +329,11 @@ for label, desc in [
         "iEsquelas",
         "iesquelas.com — agregador nacional de esquelas. "
         "Tercera fuente de obituarios con datos de tanatorio.",
+    ),
+    (
+        "Servihabitat",
+        "Servihabitat.com — portal de inmuebles de cartera bancaria "
+        "(CaixaBank). Propiedades recuperadas por impago, con descuento.",
     ),
 ]:
     lg.cell(row=row, column=2, value=label).font = bold11

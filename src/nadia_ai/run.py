@@ -38,6 +38,7 @@ def run_pipeline() -> dict:
         "iesquelas_new": 0,
         "solares_new": 0,
         "licencias_new": 0,
+        "servihabitat_new": 0,
         "enriched": 0,
         "subastas_enriched": 0,
         "obras_enriched": 0,
@@ -165,7 +166,19 @@ def run_pipeline() -> dict:
         logger.error("Licencias scraper failed: %s", e)
         summary["errors"].append(f"licencias: {e}")
 
-    all_records = tablon_records + boa_records + bop_records + boe_records + borme_records + esquelas_records + defunciones_records + iesquelas_records + solares_records + licencias_records
+    # Step 3j: Scrape Servihabitat bank-owned properties (CaixaBank)
+    servihabitat_records = []
+    try:
+        from nadia_ai.scrapers.servihabitat import scrape_servihabitat
+
+        servihabitat_records = scrape_servihabitat()
+        summary["servihabitat_new"] = len(servihabitat_records)
+        logger.info("Servihabitat: %d new records", len(servihabitat_records))
+    except Exception as e:
+        logger.error("Servihabitat scraper failed: %s", e)
+        summary["errors"].append(f"servihabitat: {e}")
+
+    all_records = tablon_records + boa_records + bop_records + boe_records + borme_records + esquelas_records + defunciones_records + iesquelas_records + solares_records + licencias_records + servihabitat_records
 
     # Step 4: Enrich via Catastro and persist
     try:

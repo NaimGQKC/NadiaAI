@@ -22,7 +22,7 @@ logger = logging.getLogger("nadia_ai.scrapers.tablon")
 TABLON_API_URL = "https://www.zaragoza.es/sede/servicio/tablon-edicto.json"
 
 # Category IDs for herederos declarations
-TIPO_IDS = [29, 26]  # 29=Acta notoriedad/Declaracion herederos, 26=Declaraciones de herederos
+TIPO_IDS = [29, 26, 28]  # 29=Acta notoriedad/Declaracion herederos, 26=Declaraciones de herederos, 28=Subastas otras entidades
 
 HEADERS = {
     "User-Agent": "NadiaAI/0.1 (lead-generation research; contact: dev@example.com)",
@@ -61,7 +61,7 @@ NAME_PATTERNS = [
 ]
 
 # FIQL text query to catch inheritance edicts that may be miscategorized
-TEXT_QUERY = "title==*herederos*,title==*herencia*,title==*abintestato*,title==*notoriedad*"
+TEXT_QUERY = "title==*herederos*,title==*herencia*,title==*abintestato*,title==*notoriedad*,title==*subasta*,title==*enajenacion*"
 
 
 def fetch_herederos_edicts(since: datetime | None = None, max_rows: int = 200) -> list[dict]:
@@ -162,11 +162,25 @@ def parse_api_record(record: dict) -> EdictRecord:
     if not source_url and record_id:
         source_url = f"https://www.zaragoza.es/sede/servicio/tablon-edicto/{record_id}/document"
 
+    # Classify edict type based on tipo or title keywords
+    tipo_id = None
+    tipo_raw = record.get("tipo", {})
+    if isinstance(tipo_raw, dict):
+        tipo_id = tipo_raw.get("id")
+    elif isinstance(tipo_raw, (int, str)):
+        tipo_id = int(tipo_raw) if str(tipo_raw).isdigit() else None
+
+    title_lower = title.lower()
+    if tipo_id == 28 or "subasta" in title_lower or "enajenacion" in title_lower:
+        edict_type = "subasta_municipal"
+    else:
+        edict_type = "declaracion_herederos_abintestato"
+
     return EdictRecord(
         source="tablon",
         source_id=record_id,
         referencia_catastral=None,  # Not available in tablon data
-        edict_type="declaracion_herederos_abintestato",
+        edict_type=edict_type,
         published_at=published_at,
         source_url=source_url,
         causante=causante,

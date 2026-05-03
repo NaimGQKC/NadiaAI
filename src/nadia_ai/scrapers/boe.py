@@ -82,6 +82,9 @@ TEJU_QUERIES = [
     '"herederos abintestato"',
     '"declaracion de herederos"',
     '"herencia yacente"',
+    '"sucesion" .Y "Zaragoza"',
+    '"testamentaria"',
+    '"bienes relictos"',
 ]
 
 
