@@ -34,6 +34,7 @@ TIPO_MAP = {
     "declaracion_herederos_abintestato": "Declaración de herederos",
     "edicto_judicial_herederos": "Declaración de herederos",
     "sucesion_legal_boa": "Sucesión legal",
+    "defuncion_esquela": "Defunción reciente",
 }
 for l in leads:
     l["tipo"] = TIPO_MAP.get(l.get("edict_type", ""), "Sucesión legal")
@@ -76,7 +77,7 @@ wb = Workbook()
 
 # --- LEADS TAB ---
 ws = wb.active
-ws.title = "Leads 30-04-2026"
+ws.title = "Leads 02-05-2026"
 
 header_fill = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
 header_font = Font(color="FFFFFF", bold=True, size=11)
@@ -99,7 +100,7 @@ for col, (h, w) in enumerate(zip(headers, widths), 1):
     cell.alignment = Alignment(horizontal="center")
     ws.column_dimensions[get_column_letter(col)].width = w
 
-src_map = {"boa": "BOA", "tablon": "Tablón", "boe_teju": "BOE"}
+src_map = {"boa": "BOA", "tablon": "Tablón", "boe_teju": "BOE", "esquelas": "Esquelas"}
 for i, l in enumerate(leads, 2):
     sources = json.loads(l.get("sources", "[]"))
     source_urls = json.loads(l.get("source_urls", "[]"))
@@ -195,6 +196,15 @@ for label, desc in [
         "(provincia Zaragoza). Si tiene dirección, puedes informar "
         "a clientes inversores interesados en comprar en subasta.",
     ),
+    (
+        "Defunción reciente",
+        "Fallecimiento detectado vía esquela funeraria (Memora). "
+        "No es un edicto legal, sino una señal temprana de que puede "
+        "haber un inmueble próximamente en el mercado.\n\n"
+        "→ Cómo actuar: Espera unas semanas por respeto. Luego puedes "
+        "investigar si la persona tenía propiedades en Catastro y "
+        "contactar a herederos ofreciendo tus servicios.",
+    ),
 ]:
     lg.cell(row=row, column=2, value=label).font = bold11
     c = lg.cell(row=row, column=3, value=desc)
@@ -220,6 +230,11 @@ for label, desc in [
     (
         "BOE",
         "Boletín Oficial del Estado. Edictos judiciales de ámbito nacional.",
+    ),
+    (
+        "Esquelas",
+        "Esquelas funerarias de Memora (principal funeraria de Zaragoza). "
+        "Señal temprana de fallecimiento reciente.",
     ),
 ]:
     lg.cell(row=row, column=2, value=label).font = bold11
@@ -253,7 +268,7 @@ for label, desc in [
     lg.cell(row=row, column=3, value=desc).font = normal11
     row += 1
 
-out = "leads_2026-04-30.xlsx"
+out = "leads_2026-05-02.xlsx"
 wb.save(out)
 
 tier_a = sum(1 for l in leads if l["tier"] == "A")

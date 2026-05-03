@@ -14,7 +14,7 @@ import io
 import logging
 import re
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import requests
 
@@ -267,6 +267,9 @@ SEARCH_QUERIES = [
     "sucesion+legal+comunidad+autonoma+aragon",
     "Junta+Distribuidora+Herencias",
     "declaracion+de+herederos",
+    "herencia+yacente",
+    "herederos+abintestato",
+    "acta+notoriedad+herederos",
 ]
 
 
@@ -743,6 +746,9 @@ def scrape_boa(since: datetime | None = None) -> list[EdictRecord]:
     Runs multiple search queries and deduplicates by source_id.
     Safe to run daily — returns empty list when BOA has no new content.
     """
+    if since is None:
+        since = datetime.now(UTC) - timedelta(days=90)
+
     seen_ids = set()
     all_records = []
 
@@ -754,6 +760,9 @@ def scrape_boa(since: datetime | None = None) -> list[EdictRecord]:
             for raw in raw_results:
                 record = parse_boa_record(raw, query_label=query)
                 if record and record.source_id not in seen_ids:
+                    # Client-side date filter — BOA API ignores PUBL-GE
+                    if record.published_at and record.published_at < since:
+                        continue
                     seen_ids.add(record.source_id)
                     all_records.append(record)
                     if record.causante:

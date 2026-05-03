@@ -10,7 +10,7 @@ Queries both tipo-based and text-based searches for maximum coverage.
 
 import logging
 import re
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import requests
 
@@ -179,6 +179,9 @@ def scrape_tablon(since: datetime | None = None) -> list[EdictRecord]:
     Returns a list of EdictRecord objects for relevant edicts.
     Idempotent: duplicates are handled at the database layer via (source, source_id).
     """
+    if since is None:
+        since = datetime.now(UTC) - timedelta(days=90)
+
     try:
         raw_records = fetch_herederos_edicts(since=since)
     except requests.RequestException as e:

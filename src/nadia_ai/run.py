@@ -33,6 +33,7 @@ def run_pipeline() -> dict:
         "bop_new": 0,
         "boe_new": 0,
         "borme_new": 0,
+        "esquelas_new": 0,
         "enriched": 0,
         "subastas_enriched": 0,
         "obras_enriched": 0,
@@ -100,7 +101,19 @@ def run_pipeline() -> dict:
         logger.error("BORME scraper failed: %s", e)
         summary["errors"].append(f"borme: {e}")
 
-    all_records = tablon_records + boa_records + bop_records + boe_records + borme_records
+    # Step 3e: Scrape Memora esquelas (obituary high-volume source)
+    esquelas_records = []
+    try:
+        from nadia_ai.scrapers.esquelas import scrape_esquelas
+
+        esquelas_records = scrape_esquelas()
+        summary["esquelas_new"] = len(esquelas_records)
+        logger.info("Esquelas: %d new records", len(esquelas_records))
+    except Exception as e:
+        logger.error("Esquelas scraper failed: %s", e)
+        summary["errors"].append(f"esquelas: {e}")
+
+    all_records = tablon_records + boa_records + bop_records + boe_records + borme_records + esquelas_records
 
     # Step 4: Enrich via Catastro and persist
     try:
