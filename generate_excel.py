@@ -100,7 +100,7 @@ for col, (h, w) in enumerate(zip(headers, widths), 1):
     cell.alignment = Alignment(horizontal="center")
     ws.column_dimensions[get_column_letter(col)].width = w
 
-src_map = {"boa": "BOA", "tablon": "Tablón", "boe_teju": "BOE", "esquelas": "Esquelas"}
+src_map = {"boa": "BOA", "tablon": "Tablón", "boe_teju": "BOE", "esquelas": "Esquelas", "defunciones": "Defunciones"}
 for i, l in enumerate(leads, 2):
     sources = json.loads(l.get("sources", "[]"))
     source_urls = json.loads(l.get("source_urls", "[]"))

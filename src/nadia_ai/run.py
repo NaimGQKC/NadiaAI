@@ -34,6 +34,7 @@ def run_pipeline() -> dict:
         "boe_new": 0,
         "borme_new": 0,
         "esquelas_new": 0,
+        "defunciones_new": 0,
         "enriched": 0,
         "subastas_enriched": 0,
         "obras_enriched": 0,
@@ -113,7 +114,19 @@ def run_pipeline() -> dict:
         logger.error("Esquelas scraper failed: %s", e)
         summary["errors"].append(f"esquelas: {e}")
 
-    all_records = tablon_records + boa_records + bop_records + boe_records + borme_records + esquelas_records
+    # Step 3f: Scrape defunciones.es (second obituary source with municipality data)
+    defunciones_records = []
+    try:
+        from nadia_ai.scrapers.defunciones import scrape_defunciones
+
+        defunciones_records = scrape_defunciones()
+        summary["defunciones_new"] = len(defunciones_records)
+        logger.info("Defunciones: %d new records", len(defunciones_records))
+    except Exception as e:
+        logger.error("Defunciones scraper failed: %s", e)
+        summary["errors"].append(f"defunciones: {e}")
+
+    all_records = tablon_records + boa_records + bop_records + boe_records + borme_records + esquelas_records + defunciones_records
 
     # Step 4: Enrich via Catastro and persist
     try:

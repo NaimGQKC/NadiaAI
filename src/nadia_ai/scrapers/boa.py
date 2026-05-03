@@ -747,7 +747,7 @@ def scrape_boa(since: datetime | None = None) -> list[EdictRecord]:
     Safe to run daily — returns empty list when BOA has no new content.
     """
     if since is None:
-        since = datetime.now(UTC) - timedelta(days=90)
+        since = datetime.now(UTC) - timedelta(days=365)
 
     seen_ids = set()
     all_records = []
