@@ -123,6 +123,7 @@ def scrape_esquelas(since: datetime | None = None) -> list[EdictRecord]:
                 return all_records
 
             source_id = _name_to_slug(slug)
+            fecha_f = pub_date.strftime("%Y-%m-%d") if pub_date else None
             record = EdictRecord(
                 source="esquelas",
                 source_id=source_id,
@@ -131,6 +132,7 @@ def scrape_esquelas(since: datetime | None = None) -> list[EdictRecord]:
                 source_url=card["url"],
                 causante=card["name"],
                 localidad="Zaragoza",
+                fecha_fallecimiento=fecha_f,
             )
             all_records.append(record)
             new_on_page += 1

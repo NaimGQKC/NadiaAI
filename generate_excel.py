@@ -13,7 +13,7 @@ conn.row_factory = sqlite3.Row
 
 # Pull leads with edict type + full text for notary extraction
 rows = conn.execute("""
-    SELECT l.*, e.edict_type, e.source_url as edict_url
+    SELECT l.*, e.edict_type, e.source_url as edict_url, e.published_at as edict_pub
     FROM leads l
     LEFT JOIN lead_edicts le ON l.id = le.lead_id
     LEFT JOIN edicts e ON e.id = le.edict_id
@@ -113,7 +113,7 @@ for i, l in enumerate(leads, 2):
         l.get("direccion", "") or "",
         l.get("juzgado", "") or "",
         ", ".join(src_map.get(s, s) for s in sources),
-        l.get("fecha_fallecimiento", "") or "",
+        l.get("fecha_fallecimiento", "") or (l.get("edict_pub", "") or "")[:10],
         l.get("estado", "Nuevo"),
         source_urls[0] if source_urls else "",
     ]
