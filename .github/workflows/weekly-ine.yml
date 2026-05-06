@@ -1,0 +1,49 @@
+name: NadiaAI Weekly INE Calibration
+
+on:
+  schedule:
+    # 04:00 UTC Monday = 06:00 CET / 07:00 CEST
+    # Runs before the daily pipeline so Calibración tab is fresh.
+    - cron: '0 4 * * 1'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  run-ine-calibration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Write service account JSON
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON_B64 }}" | base64 -d > /tmp/sa.json
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON_B64: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON_B64 }}
+
+      - name: Run INE calibration
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: /tmp/sa.json
+          LEADS_SHEET_ID: ${{ secrets.LEADS_SHEET_ID }}
+          NADIA_DB_PATH: nadia_ai.db
+        run: python -c "
+          from nadia_ai.ine import fetch_calibration_data;
+          from nadia_ai.delivery import write_calibracion_tab;
+          data = fetch_calibration_data();
+          print(f'Fetched {len(data)} calibration rows');
+          write_calibracion_tab(data);
+          print('Calibración tab updated')
+          "
+
+      - name: Clean up service account
+        if: always()
+        run: rm -f /tmp/sa.json

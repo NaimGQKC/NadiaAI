@@ -2,7 +2,7 @@
 
 import responses
 
-from nadia_ai.scrapers.boa import extract_ref_catastral as boa_extract_rc
+from nadia_ai.scrapers.boa import RC_PATTERN as boa_rc_pattern
 from nadia_ai.scrapers.tablon import (
     extract_name_from_title,
     fetch_herederos_edicts,
@@ -37,6 +37,26 @@ class TestExtractNameFromTitle:
         name = extract_name_from_title(title)
         assert name is not None
         assert "Martinez Ruiz Pedro" in name
+
+    def test_herederos_abintestato_de_dona(self):
+        title = "Acta de declaracion herederos abintestato de DOÑA JOAQUINA ORTIZ GARCES"
+        name = extract_name_from_title(title)
+        assert name is not None
+        assert "Joaquina" in name
+        assert "Ortiz" in name
+
+    def test_herencia_yacente(self):
+        title = "Herencia Yacen de D. Ramon Jose Chueca Alonso"
+        name = extract_name_from_title(title)
+        assert name is not None
+        assert "Ramon" in name
+        assert "Chueca" in name
+
+    def test_acta_notoriedad_don(self):
+        title = "Acta de notoriedad para declaracion herederos, DON BENITO ARTAL ARTAL"
+        name = extract_name_from_title(title)
+        assert name is not None
+        assert "Benito" in name
 
 
 class TestParseAPIRecord:
@@ -79,18 +99,25 @@ class TestParseAPIRecord:
 class TestFetchHerederosEdicts:
     @responses.activate
     def test_successful_fetch(self):
+        # fetch_herederos_edicts now runs 2 queries (tipo-based + text-based)
         responses.add(
             responses.GET,
             "https://www.zaragoza.es/sede/servicio/tablon-edicto.json",
             json={
                 "totalCount": 2,
                 "start": 0,
-                "rows": 50,
+                "rows": 200,
                 "result": [
-                    {"id": "4150", "title": "Test 1"},
-                    {"id": "4151", "title": "Test 2"},
+                    {"id": 4150, "title": "Test 1"},
+                    {"id": 4151, "title": "Test 2"},
                 ],
             },
+            status=200,
+        )
+        responses.add(
+            responses.GET,
+            "https://www.zaragoza.es/sede/servicio/tablon-edicto.json",
+            json={"totalCount": 0, "result": []},
             status=200,
         )
         results = fetch_herederos_edicts()
@@ -101,7 +128,13 @@ class TestFetchHerederosEdicts:
         responses.add(
             responses.GET,
             "https://www.zaragoza.es/sede/servicio/tablon-edicto.json",
-            json={"totalCount": 0, "start": 0, "rows": 50, "result": []},
+            json={"totalCount": 0, "start": 0, "rows": 200, "result": []},
+            status=200,
+        )
+        responses.add(
+            responses.GET,
+            "https://www.zaragoza.es/sede/servicio/tablon-edicto.json",
+            json={"totalCount": 0, "result": []},
             status=200,
         )
         results = fetch_herederos_edicts()
@@ -118,13 +151,18 @@ class TestScrapeTablon:
                 "totalCount": 1,
                 "result": [
                     {
-                        "id": "4150",
+                        "id": 4150,
                         "title": "Acta por fallecimiento de DON GARCIA LOPEZ",
                         "publicationDate": "2026-04-15T00:10:01",
                         "document": "https://example.com/doc",
                     }
                 ],
             },
+        )
+        responses.add(
+            responses.GET,
+            "https://www.zaragoza.es/sede/servicio/tablon-edicto.json",
+            json={"totalCount": 0, "result": []},
         )
         records = scrape_tablon()
         assert len(records) == 1
@@ -133,6 +171,12 @@ class TestScrapeTablon:
 
     @responses.activate
     def test_scrape_handles_api_error(self):
+        # Both queries fail — should return empty
+        responses.add(
+            responses.GET,
+            "https://www.zaragoza.es/sede/servicio/tablon-edicto.json",
+            status=500,
+        )
         responses.add(
             responses.GET,
             "https://www.zaragoza.es/sede/servicio/tablon-edicto.json",
@@ -145,5 +189,5 @@ class TestScrapeTablon:
 class TestBOAExtractRC:
     def test_same_patterns_as_tablon(self):
         text = "referencia catastral 9872301TF6697S0001WX"
-        rc = boa_extract_rc(text)
-        assert rc is not None
+        m = boa_rc_pattern.search(text)
+        assert m is not None

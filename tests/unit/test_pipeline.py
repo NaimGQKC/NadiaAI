@@ -22,6 +22,18 @@ class TestRunPipeline:
                 "nadia_ai.scrapers.boa.scrape_boa",
                 side_effect=Exception("BOA down"),
             ),
+            patch(
+                "nadia_ai.scrapers.bop.scrape_bop",
+                side_effect=Exception("BOP down"),
+            ),
+            patch(
+                "nadia_ai.scrapers.boe.scrape_boe",
+                side_effect=Exception("BOE down"),
+            ),
+            patch(
+                "nadia_ai.scrapers.borme.scrape_borme",
+                side_effect=Exception("BORME down"),
+            ),
             patch("nadia_ai.delivery.compute_todays_leads", return_value=[]),
             patch("nadia_ai.delivery.deliver"),
         ):
@@ -29,7 +41,10 @@ class TestRunPipeline:
 
         assert summary["tablon_new"] == 0
         assert summary["boa_new"] == 0
-        assert len(summary["errors"]) >= 2
+        assert summary["bop_new"] == 0
+        assert summary["boe_new"] == 0
+        assert summary["borme_new"] == 0
+        assert len(summary["errors"]) >= 5
         assert "elapsed_seconds" in summary
 
     @patch("nadia_ai.run.get_connection")
@@ -42,6 +57,9 @@ class TestRunPipeline:
         with (
             patch("nadia_ai.scrapers.tablon.scrape_tablon", return_value=[]),
             patch("nadia_ai.scrapers.boa.scrape_boa", return_value=[]),
+            patch("nadia_ai.scrapers.bop.scrape_bop", return_value=[]),
+            patch("nadia_ai.scrapers.boe.scrape_boe", return_value=[]),
+            patch("nadia_ai.scrapers.borme.scrape_borme", return_value=[]),
             patch("nadia_ai.catastro.enrich_and_persist", return_value=0),
             patch("nadia_ai.delivery.compute_todays_leads", return_value=[]),
             patch("nadia_ai.delivery.deliver"),
@@ -79,7 +97,7 @@ class TestDeliver:
         leads = [
             LeadRow(
                 fecha_deteccion="2026-04-28",
-                fuente="Tablón",
+                fuentes="Tablón",
                 referencia_catastral="RC001",
             )
         ]

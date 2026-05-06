@@ -1,0 +1,407 @@
+[
+  {
+    "fuente": "Tablón",
+    "causante": "Benito Artal Artal",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.zaragoza.es/sede/servicio/tablon-edicto/4150/document"
+  },
+  {
+    "fuente": "Tablón",
+    "causante": "Joaquina Ortiz Garcés",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.zaragoza.es/sede/servicio/tablon-edicto/4146/document"
+  },
+  {
+    "fuente": "Tablón",
+    "causante": "Ramón José Chueca Alonso",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.zaragoza.es/sede/servicio/tablon-edicto/4136/document"
+  },
+  {
+    "fuente": "Tablón",
+    "causante": "Tomás Otero Vazquez",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.zaragoza.es/sede/servicio/tablon-edicto/4131/document"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Emilio Alejandro Anadón Diaus",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1409283941010"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "",
+    "direccion": "calle Lanuza, 45",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1031105842121"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Joaquín Conesa Gómez",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1019987263838"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Escolástico Muñoz Castellar",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1013687064343"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Mario Laborda Álvarez",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1013689084343"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Joaquín Pelet Azagra",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1006955065454"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Mariano Alejandro Faci Ballabriga",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=998959425353"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Isaías Diago Laínez",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=979310304646"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Antonio Alarcón Martínez",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=972180584848"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Félix Rubio Mateo",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=957760102727"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "José Antonio Galarreta Alonso",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=957762122727"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Julio Brocate Navarro",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=957764142727"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Pablo Lorente Lacasta",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=953435904242"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Francisco José Cameo Plaza",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=949094984040"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Amado Brocate Gracia",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=942495922828"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Marcelino de Anta Lozano",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=936938265252"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Luis Puyane Bainat",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=936395482020"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "",
+    "direccion": "calle Lanuza, 45",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=916815543333"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "José Ignacio Mas Fernández",
+    "direccion": "calle Nicolás Guillén 6",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=915181604747"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "",
+    "direccion": "calle Anselmo Clavé 37",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=915183624747"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Manuel Jerónimo Gayo García",
+    "direccion": "camino Torre del Callejón, 114",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=914421844545"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Félix Sánchez Sánchez",
+    "direccion": "calle Escosura 67",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=909725144545"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Francisco Gutiérrez Rubio",
+    "direccion": "calle Barón de Warsage, 2",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=897003983535"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "",
+    "direccion": "avenida Salvador Allende, 45",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=895760222626"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Antonio Dionisio Yun Fernández",
+    "direccion": "avenida Zaragoza, 10",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=892376943434"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Antonio Pac Morillo",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=892378963535"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Miguel Flores Alonso",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=892382003535"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Manuel Solano Garcés",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=890472523131"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Miguel Ángel Samitier Malón",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=890474543131"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Miguel Flores Alonso",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=890476563131"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Aurelio Fernando Fernando Calvo",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=890480603131"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "",
+    "direccion": "c Morillo (27",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=980300844949"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "",
+    "direccion": "calle Las Armas, 23",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=853447700202"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "",
+    "direccion": "PLAZA ZARAGOZA 88",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=150603933939"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Inocencia Mediel Blanco",
+    "direccion": "calle Latorre Segura nº 2",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=401352194746"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Francisco Javier Inés Lafuente",
+    "direccion": "calle San Pablo nº 90",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=398391164242"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "",
+    "direccion": "calle San Miguel 48",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=398632371818"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "",
+    "direccion": "calle Coruña, 21",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=408017670606"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Joaquín Salo Cabos",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=1185211365353"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "",
+    "direccion": "calle Baltasar Gracián nº 10",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=267425303333"
+  },
+  {
+    "fuente": "BOA",
+    "causante": "Teodoro Marco Marco",
+    "direccion": "",
+    "referencia_catastral": "",
+    "m2": null,
+    "tipo_inmueble": "",
+    "link_edicto": "https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI?CMD=VEROBJ&MLKOB=49572253939"
+  }
+]

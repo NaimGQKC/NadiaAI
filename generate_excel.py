@@ -1,0 +1,376 @@
+"""Generate the Excel report for Nadia with Tipo column + Leyenda tab."""
+
+import json
+import re
+import sqlite3
+
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
+
+conn = sqlite3.connect("nadia_ai.db")
+conn.row_factory = sqlite3.Row
+
+# Pull leads with edict type + full text for notary extraction
+rows = conn.execute("""
+    SELECT l.*, e.edict_type, e.source_url as edict_url, e.published_at as edict_pub
+    FROM leads l
+    LEFT JOIN lead_edicts le ON l.id = le.lead_id
+    LEFT JOIN edicts e ON e.id = le.edict_id
+    ORDER BY l.tier ASC, l.causante DESC
+""").fetchall()
+
+# Deduplicate by lead id
+seen = set()
+leads = []
+for r in rows:
+    if r["id"] in seen:
+        continue
+    seen.add(r["id"])
+    leads.append(dict(r))
+
+# Classify tipo
+TIPO_MAP = {
+    "declaracion_herederos_abintestato": "Declaración de herederos",
+    "edicto_judicial_herederos": "Declaración de herederos",
+    "sucesion_legal_boa": "Sucesión legal",
+    "defuncion_esquela": "Defunción reciente",
+    "solar_vacante": "Solar vacante",
+    "licencia_obra": "Licencia de obra",
+    "licencia_derribo": "Licencia de derribo",
+    "subasta_municipal": "Subasta municipal",
+    "banco_inmueble": "Inmueble bancario",
+}
+for l in leads:
+    l["tipo"] = TIPO_MAP.get(l.get("edict_type", ""), "Sucesión legal")
+
+# Extract notary from edict text (stored in edicts table via source)
+# We'll try to get it from the persons/edicts data
+# For now, extract from the edict body if we can get it
+notary_cache = {}
+edict_rows = conn.execute("""
+    SELECT e.id, e.source_url FROM edicts e
+""").fetchall()
+
+# Filter noise
+noise_words = [
+    "causante", "hermanos", "procurador", "ministerio", "diputa",
+    "AUTISMO", "diez causantes", "D.ª Agustina",
+]
+leads = [
+    l for l in leads
+    if not (l["causante"] and any(n in l["causante"] for n in noise_words))
+    and (l["causante"] or l["direccion"])
+]
+
+# Separate solares into their own tab (too many for main leads view)
+solares_leads = [l for l in leads if l.get("tipo") == "Solar vacante"]
+main_leads = [l for l in leads if l.get("tipo") != "Solar vacante"]
+
+# Clean locality
+for l in main_leads:
+    loc = l.get("localidad", "")
+    if loc and loc.startswith(("la ", "el ")):
+        l["localidad"] = "Zaragoza"
+
+# Sort: A first, then named B, then address-only B
+def sort_key(l):
+    tier_order = 0 if l["tier"] == "A" else 1
+    has_name = 0 if l["causante"] else 1
+    return (tier_order, has_name, l["causante"] or "")
+
+main_leads.sort(key=sort_key)
+
+# === BUILD EXCEL ===
+wb = Workbook()
+
+# --- LEADS TAB ---
+ws = wb.active
+ws.title = "Leads 02-05-2026"
+
+header_fill = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
+header_font = Font(color="FFFFFF", bold=True, size=11)
+a_fill = PatternFill(start_color="D5F5E3", end_color="D5F5E3", fill_type="solid")
+b_fill = PatternFill(start_color="FEF9E7", end_color="FEF9E7", fill_type="solid")
+link_font = Font(color="2E86C1", underline="single", size=10)
+bold_font = Font(bold=True, size=10)
+normal_font = Font(size=10)
+thin_border = Border(bottom=Side(style="thin", color="DDDDDD"))
+
+headers = [
+    "Tier", "Tipo", "Causante", "Localidad", "Dirección",
+    "Juzgado/Notaría", "Fuente", "Fecha fallec.", "Estado", "Link edicto",
+]
+widths = [6, 24, 36, 16, 38, 36, 10, 14, 10, 55]
+for col, (h, w) in enumerate(zip(headers, widths), 1):
+    cell = ws.cell(row=1, column=col, value=h)
+    cell.fill = header_fill
+    cell.font = header_font
+    cell.alignment = Alignment(horizontal="center")
+    ws.column_dimensions[get_column_letter(col)].width = w
+
+src_map = {"boa": "BOA", "tablon": "Tablón", "boe_teju": "BOE", "esquelas": "Esquelas", "defunciones": "Defunciones", "iesquelas": "iEsquelas", "solares": "Solares", "licencias": "Licencias", "servihabitat": "Servihabitat"}
+for i, l in enumerate(main_leads, 2):
+    sources = json.loads(l.get("sources", "[]"))
+    source_urls = json.loads(l.get("source_urls", "[]"))
+    fill = a_fill if l["tier"] == "A" else b_fill
+    vals = [
+        l["tier"],
+        l["tipo"],
+        l["causante"] or "—",
+        l.get("localidad", "") or "Zaragoza",
+        l.get("direccion", "") or "",
+        l.get("juzgado", "") or "",
+        ", ".join(src_map.get(s, s) for s in sources),
+        l.get("fecha_fallecimiento", "") or (l.get("edict_pub", "") or "")[:10],
+        l.get("estado", "Nuevo"),
+        source_urls[0] if source_urls else "",
+    ]
+    for col, v in enumerate(vals, 1):
+        cell = ws.cell(row=i, column=col, value=v)
+        cell.fill = fill
+        cell.border = thin_border
+        cell.font = bold_font if col == 3 else normal_font
+        if col == 10 and v:
+            cell.font = link_font
+            cell.hyperlink = v
+            cell.value = "Ver edicto"
+
+ws.freeze_panes = "A2"
+ws.auto_filter.ref = f"A1:J{len(main_leads)+1}"
+
+# --- SOLARES TAB ---
+if solares_leads:
+    sol_ws = wb.create_sheet("Solares vacantes")
+    sol_ws.sheet_properties.tabColor = "27AE60"
+    sol_headers = ["Dirección/Coordenadas", "Ref. Catastral", "m²", "Link"]
+    sol_widths = [55, 22, 10, 45]
+    for col, (h, w) in enumerate(zip(sol_headers, sol_widths), 1):
+        cell = sol_ws.cell(row=1, column=col, value=h)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center")
+        sol_ws.column_dimensions[get_column_letter(col)].width = w
+
+    for i, l in enumerate(solares_leads, 2):
+        source_urls = json.loads(l.get("source_urls", "[]"))
+        vals = [
+            l.get("direccion", "") or "",
+            l.get("referencia_catastral", "") or "",
+            l.get("m2", "") or "",
+            source_urls[0] if source_urls else "",
+        ]
+        for col, v in enumerate(vals, 1):
+            cell = sol_ws.cell(row=i, column=col, value=v)
+            cell.border = thin_border
+            cell.font = normal_font
+            if col == 4 and v:
+                cell.font = link_font
+                cell.hyperlink = v
+                cell.value = "Ver solar"
+
+    sol_ws.freeze_panes = "A2"
+    sol_ws.auto_filter.ref = f"A1:D{len(solares_leads)+1}"
+
+# --- LEYENDA TAB ---
+lg = wb.create_sheet("Leyenda")
+lg.sheet_properties.tabColor = "3498DB"
+
+title_font = Font(bold=True, size=14, color="2C3E50")
+section_font = Font(bold=True, size=12, color="2C3E50")
+bold11 = Font(bold=True, size=11)
+normal11 = Font(size=11)
+wrap = Alignment(wrap_text=True, vertical="top")
+
+lg.column_dimensions["A"].width = 3
+lg.column_dimensions["B"].width = 28
+lg.column_dimensions["C"].width = 70
+
+row = 2
+lg.cell(row=row, column=2, value="NadiaAI — Guía de leads").font = title_font
+row += 2
+
+# Tiers
+lg.cell(row=row, column=2, value="TIERS (prioridad)").font = section_font
+row += 1
+for label, desc, fill in [
+    (
+        "Tier A",
+        "Nombre del causante + dirección del inmueble. "
+        "Accionable directamente: puedes buscar la finca en Catastro "
+        "y contactar al notario/herederos.",
+        a_fill,
+    ),
+    (
+        "Tier B",
+        "Nombre del causante O dirección (pero no ambos). "
+        "Requiere algo de investigación adicional para localizar "
+        "el inmueble o los herederos.",
+        b_fill,
+    ),
+]:
+    c2 = lg.cell(row=row, column=2, value=label)
+    c2.font = bold11
+    c2.fill = fill
+    c3 = lg.cell(row=row, column=3, value=desc)
+    c3.font = normal11
+    c3.alignment = wrap
+    lg.row_dimensions[row].height = 45
+    row += 1
+
+row += 1
+lg.cell(row=row, column=2, value="TIPOS DE EDICTO").font = section_font
+row += 1
+for label, desc in [
+    (
+        "Declaración de herederos",
+        "Hay herederos pero no había testamento. Un juzgado o notario "
+        "está declarando quién hereda. Estos herederos a menudo quieren "
+        "vender el inmueble heredado.\n\n"
+        "→ Cómo actuar: Busca la notaría que tramita el caso (a veces "
+        "aparece en el edicto) y ofrece tus servicios a los herederos.",
+    ),
+    (
+        "Sucesión legal",
+        "No se han encontrado herederos. El Gobierno de Aragón está "
+        "reclamando el patrimonio. El inmueble acabará en subasta pública.\n\n"
+        "→ Cómo actuar: Vigila las subastas en subastas.boe.es "
+        "(provincia Zaragoza). Si tiene dirección, puedes informar "
+        "a clientes inversores interesados en comprar en subasta.",
+    ),
+    (
+        "Defunción reciente",
+        "Fallecimiento detectado vía esquela funeraria (Memora). "
+        "No es un edicto legal, sino una señal temprana de que puede "
+        "haber un inmueble próximamente en el mercado.\n\n"
+        "→ Cómo actuar: Espera unas semanas por respeto. Luego puedes "
+        "investigar si la persona tenía propiedades en Catastro y "
+        "contactar a herederos ofreciendo tus servicios.",
+    ),
+    (
+        "Solar vacante",
+        "Parcela urbana vacía registrada en el censo de solares del "
+        "Ayuntamiento de Zaragoza. Es suelo urbano sin edificar — "
+        "oportunidad de inversión o desarrollo.\n\n"
+        "→ Cómo actuar: Busca la referencia catastral de la parcela, "
+        "identifica al propietario y ofrécele tus servicios para vender "
+        "o colaborar en la promoción del solar.",
+    ),
+    (
+        "Licencia de obra / derribo",
+        "Licencia municipal de obra o derribo concedida por el "
+        "Ayuntamiento de Zaragoza. Indica actividad constructiva "
+        "o demolición inminente en una parcela con ref. catastral.\n\n"
+        "→ Cómo actuar: Si es derribo, puede haber solar disponible "
+        "próximamente. Si es obra, el propietario puede necesitar "
+        "servicios inmobiliarios. Busca la ref. catastral en Catastro.",
+    ),
+    (
+        "Subasta municipal",
+        "Subasta de inmueble publicada en el Tablón de Edictos "
+        "del Ayuntamiento de Zaragoza. Propiedad en venta forzosa.\n\n"
+        "→ Cómo actuar: Informa a clientes inversores. Revisa el "
+        "pliego de condiciones en el enlace del edicto.",
+    ),
+    (
+        "Inmueble bancario",
+        "Propiedad de cartera bancaria (CaixaBank/Servihabitat). "
+        "Inmueble recuperado por impago, en venta con descuento.\n\n"
+        "→ Cómo actuar: Estas propiedades suelen venderse con "
+        "descuento del 15-20%. Ideal para clientes inversores.",
+    ),
+]:
+    lg.cell(row=row, column=2, value=label).font = bold11
+    c = lg.cell(row=row, column=3, value=desc)
+    c.font = normal11
+    c.alignment = wrap
+    lg.row_dimensions[row].height = 90
+    row += 1
+
+row += 1
+lg.cell(row=row, column=2, value="FUENTES").font = section_font
+row += 1
+for label, desc in [
+    (
+        "Tablón",
+        "Tablón de Edictos del Ayuntamiento de Zaragoza. "
+        "Publica declaraciones de herederos de la ciudad.",
+    ),
+    (
+        "BOA",
+        "Boletín Oficial de Aragón. Publica sucesiones legales "
+        "y distribuciones de herencias de toda la comunidad.",
+    ),
+    (
+        "BOE",
+        "Boletín Oficial del Estado. Edictos judiciales de ámbito nacional.",
+    ),
+    (
+        "Esquelas",
+        "Esquelas funerarias de Memora (principal funeraria de Zaragoza). "
+        "Señal temprana de fallecimiento reciente.",
+    ),
+    (
+        "Solares",
+        "Censo de solares del Ayuntamiento de Zaragoza (datos abiertos). "
+        "Parcelas urbanas vacías — oportunidades de inversión/desarrollo.",
+    ),
+    (
+        "Licencias",
+        "Licencias de obra y derribo del Ayuntamiento de Zaragoza (datos abiertos). "
+        "Señales de actividad constructiva con referencia catastral.",
+    ),
+    (
+        "Defunciones",
+        "defunciones.es — agregador de obituarios con datos de municipio. "
+        "Complementa las esquelas de Memora con localidad precisa.",
+    ),
+    (
+        "iEsquelas",
+        "iesquelas.com — agregador nacional de esquelas. "
+        "Tercera fuente de obituarios con datos de tanatorio.",
+    ),
+    (
+        "Servihabitat",
+        "Servihabitat.com — portal de inmuebles de cartera bancaria "
+        "(CaixaBank). Propiedades recuperadas por impago, con descuento.",
+    ),
+]:
+    lg.cell(row=row, column=2, value=label).font = bold11
+    c = lg.cell(row=row, column=3, value=desc)
+    c.font = normal11
+    c.alignment = wrap
+    lg.row_dimensions[row].height = 35
+    row += 1
+
+row += 1
+lg.cell(row=row, column=2, value="COLUMNAS").font = section_font
+row += 1
+for label, desc in [
+    ("Causante", "Persona fallecida cuyo patrimonio se está tramitando."),
+    ("Localidad", "Ciudad/pueblo del fallecido o del inmueble."),
+    ("Dirección", "Dirección del inmueble si se ha podido extraer del edicto."),
+    (
+        "Juzgado/Notaría",
+        "Juzgado o notaría que tramita el caso. "
+        "Contacta con ellos para ofrecer tus servicios a los herederos.",
+    ),
+    ("Fecha fallec.", "Fecha de fallecimiento (cuando consta en el edicto)."),
+    (
+        "Ver edicto",
+        "Enlace al documento oficial original. "
+        "Ábrelo para ver los detalles completos, incluyendo "
+        "la notaría o juzgado que tramita el caso.",
+    ),
+]:
+    lg.cell(row=row, column=2, value=label).font = bold11
+    lg.cell(row=row, column=3, value=desc).font = normal11
+    row += 1
+
+out = "leads_2026-05-02.xlsx"
+wb.save(out)
+
+tier_a = sum(1 for l in main_leads if l["tier"] == "A")
+named = sum(1 for l in main_leads if l["causante"])
+print(f"{len(main_leads)} leads + {len(solares_leads)} solares | {tier_a} Tier A | {named} named")
+print(f"File: {out}")

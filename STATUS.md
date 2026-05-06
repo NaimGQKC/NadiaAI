@@ -1,113 +1,92 @@
-# NadiaAI — Status
+# NadiaAI — Phase 2 Build Sprint Status
 
-Last updated: 2026-04-28
+**Sprint start:** 2026-04-30T10:00:00+02:00
+**Target:** EOD 2026-04-30
+**Status:** READY — all Priority 0 + 1 shipped, Priority 2 shipped, 110 tests passing
 
-## Current State: BUILD COMPLETE — NEEDS ENV VARS TO RUN LIVE
+## Priority 0 — Pipeline Correctness
+| Item | Status | Notes |
+|------|--------|-------|
+| 0.1 first_seen_at daily delta | DONE | merge.py `first_seen_at`, delivery only shows daily delta |
+| 0.2 Cross-source dedup | DONE | RC > name > address matching, sources merged |
+| 0.3 Tier classification | DONE | A/B/C/X with staleness rule (>6mo = downgrade B) |
+| 0.4 Outreach-legality flag | DONE | outreach_allowed + outreach_notes, distress = blocked |
+| 0.5 BOA parser polish | DONE | Added 6 new regex patterns for name/address/location |
 
-The full pipeline is built and tested. 73 unit tests pass, 75% coverage, lint clean.
+## Priority 1 — New Sources
+| Item | Status | Notes |
+|------|--------|-------|
+| 1.1 BOE TEJU + Sec.V | DONE | scrapers/boe.py — TEJU HTML search + Sec.V XML API |
+| 1.2 BORME (Secciones I+II) | DONE | scrapers/borme.py — BOE XML API, death/dissolution filter |
+| 1.3 INE Calibration | DONE | ine.py + weekly-ine.yml cron + Calibracion tab writer |
 
-## Architecture Pivot (IMPORTANT)
+## Priority 2 — Enrichment
+| Item | Status | Notes |
+|------|--------|-------|
+| 2.1 BOPZ (BOP Zaragoza) | DONE | scrapers/bop.py — HTML scraping of bop.dpz.es |
+| 2.2 Subastas BOE enrichment | DONE | enrichment.py — JV+NV, cross-join by RC/address |
+| 2.3 Zaragoza Open Data obras | DONE | enrichment.py — licencias de obra, cross-join by address |
 
-**Research finding:** Neither the Tablón de Edictos nor the BOA contain referencia catastral in their publications. The original thesis that these sources publish "with referencia catastral attached" was incorrect.
+## Priority 3 — Rejected (documented)
+| Item | Status | Notes |
+|------|--------|-------|
+| 3.1 Publicidad Concursal | REJECTED | docs/research/concursal-rejected.md |
+| 3.2 BOE Seccion II.B | REJECTED | docs/research/seccion-IIB-rejected.md |
 
-**Adapted approach:** NadiaAI v1 is a **lead discovery** system:
-- Tablón scraper uses Zaragoza's excellent **JSON API** (no HTML scraping needed)
-- Filters for `tipo.id=29` ("Acta de notoriedad/Declaracion de herederos")
-- Extracts: deceased name, notary, dates, PDF link
-- BOA scraper searches for Junta Distribuidora publications (~1-2 per year)
-- Catastro client is ready for future use when addresses are available
-- Sheet shows: Causante (deceased), Localidad, Source, Date, PDF link
-- Nadia researches the property herself (she knows the neighborhoods)
+## Test Results
+- **110 tests passing** (unit tests for all modules)
+- Covers: models, DB, merge/dedup, tier classification, outreach flags, daily delta, delivery, parsers (Tablon, BOA, BOE), pipeline orchestration, special characters
+- All QA adversarial cases verified:
+  - Same edict on 2 days → no duplicate row
+  - Same death in Tablon + BOA → 1 merged row with both sources
+  - Name only → Tier B; name+address → Tier A; neither → Tier C
+  - Subasta/concurso → Tier X, outreach_allowed=false
+  - Unicode (n, c, accents) round-trips through SQLite and merge
+  - All scrapers failing → pipeline still completes
 
-This is still a strong competitive advantage — no other agent in Zaragoza is monitoring these sources.
+## Source Taxonomy
+| Source | Code | Type | Volume | Outreach |
+|--------|------|------|--------|----------|
+| Tablon Edictos Zaragoza | tablon | Herencia individual | ~30-50/year | Yes |
+| BOA Junta Distribuidora | boa | Herencia individual | ~5-15/year | Yes |
+| BOE TEJU (judicial edicts) | boe_teju | Herencia individual | ~30-80/year | Yes |
+| BOE Seccion V.B (state-as-heir) | boe_secv | Herencia individual | ~1-5/year | Yes |
+| BORME Seccion I+II | borme_i / borme_ii | B2B (empresa) | ~3-8/month | Yes (B2B) |
+| BOP Zaragoza | bop | Herencia individual | ~50-150/year | Yes |
+| Subastas BOE | subastas | Enrichment only | Variable | NO (Tier X) |
+| Zaragoza Open Data Obras | obras | Enrichment only | Monthly batch | N/A |
+| INE (calibration) | ine | Dashboard only | Weekly | N/A |
 
-## Done
+## Schema (Phase 2 additions)
+- `tier` (A/B/C/X), `sources` (JSON array), `subsource`, `first_seen_at`
+- `outreach_allowed` (bool), `outreach_notes` (string)
+- `subasta_activa`, `obras_recientes` (enrichment cross-join)
+- `nif`, `valor_tasacion`, `procedimiento` (BOE V.B / subastas)
 
-| Phase | Status | Notes |
-|-------|--------|-------|
-| R1 Tablón research | Done | JSON API at zaragoza.es/sede/servicio/tablon-edicto.json |
-| R2 BOA research | Done | CGI search + PDF only, ~1-2 publications/year |
-| R3 Catastro research | Done | SOAP API, works for RC lookup |
-| R4 Delivery research | Done | gspread + Gmail SMTP |
-| TS Tech Stack | Done | Python 3.11+, requests, bs4, pydantic, gspread, sqlite |
-| B1 Skeleton | Done | pyproject.toml, package layout, schema, Makefile |
-| B2 Tablón scraper | Done | JSON API, name extraction from titles |
-| B3 BOA scraper | Done | CGI search + HTML parser (PDF parsing can be added) |
-| B4 Catastro client | Done | Lookup by RC, retry, cache |
-| B5 Pipeline orchestrator | Done | python -m nadia_ai, TTL cleanup first |
-| B6 Sheets + email | Done | gspread + Gmail SMTP, CSV fallback |
-| B7 GitHub Actions | Done | .github/workflows/daily.yml, 07:00 UTC |
-| QA | Done | 73 tests, 75% coverage, lint clean |
-| Setup guide | Done | docs/SETUP_GOOGLE_SHEETS.md |
-| README.md | Done | English, dev-facing |
-| MANUAL_NADIA.md | Done | Spanish, agent-facing, includes Art. 14 GDPR letter template |
-
-## Decisions Made
-
-1. **Architecture pivot**: lead discovery (name-based) instead of property-level (RC-based)
-2. **Tablón uses JSON API** — not HTML scraping (cleaner, faster, official open data)
-3. **Sheet columns reordered**: Causante is now column C (the primary lead info)
-4. **GitHub remote**: `NaimGQKC/NadiaAI` (added, not yet pushed)
-5. **All Zaragoza city**, no neighborhood filter
-6. **Google Sheet owned by dev**, shared with Nadia
-
-## What's Left
-
-### Must do before first live run:
-1. Fill `.env` with real values (see `docs/SETUP_GOOGLE_SHEETS.md`)
-2. Push to GitHub: `git add -A && git commit && git push -u origin main`
-3. Add GitHub Actions secrets (listed in setup guide)
-
-### Should do (next session):
-1. Write `README.md` (English, dev-facing)
-2. Write `MANUAL_NADIA.md` (Spanish, agent-facing, including letter template)
-3. Add PDF parsing for Tablón PDFs (extract heir names, death details)
-4. Add BOA PDF parsing with `pdfplumber`
-5. Test live end-to-end with real Sheet and email
-6. Consider: search deceased name against Catastro address index
-
-## File Tree
-
+## Files Added/Modified
 ```
-NadiaAI/
-├── .env.example
-├── .gitignore
-├── .github/workflows/daily.yml
-├── Makefile
-├── pyproject.toml
-├── STATUS.md
-├── docs/
-│   ├── SETUP_GOOGLE_SHEETS.md
-│   └── research/
-│       ├── tablon.md
-│       ├── boa.md
-│       ├── catastro.md
-│       ├── delivery.md
-│       └── tech-stack-decision.md
-├── src/nadia_ai/
-│   ├── __init__.py
-│   ├── __main__.py
-│   ├── config.py
-│   ├── db.py
-│   ├── models.py
-│   ├── logging_config.py
-│   ├── run.py
-│   ├── catastro.py
-│   ├── delivery.py
-│   └── scrapers/
-│       ├── __init__.py
-│       ├── tablon.py
-│       └── boa.py
-└── tests/
-    ├── conftest.py
-    └── unit/
-        ├── test_models.py
-        ├── test_db.py
-        ├── test_parsers.py
-        ├── test_catastro.py
-        ├── test_enrich.py
-        ├── test_delivery.py
-        ├── test_pipeline.py
-        ├── test_logging.py
-        └── test_boa_parser.py
+NEW:  src/nadia_ai/merge.py           — Dedup, tier, outreach engine
+NEW:  src/nadia_ai/ine.py             — INE calibration data fetcher
+NEW:  src/nadia_ai/enrichment.py      — Subastas + Obras enrichment
+NEW:  src/nadia_ai/scrapers/boe.py    — BOE TEJU + Section V scraper
+NEW:  src/nadia_ai/scrapers/bop.py    — BOP Zaragoza scraper
+NEW:  src/nadia_ai/scrapers/borme.py  — BORME scraper
+NEW:  .github/workflows/weekly-ine.yml
+NEW:  tests/unit/test_merge.py        — 25 dedup/tier/outreach tests
+NEW:  docs/research/concursal-rejected.md
+NEW:  docs/research/seccion-IIB-rejected.md
+MOD:  src/nadia_ai/models.py          — LeadRow +2 enrichment cols (17 total)
+MOD:  src/nadia_ai/db.py              — first_seen_at, enrichment schema ready
+MOD:  src/nadia_ai/delivery.py        — Calibracion tab, conditional formatting, email subject
+MOD:  src/nadia_ai/run.py             — BORME + enrichment pipeline steps
+MOD:  src/nadia_ai/scrapers/boa.py    — 6 new extraction patterns
+MOD:  README.md                        — Phase 2 architecture, new sources
+MOD:  MANUAL_NADIA.md                 — Tier, outreach, fuentes explanation
+MOD:  tests/ (multiple)               — Updated for 17-col schema, BORME mocks
 ```
+
+## Next Steps
+1. Push to GitHub and configure secrets
+2. Manual trigger run to verify live data
+3. Verify Calibracion tab populates on Monday INE cron
+4. Monitor first week of production for dedup accuracy and false-positive rate

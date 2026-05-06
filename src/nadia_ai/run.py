@@ -30,12 +30,23 @@ def run_pipeline() -> dict:
         "purged_persons": purged,
         "tablon_new": 0,
         "boa_new": 0,
+        "bop_new": 0,
+        "boe_new": 0,
+        "borme_new": 0,
+        "esquelas_new": 0,
+        "defunciones_new": 0,
+        "iesquelas_new": 0,
+        "solares_new": 0,
+        "licencias_new": 0,
+        "servihabitat_new": 0,
         "enriched": 0,
+        "subastas_enriched": 0,
+        "obras_enriched": 0,
         "leads_today": 0,
         "errors": [],
     }
 
-    # Step 2: Scrape Tablón de Edictos
+    # Step 2: Scrape Tablón de Edictos (Zaragoza city)
     try:
         from nadia_ai.scrapers.tablon import scrape_tablon
 
@@ -47,7 +58,7 @@ def run_pipeline() -> dict:
         summary["errors"].append(f"tablon: {e}")
         tablon_records = []
 
-    # Step 3: Scrape BOA
+    # Step 3: Scrape BOA (Boletín Oficial de Aragón)
     try:
         from nadia_ai.scrapers.boa import scrape_boa
 
@@ -59,7 +70,115 @@ def run_pipeline() -> dict:
         summary["errors"].append(f"boa: {e}")
         boa_records = []
 
-    all_records = tablon_records + boa_records
+    # Step 3b: Scrape BOP Zaragoza (province-wide edicts)
+    try:
+        from nadia_ai.scrapers.bop import scrape_bop
+
+        bop_records = scrape_bop()
+        summary["bop_new"] = len(bop_records)
+        logger.info("BOP: %d new records", len(bop_records))
+    except Exception as e:
+        logger.error("BOP scraper failed: %s", e)
+        summary["errors"].append(f"bop: {e}")
+        bop_records = []
+
+    # Step 3c: Scrape BOE (TEJU judicial edicts + Section V state-as-heir)
+    try:
+        from nadia_ai.scrapers.boe import scrape_boe
+
+        boe_records = scrape_boe()
+        summary["boe_new"] = len(boe_records)
+        logger.info("BOE: %d new records", len(boe_records))
+    except Exception as e:
+        logger.error("BOE scraper failed: %s", e)
+        summary["errors"].append(f"boe: {e}")
+        boe_records = []
+
+    # Step 3d: Scrape BORME (company death/dissolution events)
+    borme_records = []
+    try:
+        from nadia_ai.scrapers.borme import scrape_borme
+
+        borme_records = scrape_borme()
+        summary["borme_new"] = len(borme_records)
+        logger.info("BORME: %d new records", len(borme_records))
+    except Exception as e:
+        logger.error("BORME scraper failed: %s", e)
+        summary["errors"].append(f"borme: {e}")
+
+    # Step 3e: Scrape Memora esquelas (obituary high-volume source)
+    esquelas_records = []
+    try:
+        from nadia_ai.scrapers.esquelas import scrape_esquelas
+
+        esquelas_records = scrape_esquelas()
+        summary["esquelas_new"] = len(esquelas_records)
+        logger.info("Esquelas: %d new records", len(esquelas_records))
+    except Exception as e:
+        logger.error("Esquelas scraper failed: %s", e)
+        summary["errors"].append(f"esquelas: {e}")
+
+    # Step 3f: Scrape defunciones.es (second obituary source with municipality data)
+    defunciones_records = []
+    try:
+        from nadia_ai.scrapers.defunciones import scrape_defunciones
+
+        defunciones_records = scrape_defunciones()
+        summary["defunciones_new"] = len(defunciones_records)
+        logger.info("Defunciones: %d new records", len(defunciones_records))
+    except Exception as e:
+        logger.error("Defunciones scraper failed: %s", e)
+        summary["errors"].append(f"defunciones: {e}")
+
+    # Step 3g: Scrape iEsquelas.com (third obituary source — aggregator)
+    iesquelas_records = []
+    try:
+        from nadia_ai.scrapers.iesquelas import scrape_iesquelas
+
+        iesquelas_records = scrape_iesquelas()
+        summary["iesquelas_new"] = len(iesquelas_records)
+        logger.info("iEsquelas: %d new records", len(iesquelas_records))
+    except Exception as e:
+        logger.error("iEsquelas scraper failed: %s", e)
+        summary["errors"].append(f"iesquelas: {e}")
+
+    # Step 3h: Scrape Zaragoza vacant plots (solares open data)
+    solares_records = []
+    try:
+        from nadia_ai.scrapers.solares import scrape_solares
+
+        solares_records = scrape_solares()
+        summary["solares_new"] = len(solares_records)
+        logger.info("Solares: %d new records", len(solares_records))
+    except Exception as e:
+        logger.error("Solares scraper failed: %s", e)
+        summary["errors"].append(f"solares: {e}")
+
+    # Step 3i: Scrape Zaragoza building permits (licencias de obra)
+    licencias_records = []
+    try:
+        from nadia_ai.scrapers.licencias import scrape_licencias
+
+        licencias_records = scrape_licencias()
+        summary["licencias_new"] = len(licencias_records)
+        logger.info("Licencias: %d new records", len(licencias_records))
+    except Exception as e:
+        logger.error("Licencias scraper failed: %s", e)
+        summary["errors"].append(f"licencias: {e}")
+
+    # Step 3j: Scrape Servihabitat bank-owned properties (CaixaBank)
+    servihabitat_records = []
+    try:
+        from nadia_ai.scrapers.servihabitat import scrape_servihabitat
+
+        servihabitat_records = scrape_servihabitat()
+        summary["servihabitat_new"] = len(servihabitat_records)
+        logger.info("Servihabitat: %d new records", len(servihabitat_records))
+    except Exception as e:
+        logger.error("Servihabitat scraper failed: %s", e)
+        summary["errors"].append(f"servihabitat: {e}")
+
+    all_records = tablon_records + boa_records + bop_records + boe_records + borme_records + esquelas_records + defunciones_records + iesquelas_records + solares_records + licencias_records + servihabitat_records
 
     # Step 4: Enrich via Catastro and persist
     try:
@@ -72,13 +191,55 @@ def run_pipeline() -> dict:
         logger.error("Catastro enrichment failed: %s", e)
         summary["errors"].append(f"catastro: {e}")
 
-    # Step 5: Compute today's leads and deliver
+    # Step 5: Merge leads (dedup, tier classification, outreach flags)
+    try:
+        from nadia_ai.merge import merge_leads
+
+        merge_stats = merge_leads(conn, all_records)
+        summary["leads_created"] = merge_stats["created"]
+        summary["leads_merged"] = merge_stats["merged"]
+        summary["leads_skipped"] = merge_stats["skipped"]
+        logger.info(
+            "Merge: %d created, %d merged, %d skipped",
+            merge_stats["created"],
+            merge_stats["merged"],
+            merge_stats["skipped"],
+        )
+    except Exception as e:
+        logger.error("Lead merge failed: %s", e)
+        summary["errors"].append(f"merge: {e}")
+
+    # Step 5b: Enrichment — cross-join subastas and obras data to leads
+    try:
+        from nadia_ai.enrichment import (
+            enrich_leads_from_obras,
+            enrich_leads_from_subastas,
+            fetch_obras,
+            fetch_subastas,
+            init_enrichment_schema,
+        )
+
+        init_enrichment_schema(conn)
+        fetch_subastas(conn)
+        fetch_obras(conn)
+        subastas_enriched = enrich_leads_from_subastas(conn)
+        obras_enriched = enrich_leads_from_obras(conn)
+        summary["subastas_enriched"] = subastas_enriched
+        summary["obras_enriched"] = obras_enriched
+        logger.info("Enrichment: %d subastas, %d obras matched", subastas_enriched, obras_enriched)
+    except Exception as e:
+        logger.error("Enrichment failed (non-critical): %s", e)
+        summary["errors"].append(f"enrichment: {e}")
+
+    # Step 6: Compute today's leads and deliver
     try:
         from nadia_ai.delivery import compute_todays_leads, deliver
 
         leads = compute_todays_leads(conn)
         summary["leads_today"] = len(leads)
-        logger.info("Today's leads: %d", len(leads))
+        summary["tier_a"] = sum(1 for l in leads if l.tier == "A")
+        summary["tier_b"] = sum(1 for l in leads if l.tier == "B")
+        logger.info("Today's leads: %d (A=%d, B=%d)", len(leads), summary["tier_a"], summary["tier_b"])
 
         deliver(leads, summary)
     except Exception as e:

@@ -133,6 +133,7 @@ class TestInsertEdict:
                 "edict_type": "declaracion_herederos_abintestato",
                 "published_at": "2026-04-28T00:00:00",
                 "source_url": "https://example.com/edicto/1",
+                "address": None,
             },
         )
         assert edict_id is not None
@@ -157,6 +158,7 @@ class TestInsertEdict:
             "edict_type": "declaracion_herederos_abintestato",
             "published_at": None,
             "source_url": "",
+            "address": None,
         }
         insert_edict(db_conn, data)
         result = insert_edict(db_conn, data)
@@ -192,6 +194,7 @@ class TestPersonTTL:
                 "edict_type": "test",
                 "published_at": None,
                 "source_url": "",
+                "address": None,
             },
         )
 
@@ -231,6 +234,7 @@ class TestPersonTTL:
                 "edict_type": "test",
                 "published_at": None,
                 "source_url": "",
+                "address": None,
             },
         )
 
