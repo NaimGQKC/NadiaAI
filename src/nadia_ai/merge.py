@@ -1,10 +1,11 @@
-"""Lead deduplication, merging, and tier classification.
+"""Lead deduplication, merging, tier classification, and Plusvalía Clock.
 
 After scrapers run and edicts are persisted, this module:
 1. Matches new records against existing leads (by RC, name, or address)
 2. Merges data from multiple sources into a single lead
-3. Classifies each lead into tiers (A/B/C/X)
-4. Sets outreach-legality flags
+3. Classifies each lead into tiers (A/B/C/X) with urgency phases
+4. Computes the Plusvalía Clock (days since death, tax deadline)
+5. Sets outreach-legality flags
 """
 
 import json
@@ -42,6 +43,15 @@ CREATE TABLE IF NOT EXISTS leads (
     tier TEXT NOT NULL DEFAULT 'C',
     outreach_allowed INTEGER NOT NULL DEFAULT 1,
     outreach_notes TEXT DEFAULT '',
+    -- Plusvalía Clock
+    date_of_death TEXT DEFAULT '',
+    days_since_death INTEGER,
+    urgency_phase TEXT DEFAULT '',
+    tax_deadline TEXT DEFAULT '',
+    -- Heir data (Phase 2)
+    heir_names_json TEXT NOT NULL DEFAULT '[]',
+    heir_name TEXT DEFAULT '',
+    social_profile_url TEXT DEFAULT '',
     -- Tracking
     sources TEXT NOT NULL DEFAULT '[]',
     source_urls TEXT NOT NULL DEFAULT '[]',
@@ -55,7 +65,8 @@ CREATE TABLE IF NOT EXISTS leads (
     procedimiento TEXT DEFAULT '',
     subsource TEXT DEFAULT '',
     juzgado TEXT DEFAULT '',
-    -- Nadia's fields (manual, preserved across merges)
+    -- Kanban / agent workflow
+    kanban_status TEXT DEFAULT 'new_to_call',
     estado TEXT DEFAULT 'Nuevo',
     notas TEXT DEFAULT ''
 );
@@ -72,8 +83,10 @@ CREATE INDEX IF NOT EXISTS idx_leads_causante_norm ON leads(causante_norm);
 CREATE INDEX IF NOT EXISTS idx_leads_ref_catastral ON leads(ref_catastral);
 CREATE INDEX IF NOT EXISTS idx_leads_address_norm ON leads(address_norm);
 CREATE INDEX IF NOT EXISTS idx_leads_first_seen ON leads(first_seen_at);
+CREATE INDEX IF NOT EXISTS idx_leads_urgency ON leads(urgency_phase);
 """
 
+# Only Death & Heirs sources — Solares, Licencias, Servihabitat deleted
 SOURCE_LABELS = {
     "tablon": "Tablón",
     "boa": "BOA",
@@ -86,15 +99,11 @@ SOURCE_LABELS = {
     "esquelas": "Esquelas",
     "defunciones": "Defunciones",
     "iesquelas": "iEsquelas",
-    "solares": "Solares",
-    "licencias": "Licencias",
-    "servihabitat": "Servihabitat",
     "cee": "CEE Aragón",
     "traspasos": "Traspasos Aragón",
     "ite": "ITE Zaragoza",
 }
 
-# Maps source to subsource code for finer-grained tracking
 SUBSOURCE_CODES = {
     "tablon": "Tablón",
     "boa": "BOA-JD",
@@ -106,9 +115,6 @@ SUBSOURCE_CODES = {
     "esquelas": "Esquelas",
     "defunciones": "Defunciones",
     "iesquelas": "iEsquelas",
-    "solares": "Solares",
-    "licencias": "Licencias",
-    "servihabitat": "Servihabitat",
     "cee": "CEE",
     "traspasos": "Traspasos",
     "ite": "ITE",
@@ -151,16 +157,86 @@ def normalize_address(address: str | None) -> str | None:
     return s if len(s) >= 5 else None
 
 
+# ── Plusvalía Clock ────────────────────────────────────────────────
+
+
+def compute_days_since_death(date_of_death_str: str | None) -> int | None:
+    """Compute days elapsed since date of death. Returns None if no date."""
+    if not date_of_death_str:
+        return None
+    try:
+        dod = datetime.fromisoformat(date_of_death_str)
+        if dod.tzinfo is None:
+            dod = dod.replace(tzinfo=UTC)
+        delta = (datetime.now(UTC) - dod).days
+        return max(0, delta)
+    except (ValueError, TypeError):
+        return None
+
+
+def compute_urgency_phase(days: int | None) -> str:
+    """Map days since death to urgency phase.
+
+    0-90:   Respectful/Monitoring — too early for aggressive outreach
+    91-150: High Motivation — tax deadline approaching, heirs feeling pressure
+    150+:   Urgent/Distress — penalties starting soon, highest motivation to sell
+    """
+    if days is None:
+        return ""
+    if days <= 90:
+        return "monitoring"
+    elif days <= 150:
+        return "high_motivation"
+    return "urgent_distress"
+
+
+def compute_tax_deadline(date_of_death_str: str | None) -> str:
+    """Compute the 180-day Plusvalía tax deadline as ISO date string."""
+    if not date_of_death_str:
+        return ""
+    try:
+        from datetime import timedelta
+        dod = datetime.fromisoformat(date_of_death_str)
+        deadline = dod + timedelta(days=180)
+        return deadline.strftime("%Y-%m-%d")
+    except (ValueError, TypeError):
+        return ""
+
+
+def recompute_all_deadlines(conn: sqlite3.Connection) -> int:
+    """Recompute days_since_death and urgency_phase for ALL leads.
+
+    Called at the start of every pipeline run to keep urgency current.
+    Returns count of leads updated.
+    """
+    rows = conn.execute(
+        "SELECT id, date_of_death FROM leads WHERE date_of_death IS NOT NULL AND date_of_death != ''"
+    ).fetchall()
+    updated = 0
+    for row in rows:
+        days = compute_days_since_death(row["date_of_death"])
+        phase = compute_urgency_phase(days)
+        conn.execute(
+            "UPDATE leads SET days_since_death = ?, urgency_phase = ? WHERE id = ?",
+            (days, phase, row["id"]),
+        )
+        updated += 1
+    conn.commit()
+    if updated:
+        logger.info("Recomputed deadlines for %d leads", updated)
+    return updated
+
+
 # ── Tier and outreach classification ───────────────────────────────
 
 
 def compute_tier(lead: dict) -> str:
     """Compute tier classification for a lead.
 
-    A — name + address, actionable today, fresh (<6 months)
-    B — name OR address (one missing but recoverable), or A-quality but stale (>6 months)
-    C — neither name nor address but link works
-    X — distress flag, enrichment only
+    Tier A (Hot):  Name + Address + fresh signal (< 3 months since death)
+    Tier B (Warm): Address found but data incomplete, OR 91-150 days since death
+    Tier C (Cold): Signal detected but insufficient data to act
+    Tier X (Distress): Properties in judicial auction phase
     """
     sources = json.loads(lead.get("sources", "[]"))
     is_distress = any(
@@ -171,30 +247,29 @@ def compute_tier(lead: dict) -> str:
 
     has_name = bool(lead.get("causante"))
     has_address = bool(lead.get("direccion"))
+    days = lead.get("days_since_death")
 
-    # Check staleness (>6 months since first detection)
-    is_stale = False
-    first_seen = lead.get("first_seen_at")
-    if first_seen:
-        try:
-            seen_dt = datetime.fromisoformat(first_seen)
-            if seen_dt.tzinfo is None:
-                seen_dt = seen_dt.replace(tzinfo=UTC)
-            age_days = (datetime.now(UTC) - seen_dt).days
-            is_stale = age_days > 180
-        except (ValueError, TypeError):
-            pass
-
-    # ITE desfavorable is a high-intent distress signal but outreach IS
-    # allowed (owner faces mandatory capex, may want to sell)
+    # ITE desfavorable is a capex signal — outreach allowed but Tier B
     is_ite = any("ite" in s.lower() for s in sources)
     if is_ite and has_address:
         return "B"
 
+    # Fresh signal with full data = Tier A
     if has_name and has_address:
-        return "B" if is_stale else "A"
-    elif has_name or has_address:
+        if days is not None and days <= 90:
+            return "A"
+        elif days is not None and days <= 150:
+            return "A"  # Still actionable during high motivation phase
+        elif days is not None and days > 180:
+            return "B"  # Past deadline, lower priority
+        return "A"  # No death date but has name+address = A
+
+    if has_name or has_address:
+        # Auto-escalate if nearing tax deadline
+        if days is not None and 91 <= days <= 180:
+            return "B"
         return "B"
+
     return "C"
 
 
@@ -229,6 +304,15 @@ _LEADS_MIGRATIONS = [
     ("valor_tasacion", "ALTER TABLE leads ADD COLUMN valor_tasacion REAL"),
     ("procedimiento", "ALTER TABLE leads ADD COLUMN procedimiento TEXT DEFAULT ''"),
     ("juzgado", "ALTER TABLE leads ADD COLUMN juzgado TEXT DEFAULT ''"),
+    # Phase 2: Plusvalía Clock + heir data
+    ("date_of_death", "ALTER TABLE leads ADD COLUMN date_of_death TEXT DEFAULT ''"),
+    ("days_since_death", "ALTER TABLE leads ADD COLUMN days_since_death INTEGER"),
+    ("urgency_phase", "ALTER TABLE leads ADD COLUMN urgency_phase TEXT DEFAULT ''"),
+    ("tax_deadline", "ALTER TABLE leads ADD COLUMN tax_deadline TEXT DEFAULT ''"),
+    ("heir_names_json", "ALTER TABLE leads ADD COLUMN heir_names_json TEXT NOT NULL DEFAULT '[]'"),
+    ("heir_name", "ALTER TABLE leads ADD COLUMN heir_name TEXT DEFAULT ''"),
+    ("social_profile_url", "ALTER TABLE leads ADD COLUMN social_profile_url TEXT DEFAULT ''"),
+    ("kanban_status", "ALTER TABLE leads ADD COLUMN kanban_status TEXT DEFAULT 'new_to_call'"),
 ]
 
 
@@ -299,14 +383,42 @@ def _get_parcel_data(conn: sqlite3.Connection, rc: str | None) -> dict:
     return dict(row) if row else {}
 
 
+def _resolve_date_of_death(record: EdictRecord) -> str:
+    """Extract and standardize date of death from multiple sources.
+
+    Priority: date_of_death > fecha_fallecimiento > published_at (for esquelas).
+    """
+    if record.date_of_death:
+        return record.date_of_death
+    if record.fecha_fallecimiento:
+        return record.fecha_fallecimiento
+    # For obituary sources, published_at IS roughly the death date
+    if record.source in ("esquelas", "defunciones", "iesquelas") and record.published_at:
+        return record.published_at.strftime("%Y-%m-%d")
+    return ""
+
+
 def _update_lead_classification(conn: sqlite3.Connection, lead_id: int) -> None:
-    """Recompute tier and outreach for a lead."""
+    """Recompute tier, outreach, and Plusvalía Clock for a lead."""
     lead = dict(conn.execute("SELECT * FROM leads WHERE id = ?", (lead_id,)).fetchone())
+
+    # Plusvalía Clock
+    dod = lead.get("date_of_death") or ""
+    days = compute_days_since_death(dod)
+    phase = compute_urgency_phase(days)
+    deadline = compute_tax_deadline(dod)
+
+    # Tier and outreach
+    lead["days_since_death"] = days  # inject for compute_tier
     tier = compute_tier(lead)
     ok, notes = compute_outreach(lead)
+
     conn.execute(
-        "UPDATE leads SET tier = ?, outreach_allowed = ?, outreach_notes = ? WHERE id = ?",
-        (tier, int(ok), notes, lead_id),
+        """UPDATE leads SET
+            tier = ?, outreach_allowed = ?, outreach_notes = ?,
+            days_since_death = ?, urgency_phase = ?, tax_deadline = ?
+        WHERE id = ?""",
+        (tier, int(ok), notes, days, phase, deadline, lead_id),
     )
 
 
@@ -321,7 +433,7 @@ def merge_leads(conn: sqlite3.Connection, records: list[EdictRecord]) -> dict:
     2. Find matching lead by RC → name → address
     3. If found: merge data (COALESCE, add source)
     4. If not found: create new lead
-    5. Classify tier and outreach
+    5. Classify tier, outreach, and Plusvalía Clock
     6. Link edict to lead
 
     Returns stats dict: {created, merged, skipped}.
@@ -386,6 +498,14 @@ def _merge_into_existing(
     if record.source_url and record.source_url not in source_urls:
         source_urls.append(record.source_url)
 
+    # Merge heir names
+    existing_heirs = json.loads(existing.get("heir_names_json") or "[]")
+    new_heirs = list(set(existing_heirs + record.heir_names))
+    heir_name = existing.get("heir_name") or (new_heirs[0] if new_heirs else "")
+
+    # Resolve best date of death
+    dod = _resolve_date_of_death(record) or existing.get("date_of_death") or ""
+
     conn.execute(
         """UPDATE leads SET
             causante = COALESCE(NULLIF(?, ''), causante),
@@ -404,6 +524,9 @@ def _merge_into_existing(
             use_class = COALESCE(NULLIF(?, ''), use_class),
             neighborhood = COALESCE(NULLIF(?, ''), neighborhood),
             juzgado = COALESCE(NULLIF(?, ''), juzgado),
+            date_of_death = COALESCE(NULLIF(?, ''), date_of_death),
+            heir_names_json = ?,
+            heir_name = COALESCE(NULLIF(?, ''), heir_name),
             sources = ?,
             source_urls = ?,
             last_updated_at = datetime('now')
@@ -425,6 +548,9 @@ def _merge_into_existing(
             parcel.get("use_class") or "",
             parcel.get("neighborhood") or "",
             getattr(record, "juzgado", None) or "",
+            dod,
+            json.dumps(new_heirs),
+            heir_name,
             json.dumps(sources),
             json.dumps(source_urls),
             lead_id,
@@ -441,6 +567,12 @@ def _create_new_lead(
 ) -> int:
     """Create a new lead from a record. Returns the new lead_id."""
     subsource = SUBSOURCE_CODES.get(record.source, record.source)
+    dod = _resolve_date_of_death(record)
+    days = compute_days_since_death(dod)
+    phase = compute_urgency_phase(days)
+    deadline = compute_tax_deadline(dod)
+    heir_name = record.heir_names[0] if record.heir_names else ""
+
     cursor = conn.execute(
         """INSERT INTO leads (
             causante_norm, ref_catastral, address_norm,
@@ -448,8 +580,10 @@ def _create_new_lead(
             fecha_fallecimiento, fecha_nacimiento,
             lugar_nacimiento, lugar_fallecimiento,
             referencia_catastral, m2, year_built, use_class, neighborhood,
-            sources, source_urls, subsource, juzgado
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            sources, source_urls, subsource, juzgado,
+            date_of_death, days_since_death, urgency_phase, tax_deadline,
+            heir_names_json, heir_name
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             normalize_name(record.causante),
             record.referencia_catastral,
@@ -470,29 +604,37 @@ def _create_new_lead(
             json.dumps([record.source_url] if record.source_url else []),
             subsource,
             getattr(record, "juzgado", None) or "",
+            dod,
+            days,
+            phase,
+            deadline,
+            json.dumps(record.heir_names),
+            heir_name,
         ),
     )
     return cursor.lastrowid
 
 
 def get_todays_leads(conn: sqlite3.Connection) -> list[dict]:
-    """Get leads first seen today, sorted by tier then m² descending."""
+    """Get leads first seen today, sorted by tier then urgency."""
     rows = conn.execute(
         """SELECT * FROM leads
         WHERE date(first_seen_at) = date('now')
         ORDER BY
             CASE tier WHEN 'A' THEN 0 WHEN 'B' THEN 1 WHEN 'C' THEN 2 WHEN 'X' THEN 3 END,
+            days_since_death DESC NULLS LAST,
             m2 DESC NULLS LAST"""
     ).fetchall()
     return [dict(row) for row in rows]
 
 
 def get_all_leads(conn: sqlite3.Connection) -> list[dict]:
-    """Get all leads (for full export), sorted by tier then date."""
+    """Get all leads (for full export), sorted by tier then urgency."""
     rows = conn.execute(
         """SELECT * FROM leads
         ORDER BY
             CASE tier WHEN 'A' THEN 0 WHEN 'B' THEN 1 WHEN 'C' THEN 2 WHEN 'X' THEN 3 END,
+            days_since_death DESC NULLS LAST,
             first_seen_at DESC,
             m2 DESC NULLS LAST"""
     ).fetchall()

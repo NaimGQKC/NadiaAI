@@ -42,13 +42,21 @@ def compute_todays_leads(conn: sqlite3.Connection) -> list[LeadRow]:
     for row in rows:
         sources = json.loads(row["sources"])
         source_urls = json.loads(row["source_urls"])
+
+        # Compute urgency label for display
+        days = row.get("days_since_death")
+        urgency = row.get("urgency_phase") or ""
+
         leads.append(
             LeadRow(
                 tier=row["tier"],
                 fecha_deteccion=row["first_seen_at"][:10],
                 fuentes=", ".join(sources),
                 causante=row["causante"] or "",
+                heir_name=row.get("heir_name") or "",
                 fecha_fallecimiento=row["fecha_fallecimiento"] or "",
+                days_since_death=days,
+                urgency_phase=urgency,
                 localidad=row["localidad"] or "",
                 direccion=row["direccion"] or "",
                 referencia_catastral=row["referencia_catastral"] or "",
@@ -59,6 +67,7 @@ def compute_todays_leads(conn: sqlite3.Connection) -> list[LeadRow]:
                 notas_sistema=row["outreach_notes"] or "",
                 notas=row["notas"] or "",
                 link_edicto=source_urls[0] if source_urls else "",
+                social_profile_url=row.get("social_profile_url") or "",
                 subasta_activa=row.get("subasta_activa") or "",
                 obras_recientes=row.get("obras_recientes") or "",
             )
@@ -297,12 +306,15 @@ def send_email(leads: list[LeadRow], sheet_ok: bool) -> None:
     else:
         tier_a = [ld for ld in leads if ld.tier == "A"]
         tier_b = [ld for ld in leads if ld.tier == "B"]
+        # High priority: 120-180 days since death (tax deadline approaching)
+        high_priority = [ld for ld in leads if ld.days_since_death and 120 <= ld.days_since_death <= 180]
 
         # Show top Tier A leads, then top B
         top_leads = (tier_a + tier_b)[:5]
         top_text = "\n".join(
             f"  [{ld.tier}] {ld.causante or 'Sin nombre'} — {ld.fuentes} — {ld.localidad or 'Zaragoza'}"
             + (f" — {ld.direccion}" if ld.direccion else "")
+            + (f" — ⚠️ {ld.days_since_death}d desde fallecimiento" if ld.days_since_death and ld.days_since_death >= 120 else "")
             for ld in top_leads
         )
         top_html = "".join(
@@ -310,6 +322,7 @@ def send_email(leads: list[LeadRow], sheet_ok: bool) -> None:
             f"<strong>{ld.causante or 'Sin nombre'}</strong>"
             f" — {ld.fuentes} — {ld.localidad or 'Zaragoza'}"
             + (f" — <em>{ld.direccion}</em>" if ld.direccion else "")
+            + (f" — <span style='color:#ef4444'>⚠️ {ld.days_since_death}d (plazo fiscal)</span>" if ld.days_since_death and ld.days_since_death >= 120 else "")
             + "</li>"
             for ld in top_leads
         )
@@ -320,12 +333,18 @@ def send_email(leads: list[LeadRow], sheet_ok: bool) -> None:
             all_sources.update(s.strip() for s in ld.fuentes.split(",") if s.strip())
         fuentes_line = ", ".join(sorted(all_sources))
 
-        subject = f"NadiaAI — {len(tier_a)} nuevos accionables ({n_new} totales)"
+        # Highlight urgent tax deadline leads
+        urgency_line = ""
+        if high_priority:
+            urgency_line = f"\n⚠️ {len(high_priority)} leads con plazo fiscal próximo (120-180 días)\n"
+
+        subject = f"NadiaAI — {len(tier_a)} accionables, {len(high_priority)} urgentes ({n_new} total)"
         body_text = (
             f"Hola Nadia,\n\n"
             f"Hoy ({today}) hay {n_new} nuevos leads"
             f" ({len(tier_a)} Tier A, {len(tier_b)} Tier B):\n\n"
-            f"Top leads:\n{top_text}\n\n"
+            f"Top leads:\n{top_text}\n"
+            f"{urgency_line}\n"
             f"Fuentes activas: {fuentes_line}\n\n"
             f"Tu hoja de leads: {sheet_url}\n\n"
             f"¡Buen día!\nNadiaAI"
@@ -335,7 +354,8 @@ def send_email(leads: list[LeadRow], sheet_ok: bool) -> None:
             f"<p>Hoy ({today}) hay <strong>{n_new}</strong> nuevos leads"
             f" (<strong>{len(tier_a)}</strong> Tier A, {len(tier_b)} Tier B):</p>"
             f"<ul>{top_html}</ul>"
-            f"<p style='color:#666'>Fuentes activas: {fuentes_line}</p>"
+            + (f"<p style='color:#ef4444;font-weight:bold'>⚠️ {len(high_priority)} leads con plazo fiscal próximo (120-180 días)</p>" if high_priority else "")
+            + f"<p style='color:#666'>Fuentes activas: {fuentes_line}</p>"
             f'<p><a href="{sheet_url}">Abrir hoja de leads</a></p>'
             f"<p>¡Buen día!<br>NadiaAI</p>"
         )

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NadiaAI — Herencias Zaragoza</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <h1>NadiaAI</h1>
+            <span class="subtitle">Herencias · Zaragoza</span>
+        </div>
+        <div class="header-stats" id="stats-bar">
+            <div class="stat"><span class="stat-value" id="stat-total">-</span><span class="stat-label">Total</span></div>
+            <div class="stat tier-a"><span class="stat-value" id="stat-a">-</span><span class="stat-label">Tier A</span></div>
+            <div class="stat tier-b"><span class="stat-value" id="stat-b">-</span><span class="stat-label">Tier B</span></div>
+            <div class="stat urgent"><span class="stat-value" id="stat-urgent">-</span><span class="stat-label">Urgente</span></div>
+            <div class="stat new-today"><span class="stat-value" id="stat-today">-</span><span class="stat-label">Hoy</span></div>
+        </div>
+    </header>
+
+    <main class="kanban">
+        <div class="column" data-status="new_to_call">
+            <div class="column-header">
+                <h2>Nuevos (Llamar)</h2>
+                <span class="column-count" id="count-new">0</span>
+            </div>
+            <div class="column-body" id="col-new_to_call"></div>
+        </div>
+
+        <div class="column" data-status="tax_followup">
+            <div class="column-header">
+                <h2>Seguimiento Fiscal</h2>
+                <span class="column-count" id="count-tax">0</span>
+            </div>
+            <div class="column-body" id="col-tax_followup"></div>
+        </div>
+
+        <div class="column" data-status="urgent">
+            <div class="column-header urgent-header">
+                <h2>Urgente (150+ días)</h2>
+                <span class="column-count" id="count-urgent">0</span>
+            </div>
+            <div class="column-body" id="col-urgent"></div>
+        </div>
+
+        <div class="column" data-status="signed">
+            <div class="column-header signed-header">
+                <h2>Firmados ✓</h2>
+                <span class="column-count" id="count-signed">0</span>
+            </div>
+            <div class="column-body" id="col-signed"></div>
+        </div>
+    </main>
+
+    <!-- Lead detail modal -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal" id="lead-modal">
+            <button class="modal-close" id="modal-close">&times;</button>
+            <div id="modal-content"></div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
