@@ -1,4 +1,9 @@
-"""Pipeline entry point: python -m nadia_ai"""
+"""Pipeline entry point: python -m nadia_ai
+
+Phase 2: Inheritance Capture Engine — Death & Heirs niche only.
+Deleted sources: Solares, Licencias, Servihabitat.
+New steps: LLM heir extraction (Ollama), Plusvalía Clock recomputation.
+"""
 
 import logging
 import sys
@@ -36,9 +41,6 @@ def run_pipeline() -> dict:
         "esquelas_new": 0,
         "defunciones_new": 0,
         "iesquelas_new": 0,
-        "solares_new": 0,
-        "licencias_new": 0,
-        "servihabitat_new": 0,
         "cee_new": 0,
         "traspasos_new": 0,
         "ite_new": 0,
@@ -46,9 +48,24 @@ def run_pipeline() -> dict:
         "enriched": 0,
         "subastas_enriched": 0,
         "obras_enriched": 0,
+        "deadlines_recomputed": 0,
+        "heirs_extracted": 0,
         "leads_today": 0,
         "errors": [],
     }
+
+    # Step 1b: Recompute Plusvalía Clock for all existing leads
+    try:
+        from nadia_ai.merge import recompute_all_deadlines
+
+        recomputed = recompute_all_deadlines(conn)
+        summary["deadlines_recomputed"] = recomputed
+        logger.info("Plusvalía Clock: recomputed %d lead deadlines", recomputed)
+    except Exception as e:
+        logger.error("Deadline recomputation failed: %s", e)
+        summary["errors"].append(f"deadlines: {e}")
+
+    # ── PRIMARY ADMIN SOURCES ──────────────────────────────────────
 
     # Step 2: Scrape Tablón de Edictos (Zaragoza city)
     try:
@@ -110,7 +127,9 @@ def run_pipeline() -> dict:
         logger.error("BORME scraper failed: %s", e)
         summary["errors"].append(f"borme: {e}")
 
-    # Step 3e: Scrape Memora esquelas (obituary high-volume source)
+    # ── EARLY-SIGNAL SOURCES (Obituaries) ──────────────────────────
+
+    # Step 4a: Scrape Memora esquelas (obituary high-volume source)
     esquelas_records = []
     try:
         from nadia_ai.scrapers.esquelas import scrape_esquelas
@@ -122,7 +141,7 @@ def run_pipeline() -> dict:
         logger.error("Esquelas scraper failed: %s", e)
         summary["errors"].append(f"esquelas: {e}")
 
-    # Step 3f: Scrape defunciones.es (second obituary source with municipality data)
+    # Step 4b: Scrape defunciones.es (second obituary source with municipality data)
     defunciones_records = []
     try:
         from nadia_ai.scrapers.defunciones import scrape_defunciones
@@ -134,7 +153,7 @@ def run_pipeline() -> dict:
         logger.error("Defunciones scraper failed: %s", e)
         summary["errors"].append(f"defunciones: {e}")
 
-    # Step 3g: Scrape iEsquelas.com (third obituary source — aggregator)
+    # Step 4c: Scrape iEsquelas.com (third obituary source — aggregator)
     iesquelas_records = []
     try:
         from nadia_ai.scrapers.iesquelas import scrape_iesquelas
@@ -146,43 +165,9 @@ def run_pipeline() -> dict:
         logger.error("iEsquelas scraper failed: %s", e)
         summary["errors"].append(f"iesquelas: {e}")
 
-    # Step 3h: Scrape Zaragoza vacant plots (solares open data)
-    solares_records = []
-    try:
-        from nadia_ai.scrapers.solares import scrape_solares
+    # ── CAPEX SIGNALS ──────────────────────────────────────────────
 
-        solares_records = scrape_solares()
-        summary["solares_new"] = len(solares_records)
-        logger.info("Solares: %d new records", len(solares_records))
-    except Exception as e:
-        logger.error("Solares scraper failed: %s", e)
-        summary["errors"].append(f"solares: {e}")
-
-    # Step 3i: Scrape Zaragoza building permits (licencias de obra)
-    licencias_records = []
-    try:
-        from nadia_ai.scrapers.licencias import scrape_licencias
-
-        licencias_records = scrape_licencias()
-        summary["licencias_new"] = len(licencias_records)
-        logger.info("Licencias: %d new records", len(licencias_records))
-    except Exception as e:
-        logger.error("Licencias scraper failed: %s", e)
-        summary["errors"].append(f"licencias: {e}")
-
-    # Step 3j: Scrape Servihabitat bank-owned properties (CaixaBank)
-    servihabitat_records = []
-    try:
-        from nadia_ai.scrapers.servihabitat import scrape_servihabitat
-
-        servihabitat_records = scrape_servihabitat()
-        summary["servihabitat_new"] = len(servihabitat_records)
-        logger.info("Servihabitat: %d new records", len(servihabitat_records))
-    except Exception as e:
-        logger.error("Servihabitat scraper failed: %s", e)
-        summary["errors"].append(f"servihabitat: {e}")
-
-    # Step 3k: Scrape CEE Aragón energy certificates
+    # Step 5a: Scrape CEE Aragón energy certificates
     cee_records = []
     try:
         from nadia_ai.scrapers.cee import scrape_cee
@@ -194,7 +179,7 @@ def run_pipeline() -> dict:
         logger.error("CEE scraper failed: %s", e)
         summary["errors"].append(f"cee: {e}")
 
-    # Step 3l: Scrape Traspasos Aragón business transfers
+    # Step 5b: Scrape Traspasos Aragón business transfers
     traspasos_records = []
     try:
         from nadia_ai.scrapers.traspasos import scrape_traspasos
@@ -206,7 +191,7 @@ def run_pipeline() -> dict:
         logger.error("Traspasos scraper failed: %s", e)
         summary["errors"].append(f"traspasos: {e}")
 
-    # Step 3m: Scrape ITE Zaragoza building inspections
+    # Step 5c: Scrape ITE Zaragoza building inspections (desfavorable only)
     ite_records = []
     try:
         from nadia_ai.scrapers.ite import scrape_ite
@@ -218,7 +203,9 @@ def run_pipeline() -> dict:
         logger.error("ITE scraper failed: %s", e)
         summary["errors"].append(f"ite: {e}")
 
-    # Step 3n: Scrape Subastas BOE as primary lead generator
+    # ── DISTRESS SIGNALS ───────────────────────────────────────────
+
+    # Step 5d: Scrape Subastas BOE (Tier X — judicial auctions)
     subastas_lead_records = []
     try:
         from nadia_ai.scrapers.subastas import scrape_subastas_leads
@@ -230,9 +217,15 @@ def run_pipeline() -> dict:
         logger.error("Subastas lead gen failed: %s", e)
         summary["errors"].append(f"subastas_leads: {e}")
 
-    all_records = tablon_records + boa_records + bop_records + boe_records + borme_records + esquelas_records + defunciones_records + iesquelas_records + solares_records + licencias_records + servihabitat_records + cee_records + traspasos_records + ite_records + subastas_lead_records
+    # ── AGGREGATE & PROCESS ────────────────────────────────────────
 
-    # Step 4: Enrich via Catastro and persist
+    all_records = (
+        tablon_records + boa_records + bop_records + boe_records + borme_records
+        + esquelas_records + defunciones_records + iesquelas_records
+        + cee_records + traspasos_records + ite_records + subastas_lead_records
+    )
+
+    # Step 6: Enrich via Catastro and persist
     try:
         from nadia_ai.catastro import enrich_and_persist
 
@@ -243,7 +236,7 @@ def run_pipeline() -> dict:
         logger.error("Catastro enrichment failed: %s", e)
         summary["errors"].append(f"catastro: {e}")
 
-    # Step 5: Merge leads (dedup, tier classification, outreach flags)
+    # Step 7: Merge leads (dedup, tier classification, Plusvalía Clock)
     try:
         from nadia_ai.merge import merge_leads
 
@@ -261,7 +254,18 @@ def run_pipeline() -> dict:
         logger.error("Lead merge failed: %s", e)
         summary["errors"].append(f"merge: {e}")
 
-    # Step 5b: Enrichment — cross-join subastas and obras data to leads
+    # Step 7b: LLM Heir Extraction (Ollama — optional, graceful degradation)
+    try:
+        from nadia_ai.utils.extraction import run_heir_extraction
+
+        extracted = run_heir_extraction(conn)
+        summary["heirs_extracted"] = extracted
+        logger.info("LLM heir extraction: %d leads enriched", extracted)
+    except Exception as e:
+        logger.error("LLM extraction failed (non-critical): %s", e)
+        summary["errors"].append(f"llm_extraction: {e}")
+
+    # Step 7c: Enrichment — cross-join subastas and obras data to leads
     try:
         from nadia_ai.enrichment import (
             enrich_leads_from_obras,
@@ -283,7 +287,7 @@ def run_pipeline() -> dict:
         logger.error("Enrichment failed (non-critical): %s", e)
         summary["errors"].append(f"enrichment: {e}")
 
-    # Step 6: Compute today's leads and deliver
+    # Step 8: Compute today's leads and deliver
     try:
         from nadia_ai.delivery import compute_todays_leads, deliver
 

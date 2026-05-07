@@ -54,17 +54,39 @@ class TestRunPipeline:
         """Pipeline runs normally with zero leads."""
         mock_conn.return_value = MagicMock()
 
-        with (
+        patches = [
             patch("nadia_ai.scrapers.tablon.scrape_tablon", return_value=[]),
             patch("nadia_ai.scrapers.boa.scrape_boa", return_value=[]),
             patch("nadia_ai.scrapers.bop.scrape_bop", return_value=[]),
             patch("nadia_ai.scrapers.boe.scrape_boe", return_value=[]),
             patch("nadia_ai.scrapers.borme.scrape_borme", return_value=[]),
+            patch("nadia_ai.scrapers.esquelas.scrape_esquelas", return_value=[]),
+            patch("nadia_ai.scrapers.defunciones.scrape_defunciones", return_value=[]),
+            patch("nadia_ai.scrapers.iesquelas.scrape_iesquelas", return_value=[]),
+            patch("nadia_ai.scrapers.cee.scrape_cee", return_value=[]),
+            patch("nadia_ai.scrapers.traspasos.scrape_traspasos", return_value=[]),
+            patch("nadia_ai.scrapers.ite.scrape_ite", return_value=[]),
+            patch("nadia_ai.scrapers.subastas.scrape_subastas_leads", return_value=[]),
+            patch("nadia_ai.merge.recompute_all_deadlines", return_value=0),
             patch("nadia_ai.catastro.enrich_and_persist", return_value=0),
+            patch("nadia_ai.merge.merge_leads", return_value={"created": 0, "merged": 0, "skipped": 0}),
+            patch("nadia_ai.utils.extraction.run_heir_extraction", return_value=0),
+            patch("nadia_ai.enrichment.init_enrichment_schema"),
+            patch("nadia_ai.enrichment.fetch_subastas"),
+            patch("nadia_ai.enrichment.fetch_obras"),
+            patch("nadia_ai.enrichment.enrich_leads_from_subastas", return_value=0),
+            patch("nadia_ai.enrichment.enrich_leads_from_obras", return_value=0),
             patch("nadia_ai.delivery.compute_todays_leads", return_value=[]),
             patch("nadia_ai.delivery.deliver"),
-        ):
+        ]
+
+        for p in patches:
+            p.start()
+        try:
             summary = run_pipeline()
+        finally:
+            for p in patches:
+                p.stop()
 
         assert summary["purged_persons"] == 3
         assert summary["leads_today"] == 0

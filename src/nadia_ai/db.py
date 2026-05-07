@@ -45,9 +45,21 @@ CREATE TABLE IF NOT EXISTS edict_persons (
     FOREIGN KEY (edict_id) REFERENCES edicts(id)
 );
 
+CREATE TABLE IF NOT EXISTS outreach_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lead_id INTEGER NOT NULL,
+    action TEXT NOT NULL,
+    channel TEXT DEFAULT '',
+    legal_basis TEXT DEFAULT '',
+    notes TEXT DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (lead_id) REFERENCES leads(id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_edicts_source ON edicts(source, source_id);
 CREATE INDEX IF NOT EXISTS idx_edicts_rc ON edicts(referencia_catastral);
 CREATE INDEX IF NOT EXISTS idx_edict_persons_expires ON edict_persons(expires_at);
+CREATE INDEX IF NOT EXISTS idx_outreach_log_lead ON outreach_log(lead_id);
 """
 
 
