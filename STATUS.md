@@ -53,7 +53,16 @@
 | BOE Seccion V.B (state-as-heir) | boe_secv | Herencia individual | ~1-5/year | Yes |
 | BORME Seccion I+II | borme_i / borme_ii | B2B (empresa) | ~3-8/month | Yes (B2B) |
 | BOP Zaragoza | bop | Herencia individual | ~50-150/year | Yes |
-| Subastas BOE | subastas | Enrichment only | Variable | NO (Tier X) |
+| Esquelas Memora | esquelas | Obituario | High volume | Yes |
+| Defunciones.es | defunciones | Obituario | Variable | Yes |
+| iEsquelas.com | iesquelas | Obituario (agregador) | Variable | Yes |
+| Solares Zaragoza | solares | Solar vacante | ~2400 total | Yes |
+| Licencias Obra | licencias | Licencia edificación | Variable | Yes |
+| Servihabitat | servihabitat | Inmueble bancario | ~200/batch | Yes |
+| **CEE Aragón** | **cee** | **Certificado energético** | **Variable** | **Yes** |
+| **Traspasos Aragón** | **traspasos** | **Traspaso B2B** | **~60 active** | **Yes (B2B)** |
+| **ITE Zaragoza** | **ite** | **ITE desfavorable** | **Variable** | **Yes** |
+| **Subastas BOE** | **subastas** | **Subasta (lead gen)** | **Variable** | **NO (Tier X)** |
 | Zaragoza Open Data Obras | obras | Enrichment only | Monthly batch | N/A |
 | INE (calibration) | ine | Dashboard only | Weekly | N/A |
 
@@ -63,7 +72,7 @@
 - `subasta_activa`, `obras_recientes` (enrichment cross-join)
 - `nif`, `valor_tasacion`, `procedimiento` (BOE V.B / subastas)
 
-## Files Added/Modified
+## Files Added/Modified (Phase 2)
 ```
 NEW:  src/nadia_ai/merge.py           — Dedup, tier, outreach engine
 NEW:  src/nadia_ai/ine.py             — INE calibration data fetcher
@@ -73,16 +82,17 @@ NEW:  src/nadia_ai/scrapers/bop.py    — BOP Zaragoza scraper
 NEW:  src/nadia_ai/scrapers/borme.py  — BORME scraper
 NEW:  .github/workflows/weekly-ine.yml
 NEW:  tests/unit/test_merge.py        — 25 dedup/tier/outreach tests
-NEW:  docs/research/concursal-rejected.md
-NEW:  docs/research/seccion-IIB-rejected.md
-MOD:  src/nadia_ai/models.py          — LeadRow +2 enrichment cols (17 total)
-MOD:  src/nadia_ai/db.py              — first_seen_at, enrichment schema ready
-MOD:  src/nadia_ai/delivery.py        — Calibracion tab, conditional formatting, email subject
-MOD:  src/nadia_ai/run.py             — BORME + enrichment pipeline steps
-MOD:  src/nadia_ai/scrapers/boa.py    — 6 new extraction patterns
-MOD:  README.md                        — Phase 2 architecture, new sources
-MOD:  MANUAL_NADIA.md                 — Tier, outreach, fuentes explanation
-MOD:  tests/ (multiple)               — Updated for 17-col schema, BORME mocks
+```
+
+## Files Added/Modified (Phase 3 — New Data Sources)
+```
+NEW:  src/nadia_ai/scrapers/cee.py        — CEE Aragón energy certificates (JSF form)
+NEW:  src/nadia_ai/scrapers/traspasos.py  — Traspasos Aragón business transfers (WordPress)
+NEW:  src/nadia_ai/scrapers/ite.py        — ITE Zaragoza building inspections (dual-attempt)
+NEW:  src/nadia_ai/scrapers/subastas.py   — Subastas BOE elevated to primary lead gen
+MOD:  src/nadia_ai/merge.py               — +3 source labels, ITE/traspasos outreach rules
+MOD:  src/nadia_ai/run.py                 — +4 scraper steps (3k-3n), 15 total scrapers
+MOD:  STATUS.md                            — Updated source taxonomy
 ```
 
 ## Next Steps
