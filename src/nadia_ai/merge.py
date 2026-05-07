@@ -89,6 +89,9 @@ SOURCE_LABELS = {
     "solares": "Solares",
     "licencias": "Licencias",
     "servihabitat": "Servihabitat",
+    "cee": "CEE Aragón",
+    "traspasos": "Traspasos Aragón",
+    "ite": "ITE Zaragoza",
 }
 
 # Maps source to subsource code for finer-grained tracking
@@ -106,6 +109,9 @@ SUBSOURCE_CODES = {
     "solares": "Solares",
     "licencias": "Licencias",
     "servihabitat": "Servihabitat",
+    "cee": "CEE",
+    "traspasos": "Traspasos",
+    "ite": "ITE",
 }
 
 
@@ -179,6 +185,12 @@ def compute_tier(lead: dict) -> str:
         except (ValueError, TypeError):
             pass
 
+    # ITE desfavorable is a high-intent distress signal but outreach IS
+    # allowed (owner faces mandatory capex, may want to sell)
+    is_ite = any("ite" in s.lower() for s in sources)
+    if is_ite and has_address:
+        return "B"
+
     if has_name and has_address:
         return "B" if is_stale else "A"
     elif has_name or has_address:
@@ -196,6 +208,12 @@ def compute_outreach(lead: dict) -> tuple[bool, str]:
 
     if any("borme" in s.lower() for s in sources):
         return True, "Contexto B2B — empresa, no persona física"
+
+    if any("traspaso" in s.lower() for s in sources):
+        return True, "Contexto B2B — traspaso de negocio"
+
+    if any("ite" in s.lower() for s in sources):
+        return True, "ITE desfavorable — posible gasto capital obligatorio"
 
     return True, ""
 
