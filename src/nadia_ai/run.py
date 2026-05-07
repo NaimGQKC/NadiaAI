@@ -39,6 +39,10 @@ def run_pipeline() -> dict:
         "solares_new": 0,
         "licencias_new": 0,
         "servihabitat_new": 0,
+        "cee_new": 0,
+        "traspasos_new": 0,
+        "ite_new": 0,
+        "subastas_leads_new": 0,
         "enriched": 0,
         "subastas_enriched": 0,
         "obras_enriched": 0,
@@ -178,7 +182,55 @@ def run_pipeline() -> dict:
         logger.error("Servihabitat scraper failed: %s", e)
         summary["errors"].append(f"servihabitat: {e}")
 
-    all_records = tablon_records + boa_records + bop_records + boe_records + borme_records + esquelas_records + defunciones_records + iesquelas_records + solares_records + licencias_records + servihabitat_records
+    # Step 3k: Scrape CEE Aragón energy certificates
+    cee_records = []
+    try:
+        from nadia_ai.scrapers.cee import scrape_cee
+
+        cee_records = scrape_cee()
+        summary["cee_new"] = len(cee_records)
+        logger.info("CEE: %d new records", len(cee_records))
+    except Exception as e:
+        logger.error("CEE scraper failed: %s", e)
+        summary["errors"].append(f"cee: {e}")
+
+    # Step 3l: Scrape Traspasos Aragón business transfers
+    traspasos_records = []
+    try:
+        from nadia_ai.scrapers.traspasos import scrape_traspasos
+
+        traspasos_records = scrape_traspasos()
+        summary["traspasos_new"] = len(traspasos_records)
+        logger.info("Traspasos: %d new records", len(traspasos_records))
+    except Exception as e:
+        logger.error("Traspasos scraper failed: %s", e)
+        summary["errors"].append(f"traspasos: {e}")
+
+    # Step 3m: Scrape ITE Zaragoza building inspections
+    ite_records = []
+    try:
+        from nadia_ai.scrapers.ite import scrape_ite
+
+        ite_records = scrape_ite()
+        summary["ite_new"] = len(ite_records)
+        logger.info("ITE: %d new records", len(ite_records))
+    except Exception as e:
+        logger.error("ITE scraper failed: %s", e)
+        summary["errors"].append(f"ite: {e}")
+
+    # Step 3n: Scrape Subastas BOE as primary lead generator
+    subastas_lead_records = []
+    try:
+        from nadia_ai.scrapers.subastas import scrape_subastas_leads
+
+        subastas_lead_records = scrape_subastas_leads()
+        summary["subastas_leads_new"] = len(subastas_lead_records)
+        logger.info("Subastas leads: %d new records", len(subastas_lead_records))
+    except Exception as e:
+        logger.error("Subastas lead gen failed: %s", e)
+        summary["errors"].append(f"subastas_leads: {e}")
+
+    all_records = tablon_records + boa_records + bop_records + boe_records + borme_records + esquelas_records + defunciones_records + iesquelas_records + solares_records + licencias_records + servihabitat_records + cee_records + traspasos_records + ite_records + subastas_lead_records
 
     # Step 4: Enrich via Catastro and persist
     try:
