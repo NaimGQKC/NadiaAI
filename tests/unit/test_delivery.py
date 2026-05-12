@@ -158,5 +158,5 @@ class TestSendEmail:
         send_email(leads, sheet_ok=True)
         mock_smtp.assert_called_once()
         subject = mock_smtp.call_args[0][1]
-        assert "1 nuevos accionables" in subject
-        assert "2 totales" in subject
+        assert "1 accionables" in subject
+        assert "2 total" in subject

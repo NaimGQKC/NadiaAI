@@ -26,6 +26,9 @@ class EdictRecord(BaseModel):
     lugar_fallecimiento: str | None = Field(default=None, description="Death place")
     localidad: str | None = Field(default=None, description="Last domicile city")
     juzgado: str | None = Field(default=None, description="Court or notary handling the case")
+    # Phase 2: inheritance capture fields
+    date_of_death: str | None = Field(default=None, description="ISO date of death (force-extracted)")
+    heir_names: list[str] = Field(default_factory=list, description="LLM-extracted heir names")
 
 
 class ParcelInfo(BaseModel):
@@ -40,17 +43,20 @@ class ParcelInfo(BaseModel):
 
 
 class LeadRow(BaseModel):
-    """A single row for Google Sheet output.
+    """A single row for Google Sheet / dashboard output.
 
-    Phase 2: includes tier classification, multi-source tracking,
-    outreach legality, and extended person data (dates, places).
+    Phase 2: inheritance-focused with Plusvalía Clock urgency
+    and heir contact data.
     """
 
     tier: str = Field(default="C", description="A/B/C/X actionability tier")
     fecha_deteccion: str = Field(description="Detection date (YYYY-MM-DD)")
     fuentes: str = Field(default="", description="Comma-separated source list")
     causante: str = ""
+    heir_name: str = ""
     fecha_fallecimiento: str = ""
+    days_since_death: int | None = None
+    urgency_phase: str = ""
     localidad: str = ""
     direccion: str = ""
     referencia_catastral: str = ""
@@ -61,7 +67,8 @@ class LeadRow(BaseModel):
     notas_sistema: str = ""
     notas: str = ""
     link_edicto: str = ""
-    # Enrichment fields (hidden by default in Sheet, expandable)
+    social_profile_url: str = ""
+    # Enrichment fields
     subasta_activa: str = ""
     obras_recientes: str = ""
 
@@ -72,7 +79,10 @@ class LeadRow(BaseModel):
             self.fecha_deteccion,
             self.fuentes,
             self.causante,
+            self.heir_name,
             self.fecha_fallecimiento,
+            str(self.days_since_death) if self.days_since_death is not None else "",
+            self.urgency_phase,
             self.localidad,
             self.direccion,
             self.referencia_catastral,
@@ -83,6 +93,7 @@ class LeadRow(BaseModel):
             self.notas_sistema,
             self.notas,
             self.link_edicto,
+            self.social_profile_url,
             self.subasta_activa,
             self.obras_recientes,
         ]
@@ -95,7 +106,10 @@ class LeadRow(BaseModel):
             "Fecha detección",
             "Fuentes",
             "Causante",
+            "Heredero principal",
             "Fecha fallecimiento",
+            "Días desde fallecimiento",
+            "Fase urgencia",
             "Localidad",
             "Dirección",
             "Ref. catastral",
@@ -106,6 +120,7 @@ class LeadRow(BaseModel):
             "Notas sistema",
             "Notas Nadia",
             "Link edicto",
+            "Perfil social",
             "Subasta activa",
             "Obras recientes",
         ]

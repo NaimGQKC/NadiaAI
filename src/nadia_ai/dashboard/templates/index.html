@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NadiaAI — Herencias España</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <h1>NadiaAI</h1>
+            <span class="subtitle">Herencias España · Motor de Leads</span>
+        </div>
+        <div class="header-stats" id="stats-bar">
+            <div class="stat"><span class="stat-value" id="stat-total">-</span><span class="stat-label">Total</span></div>
+            <div class="stat stat-a"><span class="stat-value" id="stat-a">-</span><span class="stat-label">Tier A</span></div>
+            <div class="stat stat-b"><span class="stat-value" id="stat-b">-</span><span class="stat-label">Tier B</span></div>
+            <div class="stat stat-urgent"><span class="stat-value" id="stat-urgent">-</span><span class="stat-label">Urgente</span></div>
+            <div class="stat stat-regions"><span class="stat-value" id="stat-regions">-</span><span class="stat-label">Regiones</span></div>
+        </div>
+    </header>
+
+    <main class="table-container">
+        <!-- Filters Bar -->
+        <div class="filters-bar">
+            <div class="filter-group search-group">
+                <label>Buscar</label>
+                <input type="text" id="search-input" placeholder="Nombre, dirección, heredero...">
+            </div>
+            <div class="filter-group">
+                <label>Tier</label>
+                <select id="filter-tier">
+                    <option value="all">Todos</option>
+                    <option value="A">Tier A</option>
+                    <option value="B">Tier B</option>
+                    <option value="C">Tier C</option>
+                    <option value="X">Tier X</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Ordenar por</label>
+                <select id="sort-by">
+                    <option value="score">Puntuación</option>
+                    <option value="days_desc">Más antiguos</option>
+                    <option value="days_asc">Más recientes</option>
+                    <option value="name">Nombre A-Z</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Region Checkboxes -->
+        <div class="region-filter" id="region-filter">
+            <span class="region-label">Regiones:</span>
+            <label class="region-check"><input type="checkbox" value="all" checked> Todas</label>
+            <!-- Dynamically populated -->
+        </div>
+
+        <!-- Results count -->
+        <div class="results-count" id="results-count"></div>
+
+        <!-- Table -->
+        <table class="leads-table">
+            <thead>
+                <tr>
+                    <th class="col-score">Punt.</th>
+                    <th style="width: 250px;">Causante</th>
+                    <th style="width: 200px;">Heredero</th>
+                    <th style="width: 120px;">Región</th>
+                    <th style="width: 80px;">Días</th>
+                    <th style="width: 60px;">Tier</th>
+                    <th>Dirección</th>
+                </tr>
+            </thead>
+            <tbody id="leads-tbody">
+            </tbody>
+        </table>
+        <!-- Pagination -->
+        <div class="pagination-bar">
+            <span id="pagination-info">Mostrando ... de ...</span>
+            <button id="load-more-btn" class="btn-primary">Cargar más leads</button>
+        </div>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

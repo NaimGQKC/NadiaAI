@@ -74,15 +74,15 @@ class TestLeadRow:
             tipo_inmueble="Residencial",
         )
         row = lead.to_row()
-        assert len(row) == 17
+        assert len(row) == 21
         assert row[0] == "A"  # tier
         assert row[1] == "2026-04-28"
         assert row[2] == "Tablón"  # fuentes
         assert row[3] == "García López María"
-        assert row[5] == "Zaragoza"
-        assert row[10] == "Nuevo"  # default estado
-        assert row[15] == ""  # subasta_activa (empty default)
-        assert row[16] == ""  # obras_recientes (empty default)
+        assert row[8] == "Zaragoza"  # localidad
+        assert row[13] == "Nuevo"  # default estado
+        assert row[19] == ""  # subasta_activa (empty default)
+        assert row[20] == ""  # obras_recientes (empty default)
 
     def test_to_row_with_empty_values(self):
         lead = LeadRow(
@@ -92,18 +92,21 @@ class TestLeadRow:
             causante="Test Person",
         )
         row = lead.to_row()
-        assert row[7] == ""  # referencia_catastral
-        assert row[8] == ""  # m2 is None
+        assert row[10] == ""  # referencia_catastral
+        assert row[11] == ""  # m2 is None
 
     def test_sheet_headers(self):
         headers = LeadRow.sheet_headers()
-        assert len(headers) == 17
+        assert len(headers) == 21
         assert headers[0] == "Tier"
         assert headers[3] == "Causante"
-        assert headers[8] == "m²"
+        assert headers[11] == "m²"
         assert "Dirección" in headers
         assert "Subasta activa" in headers
         assert "Obras recientes" in headers
+        assert "Heredero principal" in headers
+        assert "Días desde fallecimiento" in headers
+        assert "Fase urgencia" in headers
 
     def test_causante_is_primary_lead_info(self):
         """Causante (deceased) name is the primary lead identifier."""

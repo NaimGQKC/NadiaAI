@@ -107,13 +107,13 @@ class TestComputeTier:
         assert compute_tier(lead) == "X"
 
     def test_tier_b_when_stale(self):
-        """A record with name+address but >6 months old gets Tier B."""
-        old_date = (datetime.now(UTC) - timedelta(days=200)).isoformat()
+        """A record with name+address but >6 months past death gets Tier B."""
         lead = {
             "causante": "García López",
             "direccion": "Calle Coso 15",
             "sources": '["Tablón"]',
-            "first_seen_at": old_date,
+            "first_seen_at": datetime.now(UTC).isoformat(),
+            "days_since_death": 200,  # Past 180-day deadline
         }
         assert compute_tier(lead) == "B"
 
