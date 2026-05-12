@@ -68,7 +68,8 @@ CREATE TABLE IF NOT EXISTS leads (
     -- Kanban / agent workflow
     kanban_status TEXT DEFAULT 'new_to_call',
     estado TEXT DEFAULT 'Nuevo',
-    notas TEXT DEFAULT ''
+    notas TEXT DEFAULT '',
+    region TEXT DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS lead_edicts (
@@ -78,7 +79,9 @@ CREATE TABLE IF NOT EXISTS lead_edicts (
     FOREIGN KEY (lead_id) REFERENCES leads(id),
     FOREIGN KEY (edict_id) REFERENCES edicts(id)
 );
+"""
 
+LEADS_INDEX_SQL = """
 CREATE INDEX IF NOT EXISTS idx_leads_causante_norm ON leads(causante_norm);
 CREATE INDEX IF NOT EXISTS idx_leads_ref_catastral ON leads(ref_catastral);
 CREATE INDEX IF NOT EXISTS idx_leads_address_norm ON leads(address_norm);
@@ -313,6 +316,8 @@ _LEADS_MIGRATIONS = [
     ("heir_name", "ALTER TABLE leads ADD COLUMN heir_name TEXT DEFAULT ''"),
     ("social_profile_url", "ALTER TABLE leads ADD COLUMN social_profile_url TEXT DEFAULT ''"),
     ("kanban_status", "ALTER TABLE leads ADD COLUMN kanban_status TEXT DEFAULT 'new_to_call'"),
+    ("region", "ALTER TABLE leads ADD COLUMN region TEXT DEFAULT ''"),
+    ("ai_extraction_done", "ALTER TABLE leads ADD COLUMN ai_extraction_done INTEGER DEFAULT 0"),
 ]
 
 
@@ -325,6 +330,7 @@ def init_leads_schema(conn: sqlite3.Connection) -> None:
         if col_name not in existing_cols:
             conn.execute(alter_sql)
             logger.info("Migrated leads table: added column '%s'", col_name)
+    conn.executescript(LEADS_INDEX_SQL)
     conn.commit()
 
 
@@ -355,6 +361,16 @@ def _find_matching_lead(conn: sqlite3.Connection, record: EdictRecord) -> int | 
         row = conn.execute(
             "SELECT id FROM leads WHERE address_norm = ? LIMIT 1",
             (addr_norm,),
+        ).fetchone()
+        if row:
+            return row[0]
+
+    # Phase 2: match by source URL (prevents duplicates for unnamed candidates)
+    if record.source_url:
+        # source_urls is a JSON array in the DB
+        row = conn.execute(
+            "SELECT id FROM leads WHERE source_urls LIKE ? LIMIT 1",
+            (f'%"{record.source_url}"%',),
         ).fetchone()
         if row:
             return row[0]
@@ -442,7 +458,8 @@ def merge_leads(conn: sqlite3.Connection, records: list[EdictRecord]) -> dict:
     stats = {"created": 0, "merged": 0, "skipped": 0}
 
     for record in records:
-        if not record.causante and not record.address:
+        # Phase 2: Allow records without name/address if they have a URL (for AI extraction)
+        if not record.causante and not record.address and not record.source_url:
             stats["skipped"] += 1
             continue
 
@@ -527,6 +544,7 @@ def _merge_into_existing(
             date_of_death = COALESCE(NULLIF(?, ''), date_of_death),
             heir_names_json = ?,
             heir_name = COALESCE(NULLIF(?, ''), heir_name),
+            region = COALESCE(NULLIF(?, ''), region),
             sources = ?,
             source_urls = ?,
             last_updated_at = datetime('now')
@@ -551,6 +569,7 @@ def _merge_into_existing(
             dod,
             json.dumps(new_heirs),
             heir_name,
+            getattr(record, "localidad", None) or "",
             json.dumps(sources),
             json.dumps(source_urls),
             lead_id,
@@ -582,8 +601,8 @@ def _create_new_lead(
             referencia_catastral, m2, year_built, use_class, neighborhood,
             sources, source_urls, subsource, juzgado,
             date_of_death, days_since_death, urgency_phase, tax_deadline,
-            heir_names_json, heir_name
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            heir_names_json, heir_name, region
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             normalize_name(record.causante),
             record.referencia_catastral,
@@ -610,6 +629,7 @@ def _create_new_lead(
             deadline,
             json.dumps(record.heir_names),
             heir_name,
+            getattr(record, "localidad", None) or "",
         ),
     )
     return cursor.lastrowid

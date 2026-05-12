@@ -41,20 +41,39 @@ def index():
 @app.route("/api/leads")
 def api_leads():
     """JSON feed of all actionable leads, grouped for Kanban columns."""
+    limit = request.args.get("limit", 50, type=int)
+    offset = request.args.get("offset", 0, type=int)
+    tier_filter = request.args.get("tier")
+    
     conn = _get_conn()
     try:
+        query_where = "(days_since_death IS NULL OR days_since_death <= 730)"
+        params = []
+        if tier_filter and tier_filter != "all":
+            query_where += " AND tier = ?"
+            params.append(tier_filter)
+            
+        # Get total count for pagination metadata
+        total_count = conn.execute(f"SELECT COUNT(*) FROM leads WHERE {query_where}", params).fetchone()[0]
+        
+        params.extend([limit, offset])
         rows = conn.execute(
-            """SELECT id, tier, causante, heir_name, direccion, localidad,
+            f"""SELECT id, tier, causante, heir_name, heir_names_json,
+                      direccion, localidad, region,
                       referencia_catastral, fecha_fallecimiento, date_of_death,
                       days_since_death, urgency_phase, tax_deadline,
-                      sources, social_profile_url, kanban_status,
+                      sources, source_urls, social_profile_url, kanban_status,
                       outreach_allowed, outreach_notes, m2, use_class,
+                      year_built, neighborhood, juzgado,
+                      lugar_fallecimiento, lugar_nacimiento,
                       first_seen_at, last_updated_at, estado, notas
                FROM leads
-               WHERE tier IN ('A', 'B', 'X')
+               WHERE {query_where}
                ORDER BY
-                   CASE tier WHEN 'A' THEN 0 WHEN 'B' THEN 1 WHEN 'X' THEN 2 END,
-                   days_since_death DESC NULLS LAST"""
+                   CASE tier WHEN 'A' THEN 0 WHEN 'B' THEN 1 WHEN 'X' THEN 2 ELSE 3 END,
+                   days_since_death DESC NULLS LAST
+               LIMIT ? OFFSET ?""",
+            params
         ).fetchall()
 
         leads = []
@@ -86,7 +105,10 @@ def api_leads():
 
         return jsonify({
             "columns": columns,
-            "total": len(leads),
+            "total": total_count,
+            "limit": limit,
+            "offset": offset,
+            "count": len(leads),
             "stats": {
                 "tier_a": sum(1 for l in leads if l["tier"] == "A"),
                 "tier_b": sum(1 for l in leads if l["tier"] == "B"),

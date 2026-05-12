@@ -66,7 +66,7 @@ CREATE INDEX IF NOT EXISTS idx_outreach_log_lead ON outreach_log(lead_id);
 def get_connection(db_path: Path | None = None) -> sqlite3.Connection:
     """Get a SQLite connection with WAL mode and foreign keys enabled."""
     path = db_path or DB_PATH
-    conn = sqlite3.connect(str(path))
+    conn = sqlite3.connect(str(path), timeout=60)
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
     conn.row_factory = sqlite3.Row
