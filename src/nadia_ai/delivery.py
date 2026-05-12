@@ -40,6 +40,9 @@ def compute_todays_leads(conn: sqlite3.Connection) -> list[LeadRow]:
     rows = get_todays_leads(conn)
     leads = []
     for row in rows:
+        if row.get("days_since_death") is not None and row["days_since_death"] > 730:
+            continue
+
         sources = json.loads(row["sources"])
         source_urls = json.loads(row["source_urls"])
 

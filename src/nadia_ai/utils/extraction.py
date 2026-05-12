@@ -1,236 +1,213 @@
-"""LLM-based extraction of inheritance data from raw edict/obituary text.
-
-Uses local Ollama to parse unstructured Spanish legal text and extract:
-- Deceased name (causante)
-- Date of death (fecha de fallecimiento)
-- List of heirs (herederos)
-- Property address (if present)
-
-Falls back to regex patterns when Ollama is unavailable.
-"""
-
 import json
 import logging
 import re
 import sqlite3
-from datetime import UTC, datetime
+from datetime import datetime
+from pathlib import Path
+import os
 
-import requests
+from nadia_ai.config import OLLAMA_MODEL
+from nadia_ai.scrapers.boe import extract_pdf_text
 
-from nadia_ai.config import OLLAMA_MODEL, OLLAMA_URL
+logger = logging.getLogger(__name__)
 
-logger = logging.getLogger("nadia_ai.utils.extraction")
+def clean_legal_text(text: str) -> str:
+    """Strip common administrative noise (Notary/Court headers) from Spanish legal text."""
+    if not text: return ""
+    text = re.sub(r"(?i)do[ñn]a?\s+[A-Z\s]+,\s+Notario\s+del\s+Ilustre\s+Colegio\s+de\s+[A-Z\s]+,", "", text)
+    text = re.sub(r"(?i)ante\s+m[ií],\s+[A-Z\s]+,\s+Notario\s+de\s+[A-Z\s]+,", "", text)
+    text = re.sub(r"(?i)lo\s+que\s+se\s+hace\s+p[uú]blico\s+para\s+general\s+conocimiento.*", "", text)
+    text = re.sub(r"(?i)hago\s+saber:?\s*", "", text)
+    return text.strip()
 
-OLLAMA_GENERATE_URL = f"{OLLAMA_URL}/api/generate"
+EXTRACTION_PROMPT = """Eres un experto en derecho de sucesiones en España.
+Analiza el texto y genera un objeto JSON con la siguiente estructura. Si un dato no aparece, usa null.
 
-# Prompt tuned for Spanish legal edict text
-EXTRACTION_PROMPT = """Eres un asistente legal especializado en herencias españolas.
-Analiza el siguiente texto de un edicto o esquela y extrae los datos en formato JSON.
-
-IMPORTANTE: Responde SOLO con el JSON, sin texto adicional.
-
-Formato de respuesta:
 {{
-  "deceased_name": "nombre completo del fallecido/causante",
-  "date_of_death": "YYYY-MM-DD o null si no se menciona",
-  "list_of_heirs": ["nombre heredero 1", "nombre heredero 2"],
-  "property_address": "dirección del inmueble o null si no se menciona"
+  "deceased_name": "Nombre del fallecido/causante.",
+  "date_of_death": "Fecha de fallecimiento (YYYY-MM-DD). CRÍTICO para calcular los días.",
+  "list_of_heirs": ["Nombres COMPLETOS de los herederos o peticionarios."],
+  "property_address": "Dirección del inmueble o finca. IGNORA la notaría.",
+  "localidad": "Municipio/Ciudad",
+  "provincia": "Provincia",
+  "referencia_catastral": "Ref. Catastral si aparece"
 }}
+
+REGLAS CRÍTICAS:
+1. PROHIBIDO: No uses la dirección de la Notaría (ej: 'Notaría de Telde') como 'property_address'.
+2. Si el texto menciona 'acta de notoriedad' o 'declaración de herederos abintestato', busca el nombre del fallecido después de 'Don' o 'Doña'.
+3. Extrae TODOS los herederos mencionados.
+4. Responde ÚNICAMENTE con el objeto JSON.
+5. OBLIGATORIO: Usa ÚNICAMENTE comillas dobles (") para claves y valores.
+6. OBLIGATORIO: Empieza tu respuesta con '{{' y termínala con '}}'.
 
 Texto a analizar:
 {text}"""
 
-# Regex fallback patterns for when Ollama is unavailable
 _HEIR_PATTERNS = [
-    # "herederos: D./Dña. NAME, D./Dña. NAME"
-    re.compile(
-        r"herederos?[:\s]+(?:(?:D\.?[aª]?\s+|D[ñÑ]a\.?\s+|[Dd]o[nñ]a?\s+)"
-        r"([A-ZÁÉÍÓÚÑ][a-záéíóúñA-ZÁÉÍÓÚÑ]+(?:\s+[A-ZÁÉÍÓÚÑa-záéíóúñ][a-záéíóúñA-ZÁÉÍÓÚÑ]+){1,4}))",
-        re.IGNORECASE,
-    ),
-    # "hijos/as: NAME y NAME"
-    re.compile(
-        r"hij[oa]s?[:\s]+(?:D\.?[aª]?\s+|D[ñÑ]a\.?\s+|[Dd]o[nñ]a?\s+)?"
-        r"([A-ZÁÉÍÓÚÑ][a-záéíóúñA-ZÁÉÍÓÚÑ]+(?:\s+[A-ZÁÉÍÓÚÑa-záéíóúñ][a-záéíóúñA-ZÁÉÍÓÚÑ]+){1,4})",
-        re.IGNORECASE,
-    ),
-    # "solicitado por D./Dña. NAME"
-    re.compile(
-        r"solicitad[oa]\s+por\s+(?:D\.?[aª]?\s+|D[ñÑ]a\.?\s+|[Dd]o[nñ]a?\s+)"
-        r"([A-ZÁÉÍÓÚÑ][a-záéíóúñA-ZÁÉÍÓÚÑ]+(?:\s+[A-ZÁÉÍÓÚÑa-záéíóúñ][a-záéíóúñA-ZÁÉÍÓÚÑ]+){1,4})",
-        re.IGNORECASE,
-    ),
+    re.compile(r"herederos?[:\s]+(?:(?:D\.?[aª]?\s+|D[ñÑ]a\.?\s+|[Dd]o[nñ]a?\s+)([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\s+(?:[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\s*){1,3}))", re.I),
+    re.compile(r"solicitada por (?:D\.?\s+|don\s+)([A-ZÁÉÍÓÚÑ][a-z\s]{5,40})", re.I),
+]
+_DECEASED_PATTERNS = [
+    re.compile(r"fallecimiento de (?:D\.?\s+|don\s+)([A-ZÁÉÍÓÚÑ][a-z\s]{5,40})", re.I),
 ]
 
-
-def _call_ollama(text: str) -> dict | None:
-    """Call local Ollama and parse the JSON response."""
-    prompt = EXTRACTION_PROMPT.format(text=text[:3000])  # Cap input to ~3k chars
+def extract_inheritance_data(text: str, causante_hint: str = None) -> dict:
+    """Extract inheritance details using local Ollama."""
     try:
-        resp = requests.post(
-            OLLAMA_GENERATE_URL,
+        import requests
+        cleaned_text = clean_legal_text(text)
+        truncated_text = cleaned_text[:10000]
+        prompt = f"El causante/fallecido se llama: {causante_hint}\n\n" + EXTRACTION_PROMPT.format(text=truncated_text)
+        
+        response = requests.post(
+            "http://localhost:11434/api/chat",
             json={
                 "model": OLLAMA_MODEL,
-                "prompt": prompt,
+                "messages": [{"role": "user", "content": prompt}],
                 "stream": False,
-                "options": {"temperature": 0.1, "num_predict": 500},
+                "options": {"temperature": 0},
+                "format": "json"
             },
-            timeout=60,
+            timeout=120
         )
-        resp.raise_for_status()
-        data = resp.json()
-        raw_response = data.get("response", "")
+        response.raise_for_status()
+        resp_json = response.json()
+        content = resp_json.get("message", {}).get("content", "")
+        
+        result = None
+        if content:
+            try: result = json.loads(content)
+            except:
+                m = re.search(r"\{.*\}", content, re.DOTALL)
+                if m:
+                    try: result = json.loads(m.group(0))
+                    except: pass
+        
+        if not result: return {}
 
-        # Try to extract JSON from the response
-        # LLMs sometimes wrap JSON in markdown code blocks
-        json_match = re.search(r"\{[^{}]*\}", raw_response, re.DOTALL)
-        if json_match:
-            return json.loads(json_match.group(0))
+        def is_hallucinated_address(addr):
+            if not addr: return True
+            addr_low = str(addr).lower()
+            # Generic/Fake patterns
+            generics = ["calle principal", "calle 123", "calle falsa", "avenida principal", "calle ejemplo"]
+            if any(g in addr_low for g in generics): return True
+            # Very short addresses are suspicious
+            if len(addr) < 8: return True
+            # If it's just a number without a name
+            if re.match(r"^\d+$", addr): return True
+            return False
 
-        # Try parsing the whole response as JSON
-        return json.loads(raw_response)
+        def sanitize(val):
+            if val in (None, "null", "None", "unknown", "Desconocido"): return None
+            if any(k in str(val).lower() for k in ("notar", "juzgado", "registro", "colegio")): return None
+            return val
 
-    except requests.ConnectionError:
-        logger.warning("Ollama not available at %s — using regex fallback", OLLAMA_URL)
-        return None
-    except requests.Timeout:
-        logger.warning("Ollama timed out — using regex fallback")
-        return None
-    except (requests.RequestException, json.JSONDecodeError, ValueError) as e:
-        logger.warning("Ollama extraction failed: %s — using regex fallback", e)
-        return None
-
-
-def _regex_fallback(text: str) -> dict:
-    """Extract heir names using regex patterns when Ollama is unavailable."""
-    heirs = []
-    for pattern in _HEIR_PATTERNS:
-        for match in pattern.finditer(text):
-            name = match.group(1).strip()
-            if name.isupper():
-                name = name.title()
-            if name and name not in heirs and len(name) > 3:
-                heirs.append(name)
-
-    return {
-        "deceased_name": None,
-        "date_of_death": None,
-        "list_of_heirs": heirs,
-        "property_address": None,
-    }
-
-
-def extract_inheritance_data(raw_text: str) -> dict:
-    """Extract structured inheritance data from raw edict/obituary text.
-
-    Returns:
-        {
-            "deceased_name": str or None,
-            "date_of_death": str (ISO) or None,
-            "list_of_heirs": list[str],
-            "property_address": str or None,
-        }
-    """
-    if not raw_text or len(raw_text.strip()) < 20:
-        return {
-            "deceased_name": None,
-            "date_of_death": None,
-            "list_of_heirs": [],
-            "property_address": None,
-        }
-
-    # Try Ollama first
-    result = _call_ollama(raw_text)
-
-    if result:
-        # Sanitize the LLM output
-        heirs = result.get("list_of_heirs", [])
+        heirs = result.get("list_of_heirs") or []
         if isinstance(heirs, str):
             heirs = [h.strip() for h in heirs.split(",") if h.strip()]
+        heirs = [h for h in heirs if sanitize(h)]
+
+        prop_addr = sanitize(result.get("property_address"))
+        if is_hallucinated_address(prop_addr):
+            prop_addr = None
+
         return {
-            "deceased_name": result.get("deceased_name"),
-            "date_of_death": result.get("date_of_death"),
-            "list_of_heirs": heirs or [],
-            "property_address": result.get("property_address"),
+            "deceased_name": sanitize(result.get("deceased_name")) or causante_hint,
+            "date_of_death": sanitize(result.get("date_of_death")),
+            "list_of_heirs": heirs,
+            "property_address": prop_addr,
+            "referencia_catastral": sanitize(result.get("referencia_catastral")),
+            "localidad": sanitize(result.get("localidad")),
+            "provincia": sanitize(result.get("provincia")),
         }
+    except Exception as e:
+        logger.warning("Ollama extraction failed: %s", e)
+        return {}
 
-    # Fallback to regex
-    return _regex_fallback(raw_text)
-
-
-def run_heir_extraction(conn: sqlite3.Connection) -> int:
-    """Run LLM heir extraction for leads that don't have heirs yet.
-
-    Queries leads with empty heir_names_json, fetches their linked edict
-    text, runs extraction, and updates the lead.
-
-    Returns count of leads enriched.
-    """
-    # Find leads without heirs that have linked edicts
-    rows = conn.execute(
-        """SELECT l.id, l.causante, l.direccion, l.fecha_fallecimiento,
-                  e.source_url, e.address
-           FROM leads l
-           LEFT JOIN lead_edicts le ON l.id = le.lead_id
-           LEFT JOIN edicts e ON le.edict_id = e.id
-           WHERE (l.heir_names_json = '[]' OR l.heir_names_json IS NULL)
-             AND l.tier IN ('A', 'B')
-           GROUP BY l.id
-           LIMIT 50"""
-    ).fetchall()
+def run_heir_extraction(conn):
+    """Enrich pending leads by extracting heirs and addresses from their source documents."""
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute("""
+        SELECT * FROM leads
+        WHERE (ai_extraction_done = 0 OR ai_extraction_done IS NULL)
+          AND tier IN ('A', 'B', 'C')
+        LIMIT 200
+    """).fetchall()
 
     if not rows:
         logger.info("No leads pending heir extraction")
         return 0
 
-    enriched = 0
+    count = 0
     for row in rows:
-        # Build context text from available data
-        context_parts = []
-        if row["causante"]:
-            context_parts.append(f"Causante: {row['causante']}")
-        if row["direccion"]:
-            context_parts.append(f"Dirección: {row['direccion']}")
-        if row["fecha_fallecimiento"]:
-            context_parts.append(f"Fecha fallecimiento: {row['fecha_fallecimiento']}")
-
-        context = " ".join(context_parts)
-        if len(context) < 20:
+        row_dict = dict(row)
+        source_urls = json.loads(row_dict.get("source_urls", "[]"))
+        if not source_urls:
+            conn.execute("UPDATE leads SET ai_extraction_done = 1 WHERE id = ?", (row_dict["id"],))
+            conn.commit()
             continue
 
-        result = extract_inheritance_data(context)
-        heirs = result.get("list_of_heirs", [])
+        context = ""
+        for url in source_urls:
+            if "boe.es" in url:
+                text = extract_pdf_text(url)
+                if text: context += text + "\n"
+        
+        if not context:
+            conn.execute("UPDATE leads SET ai_extraction_done = 1 WHERE id = ?", (row_dict["id"],))
+            conn.commit()
+            continue
+
+        hint = row_dict.get("causante")
+        result = extract_inheritance_data(context, hint)
+        if not result:
+            conn.execute("UPDATE leads SET ai_extraction_done = 1 WHERE id = ?", (row_dict["id"],))
+            conn.commit()
+            continue
+
+        # Update lead
+        updates = []
+        params = []
+        
+        name = result.get("deceased_name")
+        if name:
+            updates.append("causante = COALESCE(NULLIF(causante, ''), ?)")
+            params.append(name)
+
         dod = result.get("date_of_death")
+        if dod:
+            updates.append("date_of_death = COALESCE(NULLIF(date_of_death, ''), ?)")
+            params.append(dod)
+            # Recalculate days_since_death
+            try:
+                dt = datetime.strptime(dod, "%Y-%m-%d")
+                days = (datetime.now() - dt).days
+                updates.append("days_since_death = ?")
+                params.append(days)
+            except: pass
 
-        if heirs or dod:
-            updates = []
-            params = []
+        heirs = result.get("list_of_heirs")
+        if heirs:
+            updates.append("heir_names_json = ?")
+            params.append(json.dumps(heirs))
+            updates.append("heir_name = ?")
+            params.append(heirs[0])
 
-            if heirs:
-                updates.append("heir_names_json = ?")
-                params.append(json.dumps(heirs))
-                updates.append("heir_name = COALESCE(NULLIF(heir_name, ''), ?)")
-                params.append(heirs[0])
+        addr = result.get("property_address")
+        if addr:
+            updates.append("direccion = COALESCE(NULLIF(direccion, ''), ?)")
+            params.append(addr)
 
-            if dod:
-                updates.append("date_of_death = COALESCE(NULLIF(date_of_death, ''), ?)")
-                params.append(dod)
+        updates.append("ai_extraction_done = 1")
+        updates.append("last_updated_at = datetime('now')")
+        params.append(row_dict["id"])
 
-            updates.append("last_updated_at = datetime('now')")
-            params.append(row["id"])
+        if updates:
+            sql = f"UPDATE leads SET {', '.join(updates)} WHERE id = ?"
+            conn.execute(sql, params)
+            conn.commit()
+            count += 1
+            logger.info("Lead %d: extracted %d heirs, dod=%s", row_dict["id"], len(heirs or []), dod)
 
-            conn.execute(
-                f"UPDATE leads SET {', '.join(updates)} WHERE id = ?",
-                params,
-            )
-            enriched += 1
-            logger.info(
-                "Lead %d: extracted %d heirs%s",
-                row["id"],
-                len(heirs),
-                f", dod={dod}" if dod else "",
-            )
-
-    conn.commit()
-    logger.info("LLM heir extraction complete: %d leads enriched", enriched)
-    return enriched
+    return count

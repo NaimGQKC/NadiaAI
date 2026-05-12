@@ -157,10 +157,8 @@ def parse_api_record(record: dict) -> EdictRecord:
     # Extract deceased name from title
     causante = extract_name_from_title(title)
 
-    # Build source URL for the PDF document
-    source_url = record.get("document", "")
-    if not source_url and record_id:
-        source_url = f"https://www.zaragoza.es/sede/servicio/tablon-edicto/{record_id}/document"
+    # Build source URL for the human-readable page
+    source_url = f"https://www.zaragoza.es/sede/servicio/tablon-edicto/{record_id}"
 
     # Classify edict type based on tipo or title keywords
     tipo_id = None

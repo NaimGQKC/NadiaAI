@@ -36,7 +36,7 @@ def get_leads_for_enrichment(conn: sqlite3.Connection) -> list[dict]:
         """SELECT id, causante, heir_name, heir_names_json, localidad, direccion,
                   tier, days_since_death, urgency_phase
            FROM leads
-           WHERE tier IN ('A', 'B')
+           WHERE tier = 'A'
              AND (social_profile_url IS NULL OR social_profile_url = '')
              AND outreach_allowed = 1
            ORDER BY

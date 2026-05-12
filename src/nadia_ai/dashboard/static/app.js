@@ -1,259 +1,354 @@
-/* NadiaAI Dashboard — Kanban JS (no frameworks) */
+/* NadiaAI Dashboard — Spain-wide Leads Engine */
 
 const API_BASE = '';
-let currentLeads = {};
+let currentPage = 0;
+const PAGE_SIZE = 50;
+let totalLeadsCount = 0;
+let allLeads = [];
+let activeRegions = new Set(['all']);
 
-// ── Fetch & Render ────────────────────────────────────────
-
-async function fetchLeads() {
+async function fetchLeads(append = false) {
     try {
-        const resp = await fetch(`${API_BASE}/api/leads`);
+        if (!append) {
+            currentPage = 0;
+            allLeads = [];
+        }
+        
+        const offset = currentPage * PAGE_SIZE;
+        const tier = document.getElementById('filter-tier').value;
+        const resp = await fetch(`${API_BASE}/api/leads?limit=${PAGE_SIZE}&offset=${offset}&tier=${tier}`);
         const data = await resp.json();
-        currentLeads = data;
-        renderColumns(data.columns);
+        
+        totalLeadsCount = data.total;
+        
+        // Flatten Kanban columns into a single array
+        const newLeads = [
+            ...(data.columns.new_to_call || []),
+            ...(data.columns.tax_followup || []),
+            ...(data.columns.urgent || []),
+            ...(data.columns.signed || [])
+        ];
+
+        // Compute lead scores
+        newLeads.forEach(lead => { lead._score = computeScore(lead); });
+        
+        if (append) {
+            allLeads = [...allLeads, ...newLeads];
+        } else {
+            allLeads = newLeads;
+        }
+
         renderStats(data.stats, data.total);
+        buildRegionCheckboxes();
+        renderTable();
+        
+        // Update pagination UI
+        const info = document.getElementById('pagination-info');
+        info.textContent = `Mostrando ${allLeads.length} de ${totalLeadsCount} leads`;
+        
+        const btn = document.getElementById('load-more-btn');
+        if (allLeads.length >= totalLeadsCount) {
+            btn.style.display = 'none';
+        } else {
+            btn.style.display = 'block';
+        }
+        
     } catch (err) {
         console.error('Failed to fetch leads:', err);
     }
 }
 
-async function fetchStats() {
-    try {
-        const resp = await fetch(`${API_BASE}/api/stats`);
-        const stats = await resp.json();
-        document.getElementById('stat-total').textContent = stats.total_leads;
-        document.getElementById('stat-today').textContent = stats.new_today;
-    } catch (err) {
-        console.error('Failed to fetch stats:', err);
-    }
+async function loadMore() {
+    currentPage++;
+    await fetchLeads(true);
 }
 
+/* ── Scoring ─────────────────────────────────────── */
+function computeScore(lead) {
+    let score = 0;
+
+    // Tier weight
+    if (lead.tier === 'A') score += 40;
+    else if (lead.tier === 'B') score += 20;
+    else if (lead.tier === 'X') score += 10;
+
+    // Has heir extracted
+    if (lead.heir_name && lead.heir_name !== '' && !lead.heir_name.toLowerCase().includes('no extra')) score += 15;
+
+    // Has address
+    if (lead.direccion && lead.direccion !== '') score += 10;
+
+    // Has death date (enables plusvalía clock)
+    if (lead.date_of_death || lead.fecha_fallecimiento) score += 5;
+
+    // Urgency bonus (close to 180-day tax deadline)
+    const days = lead.days_since_death;
+    if (days !== null && days !== undefined) {
+        if (days >= 91 && days <= 180) score += 20;  // High motivation zone
+        else if (days >= 150) score += 15;            // Urgent/distress
+        else if (days <= 90) score += 5;              // Fresh lead
+    }
+
+    // Social profile enriched
+    if (lead.social_profile_url) score += 10;
+
+    return Math.min(score, 100);
+}
+
+/* ── Stats ────────────────────────────────────────── */
 function renderStats(stats, total) {
     document.getElementById('stat-total').textContent = total;
     document.getElementById('stat-a').textContent = stats.tier_a;
     document.getElementById('stat-b').textContent = stats.tier_b;
     document.getElementById('stat-urgent').textContent = stats.urgent;
-    fetchStats(); // also gets new_today
+
+    // Count unique regions
+    const regions = new Set(allLeads.map(l => l.region || l.localidad || 'Desconocida'));
+    document.getElementById('stat-regions').textContent = regions.size;
 }
 
-function renderColumns(columns) {
-    const mapping = {
-        'new_to_call': 'col-new_to_call',
-        'tax_followup': 'col-tax_followup',
-        'urgent': 'col-urgent',
-        'signed': 'col-signed',
-    };
+/* ── Region Checkboxes ───────────────────────────── */
+function buildRegionCheckboxes() {
+    const container = document.getElementById('region-filter');
+    
+    // Collect all unique regions
+    const regionCounts = {};
+    allLeads.forEach(lead => {
+        const r = lead.region || lead.localidad || 'Desconocida';
+        regionCounts[r] = (regionCounts[r] || 0) + 1;
+    });
 
-    for (const [status, elId] of Object.entries(mapping)) {
-        const container = document.getElementById(elId);
-        if (!container) continue;
-        container.innerHTML = '';
+    // Sort by count descending
+    const sorted = Object.entries(regionCounts).sort((a, b) => b[1] - a[1]);
 
-        const leads = columns[status] || [];
-        const countEl = container.parentElement.querySelector('.column-count');
-        if (countEl) countEl.textContent = leads.length;
+    // Clear existing dynamic checkboxes (keep the "Todas" and label)
+    const existing = container.querySelectorAll('.region-check-dynamic');
+    existing.forEach(el => el.remove());
 
-        for (const lead of leads) {
-            container.appendChild(createCard(lead));
+    sorted.forEach(([region, count]) => {
+        const label = document.createElement('label');
+        label.className = 'region-check region-check-dynamic';
+        label.innerHTML = `<input type="checkbox" value="${region}" checked> ${region} <small>(${count})</small>`;
+        container.appendChild(label);
+    });
+
+    // Wire up "Todas" checkbox
+    const allCheck = container.querySelector('input[value="all"]');
+    allCheck.addEventListener('change', () => {
+        const checks = container.querySelectorAll('.region-check-dynamic input');
+        checks.forEach(c => { c.checked = allCheck.checked; });
+        updateActiveRegions();
+        renderTable();
+    });
+
+    // Wire up individual region checkboxes
+    container.querySelectorAll('.region-check-dynamic input').forEach(cb => {
+        cb.addEventListener('change', () => {
+            updateActiveRegions();
+            renderTable();
+        });
+    });
+}
+
+function updateActiveRegions() {
+    const container = document.getElementById('region-filter');
+    const checks = container.querySelectorAll('.region-check-dynamic input');
+    activeRegions = new Set();
+    
+    let allChecked = true;
+    checks.forEach(c => {
+        if (c.checked) activeRegions.add(c.value);
+        else allChecked = false;
+    });
+
+    // Update "Todas" state
+    container.querySelector('input[value="all"]').checked = allChecked;
+
+    if (activeRegions.size === 0 || allChecked) {
+        activeRegions.add('all');
+    }
+}
+
+/* ── Table Rendering ──────────────────────────────── */
+function renderTable() {
+    const tbody = document.getElementById('leads-tbody');
+    const searchTerm = document.getElementById('search-input').value.toLowerCase();
+    const sortBy = document.getElementById('sort-by').value;
+
+    // Filter
+    let filtered = allLeads.filter(lead => {
+        // Search
+        const text = `${lead.causante} ${lead.direccion} ${lead.heir_name} ${lead.region} ${lead.localidad} ${lead.juzgado || ''}`.toLowerCase();
+        if (searchTerm && !text.includes(searchTerm)) return false;
+
+        // Region
+        if (!activeRegions.has('all')) {
+            const leadRegion = lead.region || lead.localidad || 'Desconocida';
+            if (!activeRegions.has(leadRegion)) return false;
         }
-    }
-}
 
-// ── Card Creation ─────────────────────────────────────────
-
-function createCard(lead) {
-    const card = document.createElement('div');
-    card.className = 'lead-card';
-    card.draggable = true;
-    card.dataset.leadId = lead.id;
-
-    // Name
-    const displayName = lead.causante || 'Sin nombre';
-    const heirLine = lead.heir_name ? `<div class="card-heir">Heredero: ${lead.heir_name}</div>` : '';
-
-    // Address
-    const address = lead.direccion || lead.localidad || '';
-    const addressLine = address ? `<div class="card-address">${truncate(address, 60)}</div>` : '';
-
-    // Days badge
-    const days = lead.days_since_death;
-    let daysBadge = '';
-    if (days !== null && days !== undefined) {
-        const cls = days >= 150 ? 'days-red' : days >= 91 ? 'days-orange' : 'days-green';
-        daysBadge = `<span class="days-badge ${cls}">${days}d</span>`;
-    }
-
-    // Tier badge
-    const tierCls = `badge-tier-${lead.tier.toLowerCase()}`;
-    const tierBadge = `<span class="badge ${tierCls}">${lead.tier}</span>`;
-
-    // Urgency badge
-    let urgencyBadge = '';
-    if (lead.urgency_phase) {
-        const phaseCls = `badge-${lead.urgency_phase.replace('_', '-')}`;
-        const phaseLabel = {
-            'monitoring': 'Monitoreo',
-            'high_motivation': 'Alta motivación',
-            'urgent_distress': 'Urgente'
-        }[lead.urgency_phase] || lead.urgency_phase;
-        urgencyBadge = `<span class="badge ${phaseCls}">${phaseLabel}</span>`;
-    }
-
-    // Source badges
-    const sources = Array.isArray(lead.sources) ? lead.sources : [];
-    const sourceBadges = sources.slice(0, 3).map(s =>
-        `<span class="badge badge-source">${s}</span>`
-    ).join('');
-
-    // Social link
-    let socialLink = '';
-    if (lead.social_profile_url) {
-        socialLink = `<a href="${lead.social_profile_url}" target="_blank" class="social-link">📱 Perfil</a>`;
-    }
-
-    card.innerHTML = `
-        <div class="card-top">
-            <span class="card-name">${displayName}</span>
-            ${daysBadge}
-        </div>
-        ${heirLine}
-        ${addressLine}
-        <div class="card-footer">
-            <div>${tierBadge} ${urgencyBadge}</div>
-            <div>${sourceBadges}</div>
-            ${socialLink}
-        </div>
-    `;
-
-    // Drag events
-    card.addEventListener('dragstart', onDragStart);
-    card.addEventListener('dragend', onDragEnd);
-
-    // Click to open detail modal
-    card.addEventListener('click', () => openModal(lead));
-
-    return card;
-}
-
-function truncate(str, max) {
-    return str.length > max ? str.substring(0, max) + '…' : str;
-}
-
-// ── Drag & Drop ───────────────────────────────────────────
-
-let draggedId = null;
-
-function onDragStart(e) {
-    draggedId = e.currentTarget.dataset.leadId;
-    e.currentTarget.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-}
-
-function onDragEnd(e) {
-    e.currentTarget.classList.remove('dragging');
-    document.querySelectorAll('.column-body').forEach(col => {
-        col.classList.remove('drag-over');
+        return true;
     });
+
+    // Sort
+    filtered.sort((a, b) => {
+        switch (sortBy) {
+            case 'score': return b._score - a._score;
+            case 'days_desc': return (b.days_since_death || 0) - (a.days_since_death || 0);
+            case 'days_asc': return (a.days_since_death || 9999) - (b.days_since_death || 9999);
+            case 'name': return (a.causante || '').localeCompare(b.causante || '');
+            default: return b._score - a._score;
+        }
+    });
+
+    // Update count
+    document.getElementById('results-count').textContent = `Mostrando ${filtered.length} de ${allLeads.length} leads`;
+
+    tbody.innerHTML = '';
+
+    for (const lead of filtered) {
+        const tr = document.createElement('tr');
+        const days = lead.days_since_death;
+        
+        // Row class for urgency
+        if (days !== null && days >= 150) tr.classList.add('urgent-row');
+        else if (lead.tier === 'A') tr.classList.add('hot-row');
+
+        // Score badge
+        const scoreClass = lead._score >= 60 ? 'score-high' : lead._score >= 30 ? 'score-med' : 'score-low';
+
+        // Days display
+        let daysHtml = '<span class="days-normal">-</span>';
+        if (days !== null && days !== undefined) {
+            const daysClass = days >= 150 ? 'days-urgent' : days >= 91 ? 'days-high' : 'days-normal';
+            daysHtml = `<span class="days-value ${daysClass}">${days}d</span>`;
+        }
+
+        // Region
+        const region = lead.region || lead.localidad || 'Desconocida';
+
+        // Sources
+        let sourcesHtml = '';
+        const sources = Array.isArray(lead.sources) ? lead.sources : [];
+        sources.forEach(s => { sourcesHtml += `<span class="source-tag">${s}</span>`; });
+        
+        let sourceUrls = [];
+        try { sourceUrls = JSON.parse(lead.source_urls || '[]'); } catch(e) {}
+        if (sourceUrls.length > 0) {
+            sourcesHtml += ` <a href="${sourceUrls[0]}" target="_blank" class="source-link">[Ver]</a>`;
+        }
+
+        // Heir display
+        const heirHtml = lead.heir_name && lead.heir_name.trim()
+            ? `<span class="heir-badge">${lead.heir_name}</span>`
+            : '<span class="heir-missing">No extraído</span>';
+
+        // Detection date
+        const detDate = lead.first_seen_at ? lead.first_seen_at.split('T')[0].split(' ')[0] : '-';
+
+        tr.innerHTML = `
+            <td class="col-score"><span class="score-badge ${scoreClass}">${lead._score}</span></td>
+            <td><span class="causante-name">${lead.causante || 'Sin nombre'}</span></td>
+            <td>${heirHtml}</td>
+            <td><span class="region-badge">${region}</span></td>
+            <td>${daysHtml}</td>
+            <td><span class="badge badge-tier-${lead.tier.toLowerCase()}">${lead.tier}</span></td>
+            <td><span class="address-text">${lead.direccion || '-'}</span></td>
+        `;
+
+        // Detail row
+        const detailTr = document.createElement('tr');
+        detailTr.className = 'detail-row';
+        detailTr.style.display = 'none';
+
+        // Parse heir list
+        let heirsList = 'N/A';
+        try {
+            const h = JSON.parse(lead.heir_names_json || '[]');
+            if (h.length > 0) heirsList = h.join(', ');
+        } catch(e) {}
+
+        // Phantombuster
+        const pbLink = lead.social_profile_url
+            ? `<a href="${lead.social_profile_url}" target="_blank" class="social-link">📱 Perfil Social</a>`
+            : '<em style="color:#475569">Pendiente de Phantombuster</em>';
+
+        // Source links list
+        let allLinksHtml = '';
+        sourceUrls.forEach((url, i) => {
+            allLinksHtml += `<a href="${url}" target="_blank" class="source-link">[Enlace ${i + 1}]</a> `;
+        });
+
+        detailTr.innerHTML = `
+            <td colspan="8">
+                <div class="detail-container">
+                    <div class="detail-grid">
+                        <div class="detail-section">
+                            <h4>🏠 Propiedad</h4>
+                            <p><strong>Dirección:</strong> ${lead.direccion || 'No disponible'}</p>
+                            <p><strong>Superficie:</strong> ${lead.m2 ? lead.m2 + ' m²' : 'N/A'}</p>
+                            <p><strong>Año Constr.:</strong> ${lead.year_built || 'N/A'}</p>
+                            <p><strong>Uso:</strong> ${lead.use_class || 'N/A'}</p>
+                            <p><strong>Barrio:</strong> ${lead.neighborhood || 'N/A'}</p>
+                            <p><strong>Ref. Catastral:</strong> ${lead.referencia_catastral || 'N/A'}</p>
+                        </div>
+                        <div class="detail-section">
+                            <h4>⚖️ Herencia</h4>
+                            <p><strong>Fecha Fallecimiento:</strong> ${lead.fecha_fallecimiento || lead.date_of_death || 'No extraída'}</p>
+                            <p><strong>Lugar Fallecimiento:</strong> ${lead.lugar_fallecimiento || 'N/A'}</p>
+                            <p><strong>Todos los herederos:</strong> ${heirsList}</p>
+                            <p><strong>Juzgado / Notario:</strong> ${lead.juzgado || 'N/A'}</p>
+                            <p><strong>Límite Fiscal (Plusvalía):</strong> ${lead.tax_deadline || 'N/A'}</p>
+                            <p><strong>Fase de Urgencia:</strong> ${formatUrgency(lead.urgency_phase)}</p>
+                        </div>
+                        <div class="detail-section">
+                            <h4>📞 Contacto</h4>
+                            <p>${pbLink}</p>
+                            <p><strong>Obras Recientes:</strong> ${lead.obras_recientes || 'Ninguna detectada'}</p>
+                            <p><strong>Notas IA:</strong> ${lead.outreach_notes || 'OK para contactar'}</p>
+                        </div>
+                        <div class="detail-section">
+                            <h4>📋 Fuentes</h4>
+                            <p>${allLinksHtml || 'Sin enlaces'}</p>
+                            <p><strong>Región:</strong> ${region}</p>
+                            <p><strong>Primera detección:</strong> ${lead.first_seen_at || 'N/A'}</p>
+                            <p><strong>Última actualiz.:</strong> ${lead.last_updated_at || 'N/A'}</p>
+                        </div>
+                    </div>
+                </div>
+            </td>
+        `;
+
+        // Toggle expand
+        tr.addEventListener('click', () => {
+            const isVisible = detailTr.style.display === 'table-row';
+            detailTr.style.display = isVisible ? 'none' : 'table-row';
+            tr.classList.toggle('expanded', !isVisible);
+        });
+
+        tbody.appendChild(tr);
+        tbody.appendChild(detailTr);
+    }
 }
 
-// Set up column drop targets
+function formatUrgency(phase) {
+    switch (phase) {
+        case 'monitoring': return '🟢 Monitoreo (0-90 días)';
+        case 'high_motivation': return '🟡 Alta Motivación (91-150 días)';
+        case 'urgent_distress': return '🔴 Urgente/Distress (150+ días)';
+        default: return 'Sin datos';
+    }
+}
+
+/* ── Init ─────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.column-body').forEach(col => {
-        col.addEventListener('dragover', e => {
-            e.preventDefault();
-            col.classList.add('drag-over');
-        });
-
-        col.addEventListener('dragleave', () => {
-            col.classList.remove('drag-over');
-        });
-
-        col.addEventListener('drop', async e => {
-            e.preventDefault();
-            col.classList.remove('drag-over');
-
-            if (!draggedId) return;
-
-            const status = col.id.replace('col-', '');
-            try {
-                await fetch(`${API_BASE}/api/leads/${draggedId}/status`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status }),
-                });
-                fetchLeads(); // Refresh
-            } catch (err) {
-                console.error('Status update failed:', err);
-            }
-            draggedId = null;
-        });
-    });
-
-    // Initial load
     fetchLeads();
-
+    
+    document.getElementById('search-input').addEventListener('input', renderTable);
+    document.getElementById('filter-tier').addEventListener('change', () => fetchLeads(false));
+    document.getElementById('sort-by').addEventListener('change', renderTable);
+    document.getElementById('load-more-btn').addEventListener('click', loadMore);
+    
     // Auto-refresh every 60s
-    setInterval(fetchLeads, 60000);
-
-    // Modal close
-    document.getElementById('modal-close').addEventListener('click', closeModal);
-    document.getElementById('modal-overlay').addEventListener('click', e => {
-        if (e.target === e.currentTarget) closeModal();
-    });
+    setInterval(() => fetchLeads(false), 60000);
 });
-
-// ── Modal ─────────────────────────────────────────────────
-
-function openModal(lead) {
-    const content = document.getElementById('modal-content');
-    const sources = Array.isArray(lead.sources) ? lead.sources.join(', ') : '';
-
-    content.innerHTML = `
-        <h3>${lead.causante || 'Sin nombre'}</h3>
-
-        ${lead.heir_name ? `<div class="modal-field"><label>Heredero principal</label><div class="value">${lead.heir_name}</div></div>` : ''}
-
-        <div class="modal-field"><label>Dirección</label><div class="value">${lead.direccion || '-'}</div></div>
-        <div class="modal-field"><label>Localidad</label><div class="value">${lead.localidad || '-'}</div></div>
-        <div class="modal-field"><label>Ref. Catastral</label><div class="value">${lead.referencia_catastral || '-'}</div></div>
-
-        <div class="modal-field"><label>Fecha fallecimiento</label><div class="value">${lead.fecha_fallecimiento || lead.date_of_death || '-'}</div></div>
-        <div class="modal-field"><label>Días desde fallecimiento</label><div class="value">${lead.days_since_death !== null ? lead.days_since_death + ' días' : '-'}</div></div>
-        <div class="modal-field"><label>Plazo fiscal</label><div class="value">${lead.tax_deadline || '-'}</div></div>
-
-        <div class="modal-field"><label>Tier</label><div class="value">${lead.tier}</div></div>
-        <div class="modal-field"><label>Fuentes</label><div class="value">${sources || '-'}</div></div>
-        <div class="modal-field"><label>Detectado</label><div class="value">${lead.first_seen_at || '-'}</div></div>
-
-        ${lead.social_profile_url ? `<div class="modal-field"><label>Perfil social</label><div class="value"><a href="${lead.social_profile_url}" target="_blank" class="social-link">${lead.social_profile_url}</a></div></div>` : ''}
-
-        <div class="modal-field"><label>Outreach</label><div class="value">${lead.outreach_allowed ? 'Sí' : 'No'} ${lead.outreach_notes ? '— ' + lead.outreach_notes : ''}</div></div>
-
-        <div class="modal-notes">
-            <label>Notas</label>
-            <textarea id="modal-notes-input">${lead.notas || ''}</textarea>
-            <button class="btn-save" onclick="saveNotes(${lead.id})">Guardar notas</button>
-        </div>
-    `;
-
-    document.getElementById('modal-overlay').classList.add('active');
-}
-
-function closeModal() {
-    document.getElementById('modal-overlay').classList.remove('active');
-}
-
-async function saveNotes(leadId) {
-    const notes = document.getElementById('modal-notes-input').value;
-    try {
-        await fetch(`${API_BASE}/api/leads/${leadId}/notes`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ notes }),
-        });
-        closeModal();
-        fetchLeads();
-    } catch (err) {
-        console.error('Failed to save notes:', err);
-    }
-}
