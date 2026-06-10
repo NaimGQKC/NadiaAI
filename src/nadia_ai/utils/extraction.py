@@ -3,6 +3,8 @@ import logging
 import re
 import sqlite3
 import os
+import requests
+from bs4 import BeautifulSoup
 from datetime import datetime
 from pathlib import Path
 
@@ -34,28 +36,65 @@ def clean_legal_text(text: str) -> str:
     
     return text.strip()
 
+def is_worth_llm_compute(full_text: str) -> bool:
+    """Acts as a cheap gatekeeper. 
+    If the text doesn't contain at least one strong inheritance signal, 
+    do not waste local Mistral tokens on it.
+    """
+    if not full_text: return False
+    
+    # High-signal inheritance keywords (Gemini 3.1 Pro recommendation)
+    inheritance_pattern = r'(fallecid[oa]|falleci[óo]|causante|hereder[oa]s?|abintestato|testamentar|sucesi[óo]n|legatario|albacea|defunci[óo]n|esquela)'
+    
+    # If we don't find these words, it's not an inheritance edict.
+    if not re.search(inheritance_pattern, full_text, re.IGNORECASE):
+        return False
+        
+    return True
+
 EXTRACTION_PROMPT = """Eres un experto en derecho de sucesiones en España.
-Analiza el texto y genera un objeto JSON con la estructura exacta de este ejemplo.
-Si un dato no aparece o es genérico (ej: 'Calle Principal'), usa null.
+Analiza el texto (que puede ser un edicto judicial o una esquela/obituario) y genera un objeto JSON.
+Si un dato no aparece, usa null.
 
 {{
-  "deceased_name": "Nombre del fallecido.",
+  "deceased_name": "Nombre completo del fallecido.",
   "date_of_death": "Fecha de fallecimiento (YYYY-MM-DD).",
-  "list_of_heirs": ["Nombres completos."],
-  "property_address": "Dirección exacta del inmueble. EXCLUYE notaría.",
-  "referencia_catastral": "Ref. Catastral de 20 caracteres"
+  "list_of_heirs": ["Nombres completos de hijos, viudo/a, o herederos mencionados. Ignorar nombres de sobrinos o primos si hay hijos."],
+  "property_address": "Dirección de residencia del fallecido (calle, número, piso, ciudad). Si el texto dice 'vecino de [Ciudad]', pon la ciudad. No uses direcciones de Tanatorios.",
+  "referencia_catastral": "Ref. Catastral si aparece (20 caracteres)."
 }}
 
-REGLAS:
-1. No inventes direcciones. Si no hay dirección de un inmueble claro, usa null.
-2. Si mencionas 'Notaría de...', es incorrecto.
+REGLAS CRÍTICAS:
+1. Si el texto es una esquela, busca los nombres de los hijos (ej: 'Sus hijos: Juan y María').
+2. Diferencia entre el lugar del fallecimiento (hospital/tanatorio) y el domicilio o vecindad (ej: 'vecino de Zaragoza').
 3. Responde SOLAMENTE el JSON.
 
 Texto a analizar:
 {text}"""
 
+def extract_heirs_regex(text: str) -> list[str]:
+    """Fallback regex to find potential heir names when LLM fails."""
+    heirs = []
+    # Pattern for "interesados: [NAME], [NAME]..."
+    interesados_match = re.search(r'(?i)interesados:?\s*([A-ZÁÉÍÓÚÑ\s,]+)', text)
+    if interesados_match:
+        names = interesados_match.group(1).split(',')
+        for n in names:
+            n = n.strip()
+            if len(n.split()) >= 2: # At least two words (First Last)
+                heirs.append(n.title())
+                
+    # Pattern for "herederos de D. [NAME]"
+    herederos_match = re.findall(r'(?i)herederos\s+de\s+(?:D\.|Doña|Don)?\s*([A-ZÁÉÍÓÚÑ\s]+?)(?=\s+y\s+|\s+o\s+|\s+en\s+|$|[.,])', text)
+    for h in herederos_match:
+        h = h.strip()
+        if len(h.split()) >= 2:
+            heirs.append(h.title())
+            
+    return list(set(heirs))
+
 def extract_inheritance_data(text: str, causante_hint: str = None) -> dict:
-    """Extract inheritance details using local Ollama REST API."""
+    """Extract inheritance details using local Ollama REST API with regex fallback."""
     try:
         import requests
         cleaned_text = clean_legal_text(text)
@@ -63,33 +102,42 @@ def extract_inheritance_data(text: str, causante_hint: str = None) -> dict:
         
         prompt = f"El fallecido es: {causante_hint}\n\n" + EXTRACTION_PROMPT.format(text=truncated_text)
         
-        response = requests.post(
-            "http://localhost:11434/api/chat",
-            json={
-                "model": OLLAMA_MODEL,
-                "messages": [{"role": "user", "content": prompt}],
-                "stream": False,
-                "options": {
-                    "temperature": 0,
-                    "num_ctx": 4096,
-                },
-                "format": "json",
-                "keep_alive": "5m"
-            },
-            timeout=120
-        )
-        response.raise_for_status()
-        resp_json = response.json()
-        content = resp_json.get("message", {}).get("content", "")
-        
         result = None
-        if content:
-            try: result = json.loads(content)
-            except:
-                m = re.search(r"\{.*\}", content, re.DOTALL)
-                if m:
-                    try: result = json.loads(m.group(0))
-                    except: pass
+        try:
+            response = requests.post(
+                "http://localhost:11434/api/chat",
+                json={
+                    "model": OLLAMA_MODEL,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "stream": False,
+                    "options": {
+                        "temperature": 0,
+                        "num_ctx": 4096,
+                    },
+                    "format": "json",
+                    "keep_alive": "5m"
+                },
+                timeout=120
+            )
+            response.raise_for_status()
+            resp_json = response.json()
+            content = resp_json.get("message", {}).get("content", "")
+            
+            if content:
+                try: result = json.loads(content)
+                except:
+                    m = re.search(r"\{.*\}", content, re.DOTALL)
+                    if m:
+                        try: result = json.loads(m.group(0))
+                        except: pass
+        except Exception as e:
+            logger.warning("Ollama call failed, using regex fallback: %s", e)
+            result = {
+                "deceased_name": causante_hint,
+                "list_of_heirs": extract_heirs_regex(text),
+                "property_address": None,
+                "referencia_catastral": None
+            }
         
         if not result: return {}
 
@@ -111,6 +159,10 @@ def extract_inheritance_data(text: str, causante_hint: str = None) -> dict:
         if isinstance(heirs, str):
             heirs = [h.strip() for h in heirs.split(",") if h.strip()]
         heirs = [h for h in heirs if sanitize(h)]
+        
+        # If LLM didn't find heirs but regex does, merge them
+        if not heirs:
+            heirs = extract_heirs_regex(text)
 
         prop_addr = sanitize(result.get("property_address"))
         if is_hallucinated_address(prop_addr):
@@ -124,7 +176,7 @@ def extract_inheritance_data(text: str, causante_hint: str = None) -> dict:
             "referencia_catastral": sanitize(result.get("referencia_catastral")),
         }
     except Exception as e:
-        logger.warning("Ollama extraction failed: %s", e)
+        logger.warning("Extraction failed entirely: %s", e)
         return {}
 
 def run_heir_extraction(conn):
@@ -150,17 +202,43 @@ def run_heir_extraction(conn):
         causante = lead["causante"]
         urls = json.loads(lead["source_urls"] or "[]")
         
-        # 1. Fetch full text (prioritize BOE if available)
+        # 1. Fetch full text
         full_text = ""
         for url in urls:
-            if "boe.es" in url:
-                full_text = extract_pdf_text(url) # Using the utility from boe.py
-                if full_text: break
+            fetch_url = url
+            if "zaragoza.es/sede/servicio/tablon-edicto/" in url and not url.endswith("/document"):
+                fetch_url = url + "/document"
+                
+            if "boe.es" in fetch_url:
+                full_text = extract_pdf_text(fetch_url)
+            else:
+                # Generic webpage text extraction
+                try:
+                    r = requests.get(fetch_url, timeout=15)
+                    if r.status_code == 200:
+                        soup = BeautifulSoup(r.text, "html.parser")
+                        # Try to find main content or just get all text
+                        main = soup.select_one(".content, #main, article, .esquela-detalle, .texto-esquela")
+                        full_text = main.get_text(separator=" ", strip=True) if main else soup.get_text(separator=" ", strip=True)
+                except Exception as e:
+                    logger.warning("Failed to fetch text from %s: %s", fetch_url, e)
+            
+            if full_text: break
         
         if not full_text:
+            # Fallback: if we have no text but have a causante name, we can still mark as done
+            # but maybe we want to keep it pending if text extraction failed.
+            # For now, if no text, we can't extract heirs.
             continue
             
-        # 2. Extract entities
+        # 2. Deterministic Funnel: The "Wake Word" check
+        if not is_worth_llm_compute(full_text):
+            logger.info("Skipping Lead %d: Failed deterministic check (no inheritance keywords).", lead_id)
+            conn.execute("UPDATE leads SET ai_extraction_done = 1, tier = 'C' WHERE id = ?", (lead_id,))
+            conn.commit()
+            continue
+            
+        # 3. Extract entities
         data = extract_inheritance_data(full_text, causante_hint=causante)
         if not data: 
             continue
@@ -183,9 +261,17 @@ def run_heir_extraction(conn):
             final_tier = "A"
         
         # 5. Update Database
-        heirs_json = json.dumps(data.get("list_of_heirs", []))
-        primary_heir = data["list_of_heirs"][0] if data["list_of_heirs"] else None
+        heirs_list = data.get("list_of_heirs", [])
+        if not isinstance(heirs_list, list):
+            heirs_list = [str(heirs_list)]
+        heirs_json = json.dumps(heirs_list)
+        primary_heir = heirs_list[0] if heirs_list else None
         
+        death_date = data.get("date_of_death")
+        if isinstance(death_date, list):
+            death_date = death_date[0] if death_date else None
+        death_date = str(death_date) if death_date else None
+
         conn.execute("""
             UPDATE leads 
             SET heir_names_json = ?,
@@ -202,7 +288,7 @@ def run_heir_extraction(conn):
             primary_heir, 
             data.get("property_address"), 
             data.get("referencia_catastral"),
-            data.get("date_of_death"),
+            death_date,
             final_tier,
             lead_id
         ))

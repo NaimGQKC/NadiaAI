@@ -18,8 +18,13 @@ from nadia_ai.models import EdictRecord
 logger = logging.getLogger("nadia_ai.scrapers.defunciones")
 
 BASE_URL = "https://defunciones.es"
-PROVINCE_URL = BASE_URL + "/defunciones/provincia/zaragoza/"
-MAX_PAGES = 8
+PROVINCES = [
+    "madrid", "barcelona", "valencia", "alicante", "sevilla", 
+    "malaga", "murcia", "cadiz", "vizcaya", "coruna", 
+    "asturias", "zaragoza", "pontevedra", "granada", "tarragona", 
+    "cordoba", "gerona", "almeria", "guipuzcoa", "toledo"
+]
+MAX_PAGES_PER_PROVINCE = 5
 
 SESSION = requests.Session()
 SESSION.headers.update({
@@ -42,19 +47,20 @@ def _slug_to_name(slug: str) -> str:
     return slug.replace("-", " ").title()
 
 
-def _slug_to_id(slug: str) -> str:
-    """Generate stable source_id from slug."""
-    return hashlib.md5(f"defunciones:{slug}".encode()).hexdigest()[:12]
+def _slug_to_id(slug: str, province: str) -> str:
+    """Generate stable source_id from slug and province."""
+    return hashlib.md5(f"defunciones:{province}:{slug}".encode()).hexdigest()[:12]
 
 
-def fetch_page(page: int = 1) -> list[dict]:
+def fetch_page(province: str, page: int = 1) -> list[dict]:
     """Fetch one page of province listings."""
-    url = PROVINCE_URL if page == 1 else f"{PROVINCE_URL}?pag={page}"
+    province_url = f"{BASE_URL}/defunciones/provincia/{province}/"
+    url = province_url if page == 1 else f"{province_url}?pag={page}"
     try:
         resp = SESSION.get(url, timeout=30)
         resp.raise_for_status()
     except requests.RequestException as e:
-        logger.error("defunciones.es page %d fetch failed: %s", page, e)
+        logger.error("defunciones.es province %s page %d fetch failed: %s", province, page, e)
         return []
 
     entries = []
@@ -71,53 +77,54 @@ def fetch_page(page: int = 1) -> list[dict]:
 
 
 def scrape_defunciones(since: datetime | None = None) -> list[EdictRecord]:
-    """Scrape defunciones.es for recent deaths in Zaragoza province.
+    """Scrape defunciones.es for recent deaths across Spain.
 
     Note: defunciones.es doesn't show dates per entry — it's a rolling window
     of ~10-14 days. All visible entries are considered recent.
-    The `since` param is accepted for API consistency but not used for filtering.
     """
     if since is None:
         since = datetime.now(UTC) - timedelta(days=90)
 
-    seen_slugs: set[str] = set()
     all_records: list[EdictRecord] = []
 
-    for page in range(1, MAX_PAGES + 1):
-        entries = fetch_page(page)
-        if not entries:
-            logger.info("defunciones.es: no results on page %d, stopping", page)
-            break
+    for province in PROVINCES:
+        logger.info("Scraping defunciones for province: %s", province)
+        seen_slugs: set[str] = set()
+        province_records = 0
+        
+        for page in range(1, MAX_PAGES_PER_PROVINCE + 1):
+            entries = fetch_page(province, page)
+            if not entries:
+                break
 
-        new_on_page = 0
-        for entry in entries:
-            slug = entry["slug"]
-            if slug in seen_slugs:
-                continue
-            seen_slugs.add(slug)
+            new_on_page = 0
+            for entry in entries:
+                slug = entry["slug"]
+                if slug in seen_slugs:
+                    continue
+                seen_slugs.add(slug)
 
-            source_id = _slug_to_id(slug)
-            record = EdictRecord(
-                source="defunciones",
-                source_id=source_id,
-                edict_type="defuncion_esquela",
-                published_at=datetime.now(UTC),  # No exact date; use scrape time
-                source_url=entry["url"],
-                causante=entry["name"],
-                localidad=entry["municipality"],
-            )
-            all_records.append(record)
-            new_on_page += 1
-            logger.info(
-                "Defunción: %s [%s] (id=%s)",
-                entry["name"], entry["municipality"], source_id,
-            )
+                source_id = _slug_to_id(slug, province)
+                record = EdictRecord(
+                    source="defunciones",
+                    source_id=source_id,
+                    edict_type="defuncion_esquela",
+                    published_at=datetime.now(UTC),
+                    source_url=entry["url"],
+                    causante=entry["name"],
+                    localidad=entry["municipality"],
+                    region=province.title()
+                )
+                all_records.append(record)
+                new_on_page += 1
+                province_records += 1
 
-        logger.info("defunciones.es page %d: %d new records", page, new_on_page)
+            if new_on_page == 0:
+                break
+            
+            time.sleep(0.5)
+            
+        logger.info("Province %s: %d records found", province, province_records)
 
-        # Polite delay
-        if page < MAX_PAGES:
-            time.sleep(1.0)
-
-    logger.info("defunciones.es scrape complete: %d records", len(all_records))
+    logger.info("defunciones.es total scrape complete: %d records", len(all_records))
     return all_records

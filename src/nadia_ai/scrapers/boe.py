@@ -10,6 +10,7 @@ import hashlib
 import logging
 import re
 import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from io import BytesIO
 
@@ -46,28 +47,78 @@ NAME_PATTERNS = [
 
 RC_PATTERN = re.compile(r"\b(\d{7}[A-Z]{2}\d{4}[A-Z]\d{4}[A-Z]{2})\b", re.IGNORECASE)
 
+# Gemini 3.1 Pro Implementation: Deterministic Funnel
+NEGATIVE_KEYWORDS = [
+    "animal", "perro", "perra", "canino", "hallazgo", "objeto", "joya", "multa", 
+    "tráfico", "vehículo", "sanción", "extranjería", "infracción", 
+    "decomiso", "estupefacientes", "costas", "bicicleta", "anillo", "cartera",
+    "documentación encontrada", "pérdida", "puntos", "radar"
+]
+
+def clean_summary_title(title: str) -> bool:
+    """Check if title contains any negative keywords."""
+    title_lower = title.lower()
+    for word in NEGATIVE_KEYWORDS:
+        if word in title_lower:
+            return False
+    return True
+
 REGION_MAP = {
-    "vigo": "Galicia", "santiago": "Galicia", "oviedo": "Asturias",
-    "gijón": "Asturias", "gijon": "Asturias", "santander": "Cantabria",
-    "logroño": "La Rioja", "logrono": "La Rioja",
-    "toledo": "Castilla-La Mancha", "albacete": "Castilla-La Mancha",
-    "ciudad real": "Castilla-La Mancha", "cáceres": "Extremadura",
-    "caceres": "Extremadura", "badajoz": "Extremadura",
-    "córdoba": "Andalucía", "cordoba": "Andalucía", "granada": "Andalucía",
-    "almería": "Andalucía", "almeria": "Andalucía", "jaén": "Andalucía",
-    "jaen": "Andalucía", "huelva": "Andalucía", "cádiz": "Andalucía",
-    "cadiz": "Andalucía", "alicante": "C. Valenciana",
-    "castellón": "C. Valenciana", "castellon": "C. Valenciana",
-    "tarragona": "Cataluña", "girona": "Cataluña", "lleida": "Cataluña",
-    "huesca": "Aragón", "teruel": "Aragón",
-    "zaragoza": "Aragón", "madrid": "Madrid", "barcelona": "Cataluña",
-    "vizcaya": "País Vasco", "bilbao": "País Vasco",
+    # Andalucía
+    "sevilla": "Andalucía", "málaga": "Andalucía", "malaga": "Andalucía", "córdoba": "Andalucía", "cordoba": "Andalucía", "granada": "Andalucía", "almería": "Andalucía", "almeria": "Andalucía", "jaén": "Andalucía", "jaen": "Andalucía", "huelva": "Andalucía", "cádiz": "Andalucía", "cadiz": "Andalucía",
+    # Aragón
+    "zaragoza": "Aragón", "huesca": "Aragón", "teruel": "Aragón",
+    # Asturias
+    "oviedo": "Asturias", "gijón": "Asturias", "gijon": "Asturias", "avilés": "Asturias",
+    # Baleares
+    "palma": "Baleares", "ibiza": "Baleares", "menorca": "Baleares", "mallorca": "Baleares",
+    # Canarias
+    "palmas": "Canarias", "tenerife": "Canarias", "lanzarote": "Canarias", "fuerteventura": "Canarias",
+    # Cantabria
+    "santander": "Cantabria", "torrelavega": "Cantabria",
+    # Castilla-La Mancha
+    "toledo": "Castilla-La Mancha", "albacete": "Castilla-La Mancha", "ciudad real": "Castilla-La Mancha", "cuenca": "Castilla-La Mancha", "guadalajara": "Castilla-La Mancha",
+    # Castilla y León
+    "valladolid": "Castilla y León", "burgos": "Castilla y León", "león": "Castilla y León", "leon": "Castilla y León", "salamanca": "Castilla y León", "segovia": "Castilla y León", "soria": "Castilla y León", "zamora": "Castilla y León", "palencia": "Castilla y León", "avila": "Castilla y León", "ávila": "Castilla y León",
+    # Cataluña
+    "barcelona": "Cataluña", "tarragona": "Cataluña", "lleida": "Cataluña", "girona": "Cataluña", "gerona": "Cataluña", "lérida": "Cataluña",
+    # Extremadura
+    "badajoz": "Extremadura", "cáceres": "Extremadura", "caceres": "Extremadura",
+    # Galicia
+    "coruña": "Galicia", "lugo": "Galicia", "ourense": "Galicia", "pontevedra": "Galicia", "vigo": "Galicia", "santiago": "Galicia",
+    # Madrid
+    "madrid": "Madrid", "getafe": "Madrid", "leganés": "Madrid", "alcorcón": "Madrid", "fuenlabrada": "Madrid", "móstoles": "Madrid", "alcalá": "Madrid",
+    # Murcia
+    "murcia": "Murcia", "cartagena": "Murcia",
+    # Provinces
+    "alava": "País Vasco", "albacete": "Castilla-La Mancha", "alicante": "C. Valenciana", "almeria": "Andalucía",
+    "asturias": "Asturias", "avila": "Castilla y León", "badajoz": "Extremadura", "baleares": "Baleares",
+    "barcelona": "Cataluña", "burgos": "Castilla y León", "caceres": "Extremadura", "cadiz": "Andalucía",
+    "cantabria": "Cantabria", "castellon": "C. Valenciana", "ciudad real": "Castilla-La Mancha",
+    "cordoba": "Andalucía", "coruña": "Galicia", "cuenca": "Castilla-La Mancha", "girona": "Cataluña",
+    "granada": "Andalucía", "guadalajara": "Castilla-La Mancha", "gipuzkoa": "País Vasco",
+    "huelva": "Andalucía", "huesca": "Aragón", "jaen": "Andalucía", "leon": "Castilla y León",
+    "lleida": "Cataluña", "lugo": "Galicia", "madrid": "Madrid", "malaga": "Andalucía",
+    "murcia": "Murcia", "navarra": "Navarra", "ourense": "Galicia", "palencia": "Castilla y León",
+    "palmas": "Canarias", "pontevedra": "Galicia", "rioja": "La Rioja", "salamanca": "Castilla y León",
+    "segovia": "Castilla y León", "sevilla": "Andalucía", "soria": "Castilla y León", "tarragona": "Cataluña",
+    "tenerife": "Canarias", "teruel": "Aragón", "toledo": "Castilla-La Mancha", "valencia": "C. Valenciana",
+    "valladolid": "Castilla y León", "bizkaia": "País Vasco", "zamora": "Castilla y León", "zaragoza": "Aragón",
+    "ceuta": "Ceuta", "melilla": "Melilla",
+    # Cities
+    "vitoria": "País Vasco", "san sebastian": "País Vasco", "bilbao": "País Vasco", "oviedo": "Asturias",
+    "gijon": "Asturias", "santander": "Cantabria", "logroño": "La Rioja", "pamplona": "Navarra",
 }
 
 def extract_region(text: str) -> str:
+    if not text: return "Desconocida"
     text_lower = text.lower()
-    for city, region in REGION_MAP.items():
-        if city in text_lower:
+    # Normalize text (remove accents)
+    from unicodedata import normalize
+    text_lower = normalize('NFKD', text_lower).encode('ascii', 'ignore').decode('ascii')
+    
+    for key, region in REGION_MAP.items():
+        if key in text_lower:
             return region
     return "Desconocida"
 
@@ -126,55 +177,115 @@ def extract_pdf_text(pdf_url: str) -> str:
         logger.error("Failed to extract text from PDF %s: %s", pdf_url, e)
         return ""
 
+def fetch_item_text(doc_id: str) -> str:
+    """Fetch the XML content of a specific BOE document to check the body text."""
+    url = f"https://www.boe.es/diario_boe/xml.php?id={doc_id}"
+    try:
+        r = requests.get(url, timeout=10)
+        if r.status_code == 200:
+            root = ET.fromstring(r.content)
+            # Combine all paragraph text
+            paragraphs = root.findall(".//texto/p")
+            return " ".join([p.text for p in paragraphs if p.text])
+    except Exception:
+        pass
+    return ""
+
+def is_inheritance_text(text: str) -> bool:
+    """Strict keyword check on the full document body."""
+    keywords = [
+        r"declaraci[oó]n\s+de\s+herederos",
+        r"abintestato",
+        r"sucesi[oó]n",
+        r"herencia\s+yacente",
+        r"causante",
+        r"bienes\s+relictos",
+        r"falleci[óo]n?",
+        r"defunci[oó]n",
+        r"herederos\s+de",
+        r"testamentar[ií]a",
+        r"esquela"
+    ]
+    return any(re.search(kw, text, re.IGNORECASE) for kw in keywords)
+
 def extract_inheritance_doc_ids(sumario_xml: str) -> list[str]:
+    """
+    Parses the BOE Summary XML and identifies high-intent inheritance documents.
+    Uses 'Deep Scan' for Judicial and Notary sections where titles are generic.
+    """
     doc_ids = []
-    if not sumario_xml: return doc_ids
     try:
         root = ET.fromstring(sumario_xml.encode("utf-8"))
         
-        # New keywords to capture more quality leads
+        # Primary keywords for summary-level filtering
         keywords = [
-            r"\bdeclaraci[oó]n\s+de\s+herederos\b",
-            r"\bsucesi[oó]n\b",
-            r"\babintestato\b",
-            r"\bherederos\s+de\b",
-            r"\bcausante\b",
-            r"\bbienes\s+relictos\b",
-            r"\bherencia\s+yacente\b",
-            r"\bherencia\b",
-            r"\bsucesi[oó]n\s+por\s+cesi[oó]n\b",
-            r"\bt[ií]tulo\s+de\s+(?:marqu[eé]s|conde|duque|bar[oó]n|vizconde)\b",
-            r"\bfallecimiento\b",
-            r"\bdefunci[oó]n\b",
-            r"\bedicto\b",
-            r"\bnotificaci[oó]n\b",
-            r"\bnotar[ií]a\b",
-            r"\banuncio\s+de\s+subasta\b",
+            r"herederos", r"sucesi[oó]n", r"abintestato", r"causante",
+            r"falleci[óo]", r"defunci[oó]n", r"herencia", r"esquela"
         ]
         
-        # Iterate through the hierarchy correctly
-        for dept in root.findall(".//departamento"):
-            dept_name = (dept.get("nombre") or "").lower()
-            for item in dept.findall(".//item"):
-                item_id = item.findtext("identificador", "")
-                if not item_id.startswith("BOE-B"): continue
-                
-                titulo = (item.findtext("titulo") or "").lower()
-                
-                # Check if title or department matches keywords
-                text_to_check = f"{titulo} {dept_name}"
-                
-                if any(re.search(kw, text_to_check, re.IGNORECASE) for kw in keywords):
-                    # Specific exclusion for the city of "Herencia"
-                    if "herencia (ciudad real)" in titulo or "t.m. de herencia" in titulo:
-                        logger.debug("Skipping city false positive: %s", titulo)
+        candidates_to_scan = []
+        
+        for seccion in root.findall(".//seccion"):
+            sec_code = seccion.get("codigo") or ""
+            # Section IV (Justicia) and V-C (Particulars/Notaries) are high-intent but generic titles
+            is_high_intent_sec = sec_code == "4" or sec_code == "5C"
+            # Section V-A/B are administrative noise
+            is_admin_sec = sec_code.startswith("5A") or sec_code.startswith("5B")
+            
+            if not (is_high_intent_sec or is_admin_sec):
+                continue
+            
+            for dept in seccion.findall(".//departamento"):
+                dept_name = (dept.get("nombre") or "").lower()
+                for item in dept.findall(".//item"):
+                    item_id = item.findtext("identificador", "")
+                    titulo = (item.findtext("titulo") or "").lower()
+                    
+                    if not clean_summary_title(titulo):
                         continue
                         
-                    doc_ids.append(item_id)
+                    # FAST PATH: If the title is already explicit, grab it
+                    text_to_check = f"{titulo} {dept_name}"
+                    if any(re.search(kw, text_to_check, re.IGNORECASE) for kw in keywords):
+                        # Ensure it's not the city of "Herencia"
+                        if "herencia (ciudad real)" in titulo or "t.m. de herencia" in titulo:
+                            continue
+                        doc_ids.append(item_id)
+                        continue
+                    
+                    # DEEP SCAN PATH: Determine if we should peek inside
+                    should_deep_scan = False
+                    
+                    if is_high_intent_sec:
+                        # Section IV (Justicia) and V-C (Particulars/Notaries) are ALWAYS deep scanned
+                        should_deep_scan = True
+                    elif is_admin_sec:
+                        # Section V-A/B (Official/Contracting) - only scan if dept is related to State Assets or Notaries
+                        scan_keywords = ["notar", "hacienda", "econom", "patrimonio", "tribut", "sucesi", "justicia", "recauda"]
+                        if any(skw in dept_name for skw in scan_keywords):
+                            should_deep_scan = True
+                        elif any(skw in titulo for skw in scan_keywords):
+                            should_deep_scan = True
+
+                    if should_deep_scan:
+                        candidates_to_scan.append(item_id)
+
+        # Process candidates with Deep Scan (Concurrency for speed)
+        if candidates_to_scan:
+            logger.info("Deep scanning %d potential BOE documents for inheritance signals...", len(candidates_to_scan))
+            # Use more workers for faster deep scan (BOE server handles it well)
+            with ThreadPoolExecutor(max_workers=15) as executor:
+                results = list(executor.map(lambda id: (id, fetch_item_text(id)), candidates_to_scan))
+                
+            for doc_id, text in results:
+                if text and is_inheritance_text(text):
+                    logger.info("Deep Scan MATCH found: %s", doc_id)
+                    doc_ids.append(doc_id)
                     
     except Exception as e:
         logger.error("Error parsing sumario: %s", e)
-    return doc_ids
+    
+    return list(set(doc_ids))
 
 def parse_boe_document(xml_text: str, doc_id: str) -> EdictRecord | None:
     if not xml_text: return None
@@ -197,13 +308,21 @@ def parse_boe_document(xml_text: str, doc_id: str) -> EdictRecord | None:
         rc_match = RC_PATTERN.search(combined)
         ref_catastral = rc_match.group(1).upper() if rc_match else None
         
+        source_name = "boe_nationwide"
+        if doc_id.startswith("BOE-B"):
+            source_name = "boe_secv"
+        elif doc_id.startswith("BOE-A"):
+            # Section IV (Judicial) is also in Section A/B depending on sub-type
+            # But let's keep Section V as the main priority
+            pass
+
         return EdictRecord(
-            source="boe_nationwide",
+            source=source_name,
             source_id=doc_id,
             referencia_catastral=ref_catastral,
             edict_type="inheritance_lead",
             published_at=pub_date,
-            source_url=pdf_url or f"https://www.boe.es/diario_boe/txt.php?id={doc_id}",
+            source_url=f"https://www.boe.es/diario_boe/txt.php?id={doc_id}",
             causante=causante,
             localidad=region,
         )
@@ -229,8 +348,9 @@ def scrape_supplemental_leads(days: int) -> list[EdictRecord]:
         r"\bherederos\s+de\b",
         r"\bcausante\b",
         r"\bherencia\b",
-        r"\bfallecimiento\b",
+        r"\bfalleci[óo]n?\b",
         r"\bdefunci[oó]n\b",
+        r"\besquela\b",
     ]
     
     for i in range(days):
@@ -253,19 +373,46 @@ def scrape_supplemental_leads(days: int) -> list[EdictRecord]:
                     if not id_match: continue
                     doc_id = id_match.group(1)
                     
-                    if any(re.search(kw, title, re.IGNORECASE) for kw in keywords):
-                        # Construct a record. We don't have all data yet, 
-                        # but we can try to extract name from title.
-                        causante = _extract_name(title)
-                        region = extract_region(title)
-                        
-                        # Fetch full text for rich extraction immediately
+                    # Section VI logic: Titles are agencies (e.g. Delegacion de Hacienda)
+                    # We check if the title contains "Hacienda" or "Economía" as these are high-signal for VI
+                    # Or if the title contains a keyword directly
+                    is_potential = any(re.search(kw, title, re.IGNORECASE) for kw in keywords)
+                    if not is_potential and folder == "boe_n":
+                        if "hacienda" in title.lower() or "econom" in title.lower():
+                            is_potential = True
+                    
+                    if is_potential:
+                        # Construct a record.
+                        # For BOE-N, the text URL is different
+                        if folder == "boe_n":
+                            doc_url = f"https://www.boe.es/notificaciones/notificacion.php?id={doc_id}"
+                        else:
+                            doc_url = f"https://www.boe.es/diario_boe/txt.php?id={doc_id}"
+
+                        # Fetch full text to confirm it's not a false positive and extract data
                         doc_text = ""
+                        clean_text = ""
                         try:
-                            t_resp = requests.get(f"https://www.boe.es/diario_boe/txt.php?id={doc_id}", timeout=10)
+                            t_resp = SESSION.get(doc_url, timeout=10)
                             if t_resp.status_code == 200:
                                 doc_text = t_resp.text
+                                # Use BeautifulSoup to get clean text for matching
+                                soup_doc = BeautifulSoup(doc_text, "html.parser")
+                                clean_text = soup_doc.get_text()
                         except: pass
+
+                        # Final verification on body text
+                        if not any(re.search(kw, clean_text, re.IGNORECASE) for kw in keywords):
+                            continue # Skip false positives
+                        
+                        causante = _extract_name(title)
+                        if not causante and clean_text:
+                            # Try extracting name from body if title fails
+                            causante = _extract_name(clean_text[:2000])
+
+                        region = extract_region(title)
+                        if region == "Desconocida" and clean_text:
+                            region = extract_region(clean_text[:3000])
 
                         all_records.append(EdictRecord(
                             source=f"boe_{folder}",

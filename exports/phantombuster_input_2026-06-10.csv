@@ -1,0 +1,170 @@
+name,city,lead_id,tier,urgency
+Brian Serra Salazar,Zaragoza,1716,A,monitoring
+Jeremias Nunez Fraile,Fuenlabrada,1976,A,monitoring
+Agustina Morales Prieto,Alcorcon,1979,A,monitoring
+Maria Lydia Alvarado Calderon,Majadahonda,1989,A,monitoring
+Elias Jubera Serrano,Villaconejos,1990,A,monitoring
+Maria Cruz Ruiz Munoz,Coslada,1991,A,monitoring
+Francisca Gonzalez Yuncar,Leganes,1992,A,monitoring
+Sinforiano Soriano Orellana,Mostoles,1994,A,monitoring
+Maria Carmen Fernandez Banos,Pozuelo De Alarcon,1996,A,monitoring
+Maria Teresa Albesa Perez,Leganes,1997,A,monitoring
+Balbina Hernandez Moreno,Leganes,1998,A,monitoring
+Carlos Santiago Almeria Arencibia,Alcala De Henares,1999,A,monitoring
+Juan Cuerva Clemente,Alcala De Henares,2000,A,monitoring
+Luis Jimenez Villanueva,Aranjuez,2001,A,monitoring
+Angel Pascual Garcia,Mostoles,2009,A,monitoring
+Willy Pedro Pasquel Mori,El Alamo,2010,A,monitoring
+Ascension Navarro Peco,Carabanchel,2011,A,monitoring
+Antonia Maria Dominguez Delgado,Navalcarnero,2012,A,monitoring
+Laurentino Calvo Calvo,Mostoles,2013,A,monitoring
+Emilia Millan Simon,Pozuelo De Alarcon,2014,A,monitoring
+Juan Vidal Hernandez,Sant Just Desvern,2017,A,monitoring
+Esperanza Marmolejo Rodriguez,Hospitalet De Llobregat,2020,A,monitoring
+Pau Carbonell Costa,Sant Joan Despi,2021,A,monitoring
+Dolores De Julian Linares,Hospitalet De Llobregat,2022,A,monitoring
+Juan Marin Mercado,Terrassa,2023,A,monitoring
+Pepa Rodriguez Devesa,Barcelona,2024,A,monitoring
+Catherine Aurelie Pempelonne Jorda,Manresa,2025,A,monitoring
+Miguel Osorio Ruiz,Sabadell,2026,A,monitoring
+Carmen Garcia Gordillo,Sabadell,2027,A,monitoring
+Maria Dolores Travado Cabeza,Sabadell,2028,A,monitoring
+Valerio Blanco Sanchez,Sant Vicenc Dels Horts,2029,A,monitoring
+Teresa Abad Farregut,Igualada,2030,A,monitoring
+Agustin Moral Ordonez,Terrassa,2031,A,monitoring
+Toni Sanchez Gonzalez,Terrassa,2032,A,monitoring
+Carlos Ibanez Perez,Hospitalet De Llobregat,2033,A,monitoring
+Antonio Hidalgo Caro,Badalona,2035,A,monitoring
+Isabel Tapias Colmenero,Barcelona,2036,A,monitoring
+Antonio Freixas Garcia,Sant Boi De Llobregat,2037,A,monitoring
+Mari Carmen Castilla Marquez,Hospitalet De Llobregat,2038,A,monitoring
+Ermelinda Fernandez Mourin,Barcelona,2040,A,monitoring
+Magi Marti Ferrer,Barcelona,2041,A,monitoring
+Natalia Prat Comellas,Berga,2044,A,monitoring
+Sebas Rivera Ruiz,Vic,2045,A,monitoring
+Nico Pascual Hernando,Badalona,2046,A,monitoring
+Alejandrina Hierro Busom,Terrassa,2049,A,monitoring
+Justo Jimenez Lopez,Sant Feliu De Codines,2050,A,monitoring
+Maria Jose Tirado Redondo,Barcelona,2051,A,monitoring
+Encarna Vera Iglesias,Cornella De Llobregat,2052,A,monitoring
+Paco Cazorla Martinez,Badalona,2053,A,monitoring
+Matilde Sanson Pacheco,Vilafranca Del Penedes,2054,A,monitoring
+Enrique Perez Sanchez,Terrassa,2055,A,monitoring
+Luis Cid Lopez,Centelles,2057,A,monitoring
+Montse Bassas Juan,Alella,2058,A,monitoring
+Antonio Ordonez Urbano,Badalona,2059,A,monitoring
+Carolina Avanzini Blanco,Valencia,2060,A,monitoring
+Vicente Soldevila Andres,Valencia,2061,A,monitoring
+Antonio Incertis Garcia,Valencia,2062,A,monitoring
+Luis Requena Parrilla,Valencia,2063,A,monitoring
+Luis Torregrosa Ramirez,Valencia,2064,A,monitoring
+Pedro Silvestre Domingo,Valencia,2065,A,monitoring
+Juan Manuel Carrascosa Poveda,Valencia,2066,A,monitoring
+Clotilde Caballe Eberlein,Valencia,2067,A,monitoring
+Andres Montagud Millas,Valencia,2068,A,monitoring
+Dolores Aznar Verdeguer,Valencia,2069,A,monitoring
+Dolores Villalba Zabarte,Valencia,2070,A,monitoring
+Antonio Casado Sopena,Valencia,2071,A,monitoring
+Tomas Motos Teruel,Valencia,2072,A,monitoring
+Josefa Selvi Benacloy,Valencia,2073,A,monitoring
+Enrique Pardo Martinez,Valencia,2074,A,monitoring
+Josefina Vazquez Cervera,Valencia,2075,A,monitoring
+Valentin Gonzalez Hermoso,Valencia,2076,A,monitoring
+Francisca Barcelo Barbera,Valencia,2077,A,monitoring
+Juana Fernandez Guillen,Valencia,2078,A,monitoring
+Antonia Sanchez Santos,Valencia,2080,A,monitoring
+Jose Perez Guillen,Valencia,2081,A,monitoring
+Jose Antonio Simo Crespo,Valencia,2082,A,monitoring
+Dolores Carmen Jativa Iniesta,Valencia,2084,A,monitoring
+Jacinto Cano Moreno,Valencia,2085,A,monitoring
+Hilaria Ruiz Gonzalez,Valencia,2087,A,monitoring
+Crescencia Gomez Ibanez,Valencia,2088,A,monitoring
+Vicente Orero Rozalen,Valencia,2089,A,monitoring
+Consuelo Gimenez Vidal,Valencia,2090,A,monitoring
+Maria Del Mar Tello Navarro,Valencia,2091,A,monitoring
+Josefina Puig Alonso,Valencia,2092,A,monitoring
+Joan Ramon Biosca Frances,Valencia,2093,A,monitoring
+Fernando Ubeda Lillo,Villena,2094,A,monitoring
+Francisca Perez Diaz,Villena,2095,A,monitoring
+Julio Valdes Coloma,Villena,2096,A,monitoring
+Julio Molla Valdes,Villena,2097,A,monitoring
+Francisco Lopez Gabaldon,Villena,2098,A,monitoring
+Maria Virtudes Varez Perez,Villena,2099,A,monitoring
+Manuel Perdigones Palomo,Tomares,2100,A,monitoring
+Emilia Dominguez Galvan,Sevilla,2101,A,monitoring
+Maria Magdalena Naranjo Naranjo,Constantina,2102,A,monitoring
+Juan Pernia Pernia,Alcala De Guadaira,2103,A,monitoring
+Sierra Besteiro Jesus,Sevilla,2104,A,monitoring
+Dominguez Galvan Emilia,Sevilla,2106,A,monitoring
+Manuel Romero Melero,Marchena,2110,A,monitoring
+Manuel Pariente Minero,Tomares,2112,A,monitoring
+Maria Del Carmen Esteban Rios,Tomares,2113,A,monitoring
+Alvarez Velasco Maria Del Carmen,Sevilla,2116,A,monitoring
+Carmen Rojilla Gomez,Tomares,2117,A,monitoring
+Francisco Jose Carmona Bermejo,Lora Del Rio,2118,A,monitoring
+Siguenza Sojo Angel,Sevilla,2119,A,monitoring
+Catalina Recio Gomez,Tomares,2120,A,monitoring
+Gallardo Buzon Francisco,Sevilla,2122,A,monitoring
+Sanchez Ortiz Maria,Sevilla,2125,A,monitoring
+Martinez Manzanares Carlos,Sevilla,2126,A,monitoring
+Ferrera Cortes Julia,Sevilla,2127,A,monitoring
+Alvarez Perez Marina,Sevilla,2129,A,monitoring
+Moreno Retamal Emilio,Sevilla,2130,A,monitoring
+Jesus Rodriguez Reina,Tomares,2131,A,monitoring
+Enrique Correa Alvarez,Carmona,2132,A,monitoring
+Lancha Zapico Antonia,Sevilla,2133,A,monitoring
+Cansino Macias Ramon,Sevilla,2134,A,monitoring
+Setefilla Aroca Molina,Lora Del Rio,2135,A,monitoring
+Remedios Torres Garcia,Lora Del Rio,2136,A,monitoring
+Fuensanta Macias Moya,Antequera,2137,A,monitoring
+Francisco Jose Soler Espinosa,Malaga,2138,A,monitoring
+Angel Mata Tineo,Malaga,2141,A,monitoring
+Antonio Fernandez Martos,Malaga,2147,A,monitoring
+Maria Adelina Da Silva Fernandez,Las Lagunas De Mijas,2148,A,monitoring
+Juan Gijon Molina,Las Lagunas De Mijas,2149,A,monitoring
+Jonathan Isaias Ramirez Leon,San Pedro Alcantara,2150,A,monitoring
+Gabriel Benitez Contreras,Estepona,2152,A,monitoring
+Carlos Rafael Gutierrez Obeso,Malaga,2154,A,monitoring
+Encarnacion Valverde Capacete,Malaga,2155,A,monitoring
+Dolores Castilla Perez,Malaga,2156,A,monitoring
+Maria Dolores Mata Berrocal,Malaga,2157,A,monitoring
+Ana Tambri Almagro,Malaga,2163,A,monitoring
+Ana Clavijo Jimenez,Estepona,2164,A,monitoring
+Belen Millan Maraver,Marbella,2165,A,monitoring
+Alegria Gonzalez Santos,Malaga,2166,A,monitoring
+Consuelo Monso Moreno,Malaga,2167,A,monitoring
+Maria Teresa Gonzalez Araujo,Malaga,2168,A,monitoring
+Francisca Figueroa Dominguez,Las Lagunas De Mijas,2170,A,monitoring
+Jose Rando Soto,Rincon De La Victoria,2176,A,monitoring
+Cristobal Jose Valero Mateo,Estepona,2177,A,monitoring
+Francisco Villena Martin,Malaga,2179,A,monitoring
+Agustin Romera Padilla,Velez Malaga,2180,A,monitoring
+Nieves Verde Aviles,Estepona,2181,A,monitoring
+Juan Ruiz Ayala,Malaga,2182,A,monitoring
+Antonio Perez Munoz,Malaga,2184,A,monitoring
+Alfonso Santiago Jimenez Losa,Malaga,2185,A,monitoring
+Maria Martin Gomez,Alcantarilla,2197,A,monitoring
+Esteban Valenzuela Maldonado,Totana,2215,A,monitoring
+Cadia Andreo Lopez,Totana,2218,A,monitoring
+Isidoro Martinez Canovas,Totana,2222,A,monitoring
+Fernando Postigo Gomez,El Puerto De Santa Maria,2227,A,monitoring
+Milagrosa Sicilia Romero,Jerez De La Frontera,2228,A,monitoring
+Maria Alba Perez,La Linea De La Concepcion,2230,A,monitoring
+Maria De Los Milagros Camacho Aucha,El Puerto De Santa Maria,2231,A,monitoring
+Juan Manuel Palma Arevalo,El Puerto De Santa Maria,2233,A,monitoring
+Manuel Fresno Bravo,Cadiz,2240,A,monitoring
+Sebastian Barrera Garcia,Arcos De La Frontera,2242,A,monitoring
+Ana Maria Mendoza Arellano,Jerez De La Frontera,2247,A,monitoring
+Jose Maria Salguero Mateos,Grazalema,2251,A,monitoring
+Rafael Bejarano Escala,Jerez De La Frontera,2252,A,monitoring
+Cristobal Perez Correa,El Puerto De Santa Maria,2254,A,monitoring
+Maria Antonia Lopez Mariscal,Paterna De Rivera,2255,A,monitoring
+Enrique Luis Sanchez De Miguel,Jerez De La Frontera,2256,A,monitoring
+Maria Luz Garcia Lopez,Coana,2263,A,monitoring
+Pedro Ceballos Carcoba,Villaviciosa,2264,A,monitoring
+Jose Maria Camblor Cueto,Langreo,2265,A,monitoring
+Jose Ramon Quiros Quiros,Oviedo,2266,A,monitoring
+Maria Josefa Suarez Llana,Oviedo,2267,A,monitoring
+Maria Josefa Moreno Gonzalez,Ribadesella,2268,A,monitoring
+Jose Luis Diaz Menendez,Gijon,2269,A,monitoring
+Josefa Gil Lorenzo,Valencia,2545,A,monitoring
