@@ -44,14 +44,20 @@ def api_leads():
     limit = request.args.get("limit", 50, type=int)
     offset = request.args.get("offset", 0, type=int)
     tier_filter = request.args.get("tier")
+    asset_filter = request.args.get("asset_type", "all") 
     
     conn = _get_conn()
     try:
         query_where = "(days_since_death IS NULL OR days_since_death <= 730)"
         params = []
+        
         if tier_filter and tier_filter != "all":
             query_where += " AND tier = ?"
             params.append(tier_filter)
+            
+        if asset_filter and asset_filter != "all":
+            query_where += " AND use_class = ?"
+            params.append(asset_filter)
             
         # Get total count for pagination metadata
         total_count = conn.execute(f"SELECT COUNT(*) FROM leads WHERE {query_where}", params).fetchone()[0]

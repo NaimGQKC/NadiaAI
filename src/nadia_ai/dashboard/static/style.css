@@ -64,7 +64,7 @@ header {
 .filter-group label { font-size: 0.7rem; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; }
 .search-group { flex: 1; }
 
-#search-input, #filter-tier, #sort-by {
+#search-input, #filter-tier, #filter-asset, #filter-boe, #sort-by {
     padding: 0.5rem 0.75rem;
     background: #1e2130;
     border: 1px solid #2d3148;
@@ -74,11 +74,11 @@ header {
     font-family: inherit;
     transition: border-color 0.2s;
 }
-#search-input:focus, #filter-tier:focus, #sort-by:focus {
+#search-input:focus, #filter-tier:focus, #filter-asset:focus, #filter-boe:focus, #sort-by:focus {
     outline: none;
     border-color: #6366f1;
 }
-#filter-tier, #sort-by { min-width: 140px; }
+#filter-tier, #filter-asset, #filter-boe, #sort-by { min-width: 140px; }
 
 /* Region checkboxes */
 .region-filter {

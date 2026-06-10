@@ -16,7 +16,8 @@ async function fetchLeads(append = false) {
         
         const offset = currentPage * PAGE_SIZE;
         const tier = document.getElementById('filter-tier').value;
-        const resp = await fetch(`${API_BASE}/api/leads?limit=${PAGE_SIZE}&offset=${offset}&tier=${tier}`);
+        const assetType = document.getElementById('filter-asset').value;
+        const resp = await fetch(`${API_BASE}/api/leads?limit=${PAGE_SIZE}&offset=${offset}&tier=${tier}&asset_type=${assetType}`);
         const data = await resp.json();
         
         totalLeadsCount = data.total;
@@ -101,10 +102,6 @@ function renderStats(stats, total) {
     document.getElementById('stat-a').textContent = stats.tier_a;
     document.getElementById('stat-b').textContent = stats.tier_b;
     document.getElementById('stat-urgent').textContent = stats.urgent;
-
-    // Count unique regions
-    const regions = new Set(allLeads.map(l => l.region || l.localidad || 'Desconocida'));
-    document.getElementById('stat-regions').textContent = regions.size;
 }
 
 /* ── Region Checkboxes ───────────────────────────── */
@@ -187,6 +184,12 @@ function renderTable() {
             if (!activeRegions.has(leadRegion)) return false;
         }
 
+        // BOE Filter
+        const boeFilter = document.getElementById('filter-boe').value;
+        if (boeFilter !== 'all') {
+            if (!lead.sources || !lead.sources.includes(boeFilter)) return false;
+        }
+
         return true;
     });
 
@@ -254,6 +257,7 @@ function renderTable() {
             <td>${daysHtml}</td>
             <td><span class="badge badge-tier-${lead.tier.toLowerCase()}">${lead.tier}</span></td>
             <td><span class="address-text">${lead.direccion || '-'}</span></td>
+            <td>${sourceUrls.length > 0 ? `<a href="${sourceUrls[0]}" target="_blank" class="source-link">🔗 Abrir</a>` : '-'}</td>
         `;
 
         // Detail row
@@ -346,6 +350,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('search-input').addEventListener('input', renderTable);
     document.getElementById('filter-tier').addEventListener('change', () => fetchLeads(false));
+    document.getElementById('filter-asset').addEventListener('change', () => fetchLeads(false));
+    document.getElementById('filter-boe').addEventListener('change', renderTable);
     document.getElementById('sort-by').addEventListener('change', renderTable);
     document.getElementById('load-more-btn').addEventListener('click', loadMore);
     

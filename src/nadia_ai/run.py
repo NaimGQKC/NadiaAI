@@ -52,9 +52,7 @@ def run_pipeline(days: int = 90) -> dict:
         "cee_new": 0,
         "traspasos_new": 0,
         "ite_new": 0,
-        "subastas_leads_new": 0,
         "enriched": 0,
-        "subastas_enriched": 0,
         "obras_enriched": 0,
         "deadlines_recomputed": 0,
         "heirs_extracted": 0,
@@ -84,15 +82,14 @@ def run_pipeline(days: int = 90) -> dict:
         "tablon": ("nadia_ai.scrapers.tablon", "scrape_tablon", {"since": cutoff_date}),
         "boa": ("nadia_ai.scrapers.boa", "scrape_boa", {"since": cutoff_date}),
         "bop": ("nadia_ai.scrapers.bop", "scrape_bop", {"since": cutoff_date}),
-        "boe": ("nadia_ai.scrapers.boe", "scrape_boe", {"days": days}),
+        "boe": ("nadia_ai.scrapers.boe", "scrape_boe", {"days": 10}), # Increased days for deeper scan
         "borme": ("nadia_ai.scrapers.borme", "scrape_borme", {}),
         "esquelas": ("nadia_ai.scrapers.esquelas", "scrape_esquelas", {"since": cutoff_date}),
         "defunciones": ("nadia_ai.scrapers.defunciones", "scrape_defunciones", {"since": cutoff_date}),
+        "rememori": ("nadia_ai.scrapers.rememori", "scrape_rememori", {"since": cutoff_date}),
         "iesquelas": ("nadia_ai.scrapers.iesquelas", "scrape_iesquelas", {"since": cutoff_date}),
         "cee": ("nadia_ai.scrapers.cee", "scrape_cee", {}),
-        "traspasos": ("nadia_ai.scrapers.traspasos", "scrape_traspasos", {}),
         "ite": ("nadia_ai.scrapers.ite", "scrape_ite", {}),
-        "subastas_leads": ("nadia_ai.scrapers.subastas", "scrape_subastas_leads", {}),
     }
 
     all_records = []

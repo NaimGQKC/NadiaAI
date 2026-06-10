@@ -23,8 +23,13 @@ from nadia_ai.models import EdictRecord
 logger = logging.getLogger("nadia_ai.scrapers.esquelas")
 
 MEMORA_BASE = "https://www.memora.es"
-LISTING_URL = MEMORA_BASE + "/esquelas-defunciones-recientes/zaragoza"
-MAX_PAGES = 10  # Safety limit — typically 4-6 pages available
+CITIES = [
+    "madrid", "barcelona", "valencia", "zaragoza", "sevilla",
+    "malaga", "alicante", "murcia", "cadiz", "vizcaya",
+    "coruna", "asturias", "pontevedra", "granada", "tarragona",
+    "cordoba", "gerona", "almeria", "guipuzcoa", "toledo"
+]
+MAX_PAGES_PER_CITY = 5
 
 SESSION = requests.Session()
 SESSION.headers.update({
@@ -68,14 +73,15 @@ def _name_to_slug(name: str) -> str:
     return hashlib.md5(name.encode("utf-8")).hexdigest()[:12]
 
 
-def fetch_page(page: int = 0) -> list[dict]:
-    """Fetch one page of obituary listings. Returns list of raw card dicts."""
-    url = LISTING_URL if page == 0 else f"{LISTING_URL}?page={page}"
+def fetch_page(city: str, page: int = 0) -> list[dict]:
+    """Fetch one page of obituary listings for a city."""
+    listing_url = f"{MEMORA_BASE}/esquelas-defunciones-recientes/{city}"
+    url = listing_url if page == 0 else f"{listing_url}?page={page}"
     try:
         resp = SESSION.get(url, timeout=30)
         resp.raise_for_status()
     except requests.RequestException as e:
-        logger.error("Memora page %d fetch failed: %s", page, e)
+        logger.error("Memora city %s page %d fetch failed: %s", city, page, e)
         return []
 
     cards = CARD_PATTERN.findall(resp.text)
@@ -91,7 +97,7 @@ def fetch_page(page: int = 0) -> list[dict]:
 
 
 def scrape_esquelas(since: datetime | None = None) -> list[EdictRecord]:
-    """Scrape Memora.es for recent defunciones in Zaragoza province.
+    """Scrape Memora.es for recent defunciones across major cities.
 
     Returns EdictRecord objects suitable for the merge pipeline.
     Default window: 90 days (though Memora typically only shows ~10 days).
@@ -99,50 +105,52 @@ def scrape_esquelas(since: datetime | None = None) -> list[EdictRecord]:
     if since is None:
         since = datetime.now(UTC) - timedelta(days=90)
 
-    seen_slugs: set[str] = set()
     all_records: list[EdictRecord] = []
 
-    for page in range(MAX_PAGES):
-        cards = fetch_page(page)
-        if not cards:
-            logger.info("Memora: no results on page %d, stopping", page)
-            break
+    for city in CITIES:
+        logger.info("Scraping Memora for city: %s", city)
+        seen_slugs: set[str] = set()
+        city_records = 0
+        
+        for page in range(MAX_PAGES_PER_CITY):
+            cards = fetch_page(city, page)
+            if not cards:
+                break
 
-        new_on_page = 0
-        for card in cards:
-            slug = card["slug"]
-            if slug in seen_slugs:
-                continue
-            seen_slugs.add(slug)
+            new_on_page = 0
+            for card in cards:
+                slug = card["slug"]
+                if slug in seen_slugs:
+                    continue
+                seen_slugs.add(slug)
 
-            # Date filter
-            pub_date = card["date"]
-            if pub_date and pub_date < since:
-                logger.info("Memora: reached date cutoff at page %d", page)
-                # Records are sorted newest-first; stop pagination
-                return all_records
+                # Date filter
+                pub_date = card["date"]
+                if pub_date and pub_date < since:
+                    break
 
-            source_id = _name_to_slug(slug)
-            fecha_f = pub_date.strftime("%Y-%m-%d") if pub_date else None
-            record = EdictRecord(
-                source="esquelas",
-                source_id=source_id,
-                edict_type="defuncion_esquela",
-                published_at=pub_date,
-                source_url=card["url"],
-                causante=card["name"],
-                localidad="Zaragoza",
-                fecha_fallecimiento=fecha_f,
-            )
-            all_records.append(record)
-            new_on_page += 1
-            logger.info("Esquela: %s (id=%s)", card["name"], source_id)
+                source_id = _name_to_slug(slug)
+                fecha_f = pub_date.strftime("%Y-%m-%d") if pub_date else None
+                record = EdictRecord(
+                    source="esquelas",
+                    source_id=source_id,
+                    edict_type="defuncion_esquela",
+                    published_at=pub_date,
+                    source_url=card["url"],
+                    causante=card["name"],
+                    localidad=city.title(),
+                    fecha_fallecimiento=fecha_f,
+                )
+                all_records.append(record)
+                new_on_page += 1
+                city_records += 1
 
-        logger.info("Memora page %d: %d new records", page, new_on_page)
+            if new_on_page == 0:
+                break
+                
+            time.sleep(0.5)
+            
+        logger.info("City %s: %d records found", city, city_records)
 
-        # Polite delay between pages
-        if page < MAX_PAGES - 1:
-            time.sleep(1.0)
-
-    logger.info("Esquelas scrape complete: %d records", len(all_records))
+    logger.info("Memora total scrape complete: %d records", len(all_records))
     return all_records
