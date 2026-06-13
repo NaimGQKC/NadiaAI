@@ -154,19 +154,24 @@ def discover_contact(name: str, city: str, context: str) -> dict | None:
     }
 
 
-def get_leads_for_contact(conn: sqlite3.Connection, limit: int) -> list[dict]:
-    """Tier A/B, outreach-allowed leads with a valid name and no contact yet."""
+def get_leads_for_contact(conn: sqlite3.Connection, limit: int, extra_where: str = "") -> list[dict]:
+    """Tier A/B, outreach-allowed leads with a valid name and no contact yet.
+
+    `extra_where` is an optional extra SQL filter ANDed on for targeted runs
+    (e.g. "localidad LIKE '%aragoza%' AND heir_name != ''")."""
     init_leads_schema(conn)
+    where = (
+        "tier IN ('A', 'B') AND outreach_allowed = 1"
+        " AND (contact_enriched_at IS NULL OR contact_enriched_at = '')"
+        " AND ((heir_name IS NOT NULL AND heir_name != '')"
+        "      OR (causante IS NOT NULL AND causante != ''))"
+    )
+    if extra_where:
+        where += f" AND ({extra_where})"
     rows = conn.execute(
-        """SELECT id, causante, heir_name, localidad, sources, tier, urgency_phase
+        f"""SELECT id, causante, heir_name, localidad, sources, tier, urgency_phase
            FROM leads
-           WHERE tier IN ('A', 'B')
-             AND outreach_allowed = 1
-             AND (contact_enriched_at IS NULL OR contact_enriched_at = '')
-             AND (
-                 (heir_name IS NOT NULL AND heir_name != '')
-                 OR (causante IS NOT NULL AND causante != '')
-             )
+           WHERE {where}
            ORDER BY CASE tier WHEN 'A' THEN 0 ELSE 1 END,
                     days_since_death DESC NULLS LAST
            LIMIT ?""",
@@ -274,9 +279,9 @@ def enrich_lead(lead: dict) -> ContactResult | None:
     return ContactResult(source="none", has_contact=False) if ran_any else None
 
 
-def run_contact_enrichment(conn: sqlite3.Connection, limit: int | None = None) -> int:
+def run_contact_enrichment(conn: sqlite3.Connection, limit: int | None = None, extra_where: str = "") -> int:
     """Run the contact waterfall over eligible leads. Returns the count with a
-    contact found."""
+    contact found. `extra_where` scopes the candidate query for targeted runs."""
     if not (PERPLEXITY_API_KEY or EINFORMA_API_KEY):
         logger.warning(
             "No enrichment source configured (PERPLEXITY_API_KEY / EINFORMA_API_KEY) "
@@ -285,7 +290,7 @@ def run_contact_enrichment(conn: sqlite3.Connection, limit: int | None = None) -
         return 0
 
     limit = limit if limit is not None else CONTACT_ENRICH_MAX_PER_RUN
-    leads = get_leads_for_contact(conn, limit)
+    leads = get_leads_for_contact(conn, limit, extra_where)
     if not leads:
         logger.info("No leads pending contact enrichment")
         return 0
