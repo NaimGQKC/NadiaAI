@@ -180,6 +180,19 @@ def run_pipeline(days: int = 90) -> dict:
         logger.error("Address→RC resolution failed (non-critical): %s", e)
         summary["errors"].append(f"rc_resolve: {e}")
 
+    # Step 7b3: Contact discovery — search-native LLM (Perplexity Sonar) turns an
+    # heir/causante name + city into a contact path. Cost-capped per run; skips
+    # silently if no search key is set. Scoped to outreach-allowed, named leads.
+    try:
+        from nadia_ai.enrich_contact import run_contact_enrichment
+
+        contacts = run_contact_enrichment(conn)
+        summary["contacts_found"] = contacts
+        logger.info("Contact enrichment: %d leads got a contact path", contacts)
+    except Exception as e:
+        logger.error("Contact enrichment failed (non-critical): %s", e)
+        summary["errors"].append(f"contact_enrichment: {e}")
+
     # Step 7c: Enrichment — cross-join subastas and obras data to leads
     try:
         from nadia_ai.enrichment import (
