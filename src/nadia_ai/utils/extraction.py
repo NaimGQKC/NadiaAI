@@ -270,26 +270,33 @@ def extract_inheritance_data(text: str, causante_hint: str = None) -> dict:
         logger.warning("Extraction failed entirely: %s", e)
         return {}
 
-def run_heir_extraction(conn):
+def run_heir_extraction(conn, limit: int = 200, extra_where: str = ""):
     """Enrich pending leads by extracting heirs and addresses from their source documents.
-    
+
     Includes Catastro validation as a gatekeeper for Tier A.
+
+    `limit` caps how many leads are processed; `extra_where` is an optional extra
+    SQL filter (e.g. a province + source scope) ANDed onto the pending-leads query
+    for targeted/pilot runs.
     """
     from nadia_ai.catastro import lookup_by_rc
     conn.row_factory = sqlite3.Row
-    
-    cursor = conn.execute("""
-        SELECT id, causante, source_urls, tier, sources 
-        FROM leads 
-        WHERE ai_extraction_done = 0 
-        ORDER BY 
-            CASE 
-                WHEN sources LIKE '%BOE%' OR sources LIKE '%Tablón%' OR sources LIKE '%BOA%' OR sources LIKE '%BOP%' THEN 0 
-                ELSE 1 
+
+    where = "ai_extraction_done = 0"
+    if extra_where:
+        where += f" AND ({extra_where})"
+    cursor = conn.execute(f"""
+        SELECT id, causante, source_urls, tier, sources
+        FROM leads
+        WHERE {where}
+        ORDER BY
+            CASE
+                WHEN sources LIKE '%BOE%' OR sources LIKE '%Tablón%' OR sources LIKE '%BOA%' OR sources LIKE '%BOP%' THEN 0
+                ELSE 1
             END ASC,
-            tier ASC, 
-            first_seen_at DESC 
-        LIMIT 200
+            tier ASC,
+            first_seen_at DESC
+        LIMIT {int(limit)}
     """)
     leads = cursor.fetchall()
     
