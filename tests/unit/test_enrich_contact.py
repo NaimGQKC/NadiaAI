@@ -12,8 +12,10 @@ import sqlite3
 
 import nadia_ai.enrich_contact as ec
 from nadia_ai.enrich_contact import (
+    ContactResult,
     _parse_json_blob,
     discover_contact,
+    enrich_lead,
     get_leads_for_contact,
     run_contact_enrichment,
 )
@@ -184,3 +186,74 @@ def test_transient_failure_leaves_unmarked(monkeypatch):
         "SELECT contact_enriched_at FROM leads WHERE id = ?", (lead_id,)
     ).fetchone()
     assert not row["contact_enriched_at"]
+
+
+# ── waterfall orchestrator ──────────────────────────────────────────────────
+
+def test_waterfall_stops_on_first_hit(monkeypatch):
+    """A higher-priority source that hits short-circuits the lower ones."""
+    calls = []
+
+    def _hit(lead, name, city, ctx):
+        calls.append("einforma")
+        return ContactResult(source="einforma", has_contact=True, phone="976111111")
+
+    def _should_not_run(lead, name, city, ctx):
+        calls.append("search_llm")
+        return ContactResult(source="search_llm", has_contact=True, phone="999")
+
+    monkeypatch.setattr(
+        ec, "CONTACT_SOURCES", [("einforma", _hit), ("search_llm", _should_not_run)]
+    )
+    res = enrich_lead({"heir_name": "Maria Perez Lopez", "localidad": "Zaragoza", "sources": "[]"})
+    assert res.source == "einforma"
+    assert res.phone == "976111111"
+    assert calls == ["einforma"]  # second tier never ran
+
+
+def test_waterfall_cascades_past_negative(monkeypatch):
+    """A source that ran-but-found-nothing falls through to the next."""
+    def _miss(lead, name, city, ctx):
+        return None  # defers
+
+    def _hit(lead, name, city, ctx):
+        return ContactResult(source="search_llm", has_contact=True, email="a@b.es")
+
+    monkeypatch.setattr(
+        ec, "CONTACT_SOURCES", [("einforma", _miss), ("search_llm", _hit)]
+    )
+    res = enrich_lead({"heir_name": "Maria Perez Lopez", "localidad": "Zaragoza", "sources": "[]"})
+    assert res.source == "search_llm"
+    assert res.email == "a@b.es"
+
+
+def test_waterfall_all_defer_returns_none(monkeypatch):
+    monkeypatch.setattr(ec, "CONTACT_SOURCES", [("x", lambda *a: None)])
+    assert enrich_lead({"heir_name": "Maria Perez Lopez", "sources": "[]"}) is None
+
+
+def test_b2b_lead_skips_person_sources():
+    """A company lead (no heir, B2B source) is not web-searched as a person."""
+    lead = {"heir_name": "", "causante": "BAR PEPE SL", "sources": "Traspasos"}
+    # einforma stub returns None (no key), paginas/search_llm self-skip B2B → None
+    assert enrich_lead(lead) is None
+
+
+def test_contact_source_tag_persisted(monkeypatch):
+    monkeypatch.setattr(ec, "PERPLEXITY_API_KEY", "test")
+    monkeypatch.setattr(
+        ec,
+        "discover_contact",
+        lambda name, city, ctx: {
+            "identity_match": True, "confidence": "medium",
+            "phone": "976123456", "email": None, "profile_url": None,
+            "source_url": "https://x.es",
+        },
+    )
+    conn = _make_conn()
+    lead_id = _insert_lead(conn)
+    run_contact_enrichment(conn)
+    row = conn.execute(
+        "SELECT contact_source FROM leads WHERE id = ?", (lead_id,)
+    ).fetchone()
+    assert row["contact_source"] == "search_llm"

@@ -83,6 +83,11 @@ PERPLEXITY_MODEL = os.getenv("PERPLEXITY_MODEL", "sonar")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
+# B2B registry enrichment (eInforma / Axesor) — Spain's "skip-trace equivalent"
+# for company leads (borme, traspasos). Paid; the source is a stub until a key +
+# implementation are added, at which point it slots into the waterfall as tier 1.
+EINFORMA_API_KEY = os.getenv("EINFORMA_API_KEY", "")
+
 # Cost control: cap how many leads we spend a paid search on per run.
 CONTACT_ENRICH_MAX_PER_RUN = int(os.getenv("CONTACT_ENRICH_MAX_PER_RUN", "50"))
 
