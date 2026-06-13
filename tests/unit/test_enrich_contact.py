@@ -83,7 +83,6 @@ def test_invalid_name_short_circuits(monkeypatch):
         return None
 
     monkeypatch.setattr(ec, "_search_via_perplexity", _spy)
-    monkeypatch.setattr(ec, "_search_via_gemini", _spy)
     out = discover_contact("En Cualquier Caso", "Zaragoza", "herencia")
     assert out["identity_match"] is False
     assert called["n"] == 0
@@ -123,7 +122,6 @@ def test_low_confidence_is_dropped(monkeypatch):
 
 def test_provider_unavailable_returns_none(monkeypatch):
     monkeypatch.setattr(ec, "_search_via_perplexity", lambda p: None)
-    monkeypatch.setattr(ec, "_search_via_gemini", lambda p: None)
     assert discover_contact("Maria Perez Lopez", "Zaragoza", "herencia") is None
 
 

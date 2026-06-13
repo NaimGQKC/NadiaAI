@@ -8,7 +8,6 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 from pathlib import Path
 
-from nadia_ai.config import OLLAMA_MODEL
 from nadia_ai.scrapers.boe import extract_pdf_text
 from nadia_ai.utils.names import clean_name_list, is_valid_person_name
 
@@ -96,73 +95,30 @@ def extract_heirs_regex(text: str) -> list[str]:
     # ("Si En El Plazo De Un Mes...") — keep only plausible person names.
     return clean_name_list(heirs)
 
-def _extract_via_anthropic(prompt: str) -> dict | None:
-    """Extract via the Anthropic API (Claude). Best Spanish-legal accuracy and the
-    only path that works in the GitHub Actions cron (no local Ollama there).
-    Returns the raw 5-key dict, or None to let the caller fall back."""
-    from nadia_ai.config import ANTHROPIC_API_KEY, ANTHROPIC_MODEL
-    if not ANTHROPIC_API_KEY:
+def _extract_via_deepseek(prompt: str) -> dict | None:
+    """Extract via DeepSeek (OpenAI-compatible JSON mode). The cheap cloud LLM for
+    the extraction job; works in CI. Returns the raw 5-key dict, or None to defer
+    to regex."""
+    from nadia_ai.config import DEEPSEEK_API_KEY, DEEPSEEK_API_URL, DEEPSEEK_MODEL
+    if not DEEPSEEK_API_KEY:
         return None
     try:
-        import anthropic
-    except ImportError:
-        logger.warning("anthropic SDK not installed — falling back to Ollama/regex")
-        return None
-
-    # Structured output guarantees parseable JSON in the exact shape we need.
-    schema = {
-        "type": "object",
-        "properties": {
-            "deceased_name": {"type": ["string", "null"]},
-            "date_of_death": {"type": ["string", "null"]},
-            "list_of_heirs": {"type": "array", "items": {"type": "string"}},
-            "property_address": {"type": ["string", "null"]},
-            "referencia_catastral": {"type": ["string", "null"]},
-        },
-        "required": [
-            "deceased_name", "date_of_death", "list_of_heirs",
-            "property_address", "referencia_catastral",
-        ],
-        "additionalProperties": False,
-    }
-    try:
-        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-        resp = client.messages.create(
-            model=ANTHROPIC_MODEL,
-            max_tokens=1024,
-            messages=[{"role": "user", "content": prompt}],
-            output_config={"format": {"type": "json_schema", "schema": schema}},
-        )
-        if resp.stop_reason == "refusal":
-            logger.warning("Anthropic refused extraction request; falling back")
-            return None
-        content = next((b.text for b in resp.content if b.type == "text"), "")
-        return json.loads(content) if content else None
-    except Exception as e:
-        logger.warning("Anthropic extraction failed, falling back: %s", e)
-        return None
-
-
-def _extract_via_ollama(prompt: str) -> dict | None:
-    """Extract via local Ollama REST API. Free, but only reachable on a host that
-    runs Ollama — not the CI cron. Returns the raw 5-key dict, or None."""
-    import requests
-    from nadia_ai.config import OLLAMA_URL, OLLAMA_MODEL
-    try:
-        response = requests.post(
-            f"{OLLAMA_URL}/api/chat",
-            json={
-                "model": OLLAMA_MODEL,
-                "messages": [{"role": "user", "content": prompt}],
-                "stream": False,
-                "options": {"temperature": 0, "num_ctx": 4096},
-                "format": "json",
-                "keep_alive": "5m",
+        resp = requests.post(
+            DEEPSEEK_API_URL,
+            headers={
+                "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+                "Content-Type": "application/json",
             },
-            timeout=120,
+            json={
+                "model": DEEPSEEK_MODEL,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0,
+                "response_format": {"type": "json_object"},
+            },
+            timeout=60,
         )
-        response.raise_for_status()
-        content = response.json().get("message", {}).get("content", "")
+        resp.raise_for_status()
+        content = resp.json()["choices"][0]["message"]["content"]
         if not content:
             return None
         try:
@@ -171,21 +127,21 @@ def _extract_via_ollama(prompt: str) -> dict | None:
             m = re.search(r"\{.*\}", content, re.DOTALL)
             return json.loads(m.group(0)) if m else None
     except Exception as e:
-        logger.warning("Ollama call failed: %s", e)
+        logger.warning("DeepSeek extraction failed, falling back to regex: %s", e)
         return None
 
 
 def extract_inheritance_data(text: str, causante_hint: str = None) -> dict:
-    """Extract inheritance details. Provider chain: Anthropic (Claude) if a key is
-    set → local Ollama → regex. The downstream sanitization is provider-agnostic."""
+    """Extract inheritance details with DeepSeek (if DEEPSEEK_API_KEY is set), else
+    regex. The downstream sanitization is identical for both."""
     try:
         cleaned_text = clean_legal_text(text)
         truncated_text = cleaned_text[:10000]
 
         prompt = f"El fallecido es: {causante_hint}\n\n" + EXTRACTION_PROMPT.format(text=truncated_text)
 
-        # Try cloud, then local, then regex — each returns None to defer to the next.
-        result = _extract_via_anthropic(prompt) or _extract_via_ollama(prompt)
+        # DeepSeek if a key is set, else regex.
+        result = _extract_via_deepseek(prompt)
         if result is None:
             logger.info("No LLM available — using regex extraction.")
             result = {

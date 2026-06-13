@@ -31,8 +31,6 @@ import requests
 from nadia_ai.config import (
     CONTACT_ENRICH_MAX_PER_RUN,
     EINFORMA_API_KEY,
-    GEMINI_API_KEY,
-    GEMINI_MODEL,
     PERPLEXITY_API_KEY,
     PERPLEXITY_API_URL,
     PERPLEXITY_MODEL,
@@ -122,46 +120,6 @@ def _search_via_perplexity(prompt: str) -> tuple[dict, list[str]] | None:
         return None
 
 
-def _search_via_gemini(prompt: str) -> tuple[dict, list[str]] | None:
-    """Query Gemini with Google Search grounding. Alternate provider; returns
-    (parsed_json, citations) or None to defer."""
-    if not GEMINI_API_KEY:
-        return None
-    try:
-        url = (
-            f"https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
-        )
-        resp = requests.post(
-            url,
-            headers={"Content-Type": "application/json"},
-            json={
-                "contents": [{"parts": [{"text": prompt}]}],
-                "tools": [{"google_search": {}}],
-                "generationConfig": {"temperature": 0},
-            },
-            timeout=40,
-        )
-        resp.raise_for_status()
-        body = resp.json()
-        parts = body["candidates"][0]["content"]["parts"]
-        content = "".join(p.get("text", "") for p in parts)
-        data = _parse_json_blob(content)
-        if data is None:
-            return None
-        # Grounding citations live under groundingMetadata.
-        meta = body["candidates"][0].get("groundingMetadata", {})
-        citations = [
-            c.get("web", {}).get("uri")
-            for c in meta.get("groundingChunks", [])
-            if c.get("web", {}).get("uri")
-        ]
-        return data, citations
-    except (requests.RequestException, KeyError, ValueError) as e:
-        logger.warning("Gemini search failed, deferring: %s", e)
-        return None
-
-
 def discover_contact(name: str, city: str, context: str) -> dict | None:
     """Find a public contact path for a person. Returns a normalized dict with
     phone/email/profile_url/confidence/source_url, or None if no provider is
@@ -177,7 +135,7 @@ def discover_contact(name: str, city: str, context: str) -> dict | None:
 
     prompt = SEARCH_PROMPT.format(name=name, city=city or "España", context=context or "herencia")
 
-    result = _search_via_perplexity(prompt) or _search_via_gemini(prompt)
+    result = _search_via_perplexity(prompt)
     if result is None:
         return None  # no provider available / transient — let caller retry
 
@@ -266,8 +224,8 @@ def _source_paginas_blancas(lead: dict, name: str, city: str, context: str) -> C
 
 
 def _source_search_llm(lead: dict, name: str, city: str, context: str) -> ContactResult | None:
-    """TIER 3 — search-native LLM (Perplexity Sonar → Gemini grounding). The
-    pragmatic substitute for the Spanish skip-trace broker that doesn't exist."""
+    """TIER 3 — search-native LLM (Perplexity Sonar). The pragmatic substitute for
+    the Spanish skip-trace broker that doesn't exist."""
     if _is_b2b_lead(lead):
         return None
     res = discover_contact(name, city, context)
@@ -320,10 +278,10 @@ def enrich_lead(lead: dict) -> ContactResult | None:
 def run_contact_enrichment(conn: sqlite3.Connection, limit: int | None = None) -> int:
     """Run the contact waterfall over eligible leads. Returns the count with a
     contact found."""
-    if not (PERPLEXITY_API_KEY or GEMINI_API_KEY or EINFORMA_API_KEY):
+    if not (PERPLEXITY_API_KEY or EINFORMA_API_KEY):
         logger.warning(
-            "No enrichment source configured (PERPLEXITY_API_KEY / GEMINI_API_KEY / "
-            "EINFORMA_API_KEY) — skipping contact enrichment"
+            "No enrichment source configured (PERPLEXITY_API_KEY / EINFORMA_API_KEY) "
+            "— skipping contact enrichment"
         )
         return 0
 
