@@ -29,11 +29,13 @@ jobs:
         env:
           # Delivery is the self-hosted dashboard (reads the DB the cron commits).
           # Two LLMs, one job each — both graceful if unset:
-          #   EXTRACTION_API_KEY → text→JSON extraction (DeepSeek by default; point
-          #     EXTRACTION_API_URL/MODEL at any OpenAI-compatible model).
-          #   PERPLEXITY_API_KEY → search-native contact discovery (Sonar).
+          #   EXTRACTION_*  → text→JSON extraction (MiniMax M3 via OpenRouter)
+          #   PERPLEXITY_API_KEY → search-native contact discovery (Sonar)
+          # KEYS come from GitHub Secrets; URL/MODEL are plain config (not secret).
           # CONTACT_ENRICH_MAX_PER_RUN caps search spend per run.
           EXTRACTION_API_KEY: ${{ secrets.EXTRACTION_API_KEY }}
+          EXTRACTION_API_URL: https://openrouter.ai/api/v1/chat/completions
+          EXTRACTION_MODEL: minimax/minimax-m3
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
         run: python -m nadia_ai --cron
 
