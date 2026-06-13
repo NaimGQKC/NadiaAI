@@ -49,39 +49,31 @@ if SPAIN_WIDE:
 else:
     TARGET_PROVINCES = [p.strip().lower() for p in _provinces_env.split(",") if p.strip()]
 
-# Ollama (local LLM — free; only reachable when running on a machine with Ollama,
-# NOT in the GitHub Actions cron). Used as the fallback when no cloud key is set.
+# Ollama (local LLM — free; used ONLY by the standalone qa_judge dev tool now,
+# not the pipeline, which runs entirely on Gemini).
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")
-
-# Anthropic (cloud LLM — best Spanish legal extraction, works anywhere incl. CI).
-# When ANTHROPIC_API_KEY is set, heir/address extraction uses Claude; otherwise it
-# falls back to Ollama, then to regex. ANTHROPIC_MODEL is overridable — claude-haiku-4-5
-# is ~5x cheaper than the opus default and ample for this short-text extraction.
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-ANTHROPIC_MODEL = os.getenv("NADIA_ANTHROPIC_MODEL", "claude-opus-4-8")
 
 # Phantombuster (free tier social graphing)
 PHANTOMBUSTER_API_KEY = os.getenv("PHANTOMBUSTER_API_KEY", "")
 
-# ── Contact-discovery enrichment (search-native LLM) ───────────────────────
-# Turns a heir/causante name + city into a contact path (phone/email/profile)
-# by querying a *search-native* model. Claude has no search index, so this uses
-# Perplexity Sonar (primary) — purpose-built for web search and returns citations
-# we keep for identity verification + GDPR defensibility. Gemini-with-grounding is
-# an optional alternate provider. Provider-agnostic, mirrors utils/extraction.py.
+# ── Two LLMs, one job each ─────────────────────────────────────────────────
+# Extraction (read edict/obituary text → JSON): DeepSeek — cheap, strong at
+# structured extraction. Contact search (name → web → contact path): Perplexity
+# Sonar — search-native, returns citations. Both are OpenAI-compatible APIs and
+# both work in CI. Endpoints/models are overridable (their surfaces drift; e.g.
+# set DEEPSEEK_MODEL=deepseek-v4 when you want to pin that version).
 #
-# Perplexity's API surface has shifted between releases (/chat/completions vs
-# /v1/* endpoints), so the URL is overridable to avoid a code change if it moves.
-PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY", "")
-PERPLEXITY_API_URL = os.getenv(
-    "PERPLEXITY_API_URL", "https://api.perplexity.ai/chat/completions"
-)
-PERPLEXITY_MODEL = os.getenv("PERPLEXITY_MODEL", "sonar")
+# NOTE: extraction sends names (deceased + heirs = personal data) to DeepSeek, a
+# China-based provider — a cross-border transfer with no EU adequacy decision.
+# Flagged in docs/LLM_AND_DATA_LEGALITY.md; minimise payloads and confirm terms.
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+DEEPSEEK_API_URL = os.getenv("DEEPSEEK_API_URL", "https://api.deepseek.com/chat/completions")
+DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")  # maps to latest (V3/V4)
 
-# Optional alternate provider: Gemini 2.x Flash with Google Search grounding.
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY", "")
+PERPLEXITY_API_URL = os.getenv("PERPLEXITY_API_URL", "https://api.perplexity.ai/chat/completions")
+PERPLEXITY_MODEL = os.getenv("PERPLEXITY_MODEL", "sonar")
 
 # B2B registry enrichment (eInforma / Axesor) — Spain's "skip-trace equivalent"
 # for company leads (borme, traspasos). Paid; the source is a stub until a key +
