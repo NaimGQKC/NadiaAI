@@ -64,5 +64,27 @@ ANTHROPIC_MODEL = os.getenv("NADIA_ANTHROPIC_MODEL", "claude-opus-4-8")
 # Phantombuster (free tier social graphing)
 PHANTOMBUSTER_API_KEY = os.getenv("PHANTOMBUSTER_API_KEY", "")
 
+# ── Contact-discovery enrichment (search-native LLM) ───────────────────────
+# Turns a heir/causante name + city into a contact path (phone/email/profile)
+# by querying a *search-native* model. Claude has no search index, so this uses
+# Perplexity Sonar (primary) — purpose-built for web search and returns citations
+# we keep for identity verification + GDPR defensibility. Gemini-with-grounding is
+# an optional alternate provider. Provider-agnostic, mirrors utils/extraction.py.
+#
+# Perplexity's API surface has shifted between releases (/chat/completions vs
+# /v1/* endpoints), so the URL is overridable to avoid a code change if it moves.
+PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY", "")
+PERPLEXITY_API_URL = os.getenv(
+    "PERPLEXITY_API_URL", "https://api.perplexity.ai/chat/completions"
+)
+PERPLEXITY_MODEL = os.getenv("PERPLEXITY_MODEL", "sonar")
+
+# Optional alternate provider: Gemini 2.x Flash with Google Search grounding.
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+
+# Cost control: cap how many leads we spend a paid search on per run.
+CONTACT_ENRICH_MAX_PER_RUN = int(os.getenv("CONTACT_ENRICH_MAX_PER_RUN", "50"))
+
 # Dashboard
 DASHBOARD_PORT = int(os.getenv("DASHBOARD_PORT", "5000"))

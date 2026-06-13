@@ -32,6 +32,9 @@ jobs:
           # address extraction in CI (no Ollama on the runner). Optional: set
           # NADIA_ANTHROPIC_MODEL to claude-haiku-4-5 to cut extraction cost ~5x.
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # PERPLEXITY_API_KEY powers search-native contact discovery (Sonar). Optional:
+          # skipped gracefully if unset. CONTACT_ENRICH_MAX_PER_RUN caps cost per run.
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
         run: python -m nadia_ai --cron
 
   on-failure:

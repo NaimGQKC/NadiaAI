@@ -53,6 +53,13 @@ CREATE TABLE IF NOT EXISTS leads (
     heir_names_json TEXT NOT NULL DEFAULT '[]',
     heir_name TEXT DEFAULT '',
     social_profile_url TEXT DEFAULT '',
+    -- Contact discovery (search-native LLM enrichment)
+    contact_phone TEXT DEFAULT '',
+    contact_email TEXT DEFAULT '',
+    contact_profile_url TEXT DEFAULT '',
+    contact_source_url TEXT DEFAULT '',
+    contact_confidence TEXT DEFAULT '',
+    contact_enriched_at TEXT DEFAULT '',
     -- Tracking
     sources TEXT NOT NULL DEFAULT '[]',
     source_urls TEXT NOT NULL DEFAULT '[]',
@@ -325,6 +332,13 @@ _LEADS_MIGRATIONS = [
     ("kanban_status", "ALTER TABLE leads ADD COLUMN kanban_status TEXT DEFAULT 'new_to_call'"),
     ("region", "ALTER TABLE leads ADD COLUMN region TEXT DEFAULT ''"),
     ("ai_extraction_done", "ALTER TABLE leads ADD COLUMN ai_extraction_done INTEGER DEFAULT 0"),
+    # Contact discovery (search-native LLM enrichment)
+    ("contact_phone", "ALTER TABLE leads ADD COLUMN contact_phone TEXT DEFAULT ''"),
+    ("contact_email", "ALTER TABLE leads ADD COLUMN contact_email TEXT DEFAULT ''"),
+    ("contact_profile_url", "ALTER TABLE leads ADD COLUMN contact_profile_url TEXT DEFAULT ''"),
+    ("contact_source_url", "ALTER TABLE leads ADD COLUMN contact_source_url TEXT DEFAULT ''"),
+    ("contact_confidence", "ALTER TABLE leads ADD COLUMN contact_confidence TEXT DEFAULT ''"),
+    ("contact_enriched_at", "ALTER TABLE leads ADD COLUMN contact_enriched_at TEXT DEFAULT ''"),
 ]
 
 
