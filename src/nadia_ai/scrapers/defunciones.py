@@ -17,13 +17,10 @@ from nadia_ai.models import EdictRecord
 
 logger = logging.getLogger("nadia_ai.scrapers.defunciones")
 
+from nadia_ai.config import TARGET_PROVINCES
+
 BASE_URL = "https://defunciones.es"
-PROVINCES = [
-    "madrid", "barcelona", "valencia", "alicante", "sevilla", 
-    "malaga", "murcia", "cadiz", "vizcaya", "coruna", 
-    "asturias", "zaragoza", "pontevedra", "granada", "tarragona", 
-    "cordoba", "gerona", "almeria", "guipuzcoa", "toledo"
-]
+PROVINCES = TARGET_PROVINCES
 MAX_PAGES_PER_PROVINCE = 5
 
 SESSION = requests.Session()

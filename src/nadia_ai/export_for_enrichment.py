@@ -22,6 +22,7 @@ import requests
 from nadia_ai.config import PHANTOMBUSTER_API_KEY
 from nadia_ai.db import get_connection
 from nadia_ai.merge import init_leads_schema
+from nadia_ai.utils.names import is_valid_person_name
 
 logger = logging.getLogger("nadia_ai.export_for_enrichment")
 
@@ -36,7 +37,7 @@ def get_leads_for_enrichment(conn: sqlite3.Connection) -> list[dict]:
         """SELECT id, causante, heir_name, heir_names_json, localidad, direccion,
                   tier, days_since_death, urgency_phase
            FROM leads
-           WHERE tier = 'A'
+           WHERE tier IN ('A', 'B')
              AND (social_profile_url IS NULL OR social_profile_url = '')
              AND outreach_allowed = 1
            ORDER BY
@@ -55,7 +56,13 @@ def export_csv(leads: list[dict]) -> Path:
     today = datetime.now(UTC).strftime("%Y-%m-%d")
     csv_path = EXPORTS_DIR / f"phantombuster_input_{today}.csv"
 
-    with open(csv_path, "w", newline="", encoding="utf-8") as f:
+    # utf-8-sig: Excel and PhantomBuster misread plain UTF-8 as Latin-1
+    # ("AndalucÃ­a") without the BOM.
+    # Track (name, city) pairs already written — each unique person-in-city
+    # should be searched exactly once to avoid burning paid PB slots.
+    seen_name_city: set[tuple[str, str]] = set()
+
+    with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
         writer = csv.writer(f)
         writer.writerow(["name", "city", "lead_id", "tier", "urgency"])
 
@@ -75,7 +82,7 @@ def export_csv(leads: list[dict]) -> Path:
             except (json.JSONDecodeError, TypeError):
                 pass
 
-            # Fall back to causante if no heirs
+            # Fall back to causante if no heirs found
             if not names_to_search:
                 causante = lead.get("causante") or ""
                 if causante:
@@ -83,7 +90,16 @@ def export_csv(leads: list[dict]) -> Path:
 
             city = lead.get("localidad") or "Zaragoza"
 
+            # Never ship boilerplate/placeholder strings to PhantomBuster —
+            # each junk row burns a paid search slot.
+            names_to_search = [n for n in names_to_search if is_valid_person_name(n)]
+
             for name in names_to_search:
+                key = (name.strip().lower(), city.strip().lower())
+                if key in seen_name_city:
+                    # Same person+city already queued — skip duplicate slot
+                    continue
+                seen_name_city.add(key)
                 writer.writerow([
                     name,
                     city,

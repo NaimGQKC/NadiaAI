@@ -22,13 +22,10 @@ from nadia_ai.models import EdictRecord
 
 logger = logging.getLogger("nadia_ai.scrapers.esquelas")
 
+from nadia_ai.config import TARGET_PROVINCES
+
 MEMORA_BASE = "https://www.memora.es"
-CITIES = [
-    "madrid", "barcelona", "valencia", "zaragoza", "sevilla",
-    "malaga", "alicante", "murcia", "cadiz", "vizcaya",
-    "coruna", "asturias", "pontevedra", "granada", "tarragona",
-    "cordoba", "gerona", "almeria", "guipuzcoa", "toledo"
-]
+CITIES = TARGET_PROVINCES
 MAX_PAGES_PER_CITY = 5
 
 SESSION = requests.Session()

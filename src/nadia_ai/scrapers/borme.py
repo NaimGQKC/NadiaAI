@@ -160,11 +160,39 @@ def _classify_edict_type(text: str) -> str:
     return "disolucion_borme"
 
 
-def extract_seccion1_items(sumario_xml: str) -> list[dict]:
-    """Extract matching items from BORME Seccion I.
+def _item_field(item: ET.Element, name: str) -> str:
+    """Read a sumario <item> child field.
 
-    Seccion I items have <emisor> tags. We filter for those containing
-    "Zaragoza" and whose title/text matches death/dissolution keywords.
+    The BOE Open Data API moved the document id from an `id` attribute on
+    <item> to a child <identificador> element, and dropped the <emisor>
+    child entirely. This helper reads child text, falling back to the legacy
+    attribute for `id`.
+    """
+    el = item.find(name)
+    if el is not None and el.text:
+        return el.text.strip()
+    return ""
+
+
+def _item_doc_id(item: ET.Element) -> str:
+    """Resolve a sumario item's document id across old and new schemas."""
+    ident = _item_field(item, "identificador")
+    if ident:
+        return ident
+    # Legacy schema: id was an attribute on <item>
+    return item.get("id", "")
+
+
+def extract_seccion1_items(sumario_xml: str) -> list[dict]:
+    """Extract Zaragoza items from BORME Sección A (Empresarios. Actos inscritos).
+
+    In the current BOE Open Data schema the daily summary groups Sección A by
+    province: each <item> has a <titulo> equal to a province name (e.g.
+    "ZARAGOZA") and an <identificador> like BORME-A-2026-111-50. There is no
+    per-company emisor and no keyword text at the summary level — the company
+    acts live inside the per-province document. So here we simply locate the
+    Zaragoza province document(s); keyword filtering happens after we fetch and
+    split the document body in parse_borme_document().
 
     Returns list of dicts with keys: doc_id, titulo, emisor, seccion.
     """
@@ -175,41 +203,33 @@ def extract_seccion1_items(sumario_xml: str) -> list[dict]:
         logger.error("Failed to parse BORME sumario XML: %s", e)
         return items
 
-    for item in root.iter("item"):
-        doc_id = item.get("id", "")
-        if not doc_id:
+    for seccion in root.iter("seccion"):
+        if (seccion.get("codigo") or "").upper() != "A":
             continue
-
-        emisor_el = item.find("emisor")
-        emisor = (emisor_el.text or "").strip() if emisor_el is not None else ""
-
-        titulo_el = item.find("titulo")
-        titulo = (titulo_el.text or "").strip() if titulo_el is not None else ""
-
-        # Seccion I filter: emisor must reference Zaragoza
-        if "zaragoza" not in emisor.lower():
-            continue
-
-        # Must match at least one death/dissolution keyword
-        combined = f"{titulo} {emisor}"
-        if not DEATH_KEYWORDS_RE.search(combined):
-            continue
-
-        items.append({
-            "doc_id": doc_id,
-            "titulo": titulo,
-            "emisor": emisor,
-            "seccion": "I",
-        })
+        for item in seccion.iter("item"):
+            doc_id = _item_doc_id(item)
+            if not doc_id:
+                continue
+            titulo = _item_field(item, "titulo")
+            # Sección A item title is the province name.
+            if "zaragoza" not in titulo.lower():
+                continue
+            items.append({
+                "doc_id": doc_id,
+                "titulo": titulo,
+                "emisor": titulo,
+                "seccion": "I",
+            })
 
     return items
 
 
 def extract_seccion2_items(sumario_xml: str) -> list[dict]:
-    """Extract matching items from BORME Seccion II.
+    """Extract Zaragoza items from BORME Sección B (Otros actos publicados).
 
-    Seccion II items are scanned for Zaragoza-province domicilios in
-    their full text/title, combined with death/dissolution keywords.
+    Sección B items carry a descriptive <titulo> (the act + company), so we can
+    filter at the summary level on a Zaragoza reference plus a death/dissolution
+    keyword. Many BORME days have no Sección B at all — that is normal.
 
     Returns list of dicts with keys: doc_id, titulo, emisor, seccion.
     """
@@ -219,36 +239,28 @@ def extract_seccion2_items(sumario_xml: str) -> list[dict]:
     except ET.ParseError:
         return items
 
-    for item in root.iter("item"):
-        doc_id = item.get("id", "")
-        if not doc_id:
+    for seccion in root.iter("seccion"):
+        if (seccion.get("codigo") or "").upper() != "B":
             continue
+        for item in seccion.iter("item"):
+            doc_id = _item_doc_id(item)
+            if not doc_id:
+                continue
+            titulo = _item_field(item, "titulo")
 
-        # Skip items already captured in Seccion I (typically BOE-A prefixed)
-        # Seccion II items are typically BOE-B or BORME-B prefixed
-        titulo_el = item.find("titulo")
-        titulo = (titulo_el.text or "").strip() if titulo_el is not None else ""
+            # Must mention Zaragoza (name or postal code) and a death/dissolution
+            # keyword in the summary title.
+            if not ZARAGOZA_DOMICILIO_RE.search(titulo):
+                continue
+            if not DEATH_KEYWORDS_RE.search(titulo):
+                continue
 
-        emisor_el = item.find("emisor")
-        emisor = (emisor_el.text or "").strip() if emisor_el is not None else ""
-
-        # For Seccion II, check the full text blob for Zaragoza references
-        combined = f"{titulo} {emisor}"
-
-        # Must mention Zaragoza somehow (name or postal code)
-        if not ZARAGOZA_DOMICILIO_RE.search(combined):
-            continue
-
-        # Must match death/dissolution keywords
-        if not DEATH_KEYWORDS_RE.search(combined):
-            continue
-
-        items.append({
-            "doc_id": doc_id,
-            "titulo": titulo,
-            "emisor": emisor,
-            "seccion": "II",
-        })
+            items.append({
+                "doc_id": doc_id,
+                "titulo": titulo,
+                "emisor": titulo,
+                "seccion": "II",
+            })
 
     return items
 
@@ -256,31 +268,106 @@ def extract_seccion2_items(sumario_xml: str) -> list[dict]:
 # ── Document parsing ───────────────────────────────────────────────
 
 
-def parse_borme_document(xml_text: str, doc_id: str, seccion: str) -> EdictRecord | None:
-    """Parse a BORME document XML into an EdictRecord.
+# A Sección A company block opens with "<registro> - <COMPANY NAME>." Used to
+# split the per-province document body into individual company entries.
+_COMPANY_HEADER_RE = re.compile(r"^\s*(\d{3,7})\s*-\s*(.+?)\.?\s*$")
 
-    Extracts company name (→ causante), domicilio (→ address), NIF,
-    matched keywords, and applies the inmobiliaria heuristic.
+
+def _build_borme_record(
+    *,
+    company: str,
+    act_text: str,
+    doc_id: str,
+    seccion: str,
+    pub_date: datetime | None,
+    pdf_url: str,
+    suffix: str = "",
+) -> EdictRecord:
+    """Construct a single EdictRecord for one BORME company act."""
+    combined = f"{company} {act_text}"
+
+    edict_type = _classify_edict_type(combined)
+
+    address = None
+    dom_match = DOMICILIO_EXTRACT_RE.search(act_text)
+    if dom_match:
+        address = dom_match.group(1).strip().rstrip(",.")
+
+    nif = None
+    nif_match = NIF_RE.search(combined)
+    if nif_match:
+        nif = nif_match.group(1)
+
+    source_url = pdf_url or f"https://www.boe.es/diario_borme/txt.php?id={doc_id}"
+
+    outreach_notes = ""
+    if company and INMOBILIARIA_RE.search(company):
+        outreach_notes = "INMOBILIARIA — empresa del sector inmobiliario"
+        logger.info("BORME inmobiliaria lead flagged: %s", company)
+
+    subsource = "borme_i" if seccion == "I" else "borme_ii"
+
+    localidad = None
+    if (address and ZARAGOZA_DOMICILIO_RE.search(address)) or seccion == "I":
+        localidad = "Zaragoza"
+
+    notas_parts = []
+    if nif:
+        notas_parts.append(f"NIF: {nif}")
+    if outreach_notes:
+        notas_parts.append(outreach_notes)
+
+    # Make source_id unique per company within a province document.
+    source_id = f"{doc_id}{suffix}"
+
+    record = EdictRecord(
+        source=subsource,
+        source_id=source_id,
+        referencia_catastral=None,  # BORME does not contain catastral references
+        edict_type=edict_type,
+        published_at=pub_date,
+        source_url=source_url,
+        causante=company or None,
+        address=address,
+        localidad=localidad,
+    )
+
+    if notas_parts:
+        record.petitioners = notas_parts
+
+    return record
+
+
+def parse_borme_document(xml_text: str, doc_id: str, seccion: str) -> list[EdictRecord]:
+    """Parse a BORME document XML into a list of EdictRecords.
+
+    Sección A documents are per-province bundles: the <texto> body is a flat
+    list of <p> elements alternating between a company header
+    ("<registro> - <COMPANY NAME>.") and that company's registered acts. We pair
+    each header with its act paragraph, keep only the pairs whose act text
+    matches a death/dissolution keyword, and emit one record per company.
+
+    Sección B documents describe a single act; we emit one record built from the
+    whole body.
 
     Args:
         xml_text: The raw XML of the BORME document.
-        doc_id: The document identifier (e.g., BORME-A-2026-1234).
-        seccion: "I" or "II" — determines the subsource code.
+        doc_id: The document identifier (e.g., BORME-A-2026-111-50).
+        seccion: "I" (Sección A) or "II" (Sección B).
 
     Returns:
-        An EdictRecord if parsing succeeds, None otherwise.
+        A list of EdictRecord objects (possibly empty).
     """
     try:
         root = ET.fromstring(xml_text)
     except ET.ParseError:
         logger.error("Failed to parse BORME doc XML: %s", doc_id)
-        return None
+        return []
 
-    # Extract metadata fields
+    # Metadata
     title = ""
     pub_date = None
     pdf_url = ""
-
     for el in root.iter():
         tag = el.tag.split("}")[-1] if "}" in el.tag else el.tag
         if tag == "titulo" and not title:
@@ -290,81 +377,65 @@ def parse_borme_document(xml_text: str, doc_id: str, seccion: str) -> EdictRecor
                 pub_date = datetime.strptime((el.text or "").strip(), "%Y%m%d").replace(tzinfo=UTC)
             except ValueError:
                 pass
-        elif tag == "url_pdf":
+        elif tag == "url_pdf" and not pdf_url:
             pdf_url = (el.text or "").strip()
 
-    # Extract full text body
-    body_text = ""
     texto_el = root.find(".//texto")
+    paragraphs = []
     if texto_el is not None:
-        body_text = ET.tostring(texto_el, encoding="unicode", method="text")
+        for p in texto_el.findall("p"):
+            paragraphs.append((p.text or "").strip())
+        if not paragraphs:
+            # Fallback: treat the whole body as one blob
+            blob = ET.tostring(texto_el, encoding="unicode", method="text").strip()
+            if blob:
+                paragraphs = [blob]
 
-    combined = f"{title} {body_text}"
+    records: list[EdictRecord] = []
 
-    # Company name: use the title as causante (these are B2B leads)
-    # BORME titles typically ARE the company name or contain it prominently
-    causante = title if title else None
+    if seccion == "I":
+        # Pair company-header paragraphs with the following act paragraph.
+        i = 0
+        idx = 0
+        n = len(paragraphs)
+        while i < n:
+            header = _COMPANY_HEADER_RE.match(paragraphs[i])
+            if not header:
+                i += 1
+                continue
+            company = header.group(2).strip()
+            act_text = paragraphs[i + 1] if i + 1 < n else ""
+            i += 2
+            if not DEATH_KEYWORDS_RE.search(act_text):
+                continue
+            idx += 1
+            records.append(
+                _build_borme_record(
+                    company=company,
+                    act_text=act_text,
+                    doc_id=doc_id,
+                    seccion=seccion,
+                    pub_date=pub_date,
+                    pdf_url=pdf_url,
+                    suffix=f"-{idx}",
+                )
+            )
+    else:
+        # Sección B: single act document.
+        body_text = " ".join(paragraphs)
+        if DEATH_KEYWORDS_RE.search(f"{title} {body_text}"):
+            records.append(
+                _build_borme_record(
+                    company=title,
+                    act_text=body_text,
+                    doc_id=doc_id,
+                    seccion=seccion,
+                    pub_date=pub_date,
+                    pdf_url=pdf_url,
+                )
+            )
 
-    # Classify edict type
-    edict_type = _classify_edict_type(combined)
-
-    # Extract domicilio/address
-    address = None
-    dom_match = DOMICILIO_EXTRACT_RE.search(combined)
-    if dom_match:
-        address = dom_match.group(1).strip().rstrip(",.")
-
-    # Extract NIF
-    nif = None
-    nif_match = NIF_RE.search(combined)
-    if nif_match:
-        nif = nif_match.group(1)
-
-    # Build source URL
-    source_url = pdf_url
-    if not source_url:
-        source_url = f"https://www.boe.es/diario_boe/txt.php?id={doc_id}"
-
-    # Inmobiliaria heuristic
-    outreach_notes = ""
-    if causante and INMOBILIARIA_RE.search(causante):
-        outreach_notes = "INMOBILIARIA — empresa del sector inmobiliario"
-        logger.info("BORME inmobiliaria lead flagged: %s", causante)
-
-    # Subsource code
-    subsource = "borme_i" if seccion == "I" else "borme_ii"
-
-    # Build localidad from address if Zaragoza-related
-    localidad = None
-    if address and ZARAGOZA_DOMICILIO_RE.search(address):
-        localidad = "Zaragoza"
-
-    # Compose system notes with NIF and outreach flag
-    notas_parts = []
-    if nif:
-        notas_parts.append(f"NIF: {nif}")
-    if outreach_notes:
-        notas_parts.append(outreach_notes)
-
-    record = EdictRecord(
-        source=subsource,
-        source_id=doc_id,
-        referencia_catastral=None,  # BORME does not contain catastral references
-        edict_type=edict_type,
-        published_at=pub_date,
-        source_url=source_url,
-        causante=causante,
-        address=address,
-        localidad=localidad,
-    )
-
-    # Store extra metadata in petitioners field as a workaround for notes
-    # (EdictRecord has no outreach_notes field; petitioners is repurposed
-    # to carry NIF + inmobiliaria flag for downstream pipeline stages)
-    if notas_parts:
-        record.petitioners = notas_parts
-
-    return record
+    return records
 
 
 # ── Main entry point ───────────────────────────────────────────────
@@ -427,14 +498,14 @@ def scrape_borme(since: datetime | None = None) -> list[EdictRecord]:
             if doc_xml is None:
                 continue
 
-            record = parse_borme_document(doc_xml, doc_id, item["seccion"])
-            if record:
+            parsed = parse_borme_document(doc_xml, doc_id, item["seccion"])
+            for record in parsed:
                 records.append(record)
                 logger.info(
                     "BORME lead: %s [%s] (id=%s, type=%s)",
                     record.causante or "?",
                     record.source,
-                    doc_id,
+                    record.source_id,
                     record.edict_type,
                 )
 

@@ -122,11 +122,29 @@ def extract_region(text: str) -> str:
             return region
     return "Desconocida"
 
+# Capitalized sentence-starters that follow a name in legal prose and get
+# swallowed by the name patterns ("...de Josefa Serrano Canser Se hace saber")
+_TRAILING_NOISE_TOKENS = {
+    "se", "y", "de", "del", "la", "el", "que", "hace", "saber", "a", "ante", "en",
+    # company-form suffixes swallowed from co-defendant names
+    "sa", "sl", "slu", "sau", "scp", "cb",
+}
+
+
+def _strip_trailing_noise(name: str) -> str:
+    words = name.split()
+    while words and words[-1].lower() in _TRAILING_NOISE_TOKENS:
+        words.pop()
+    return " ".join(words)
+
+
 def _extract_name(text: str) -> str | None:
     for pattern in NAME_PATTERNS:
         m = pattern.search(text)
         if m:
-            name = m.group(1).strip()
+            name = _strip_trailing_noise(m.group(1).strip())
+            if not name:
+                continue
             if name.isupper(): name = name.title()
             return name
     return None
@@ -160,9 +178,20 @@ def extract_pdf_text(pdf_url: str) -> str:
         response = SESSION.get(pdf_url, timeout=20)
         response.raise_for_status()
         
-        # If it's a TXT page, return directly
-        if "txt.php" in pdf_url or "text" in response.headers.get("Content-Type", "").lower():
-            return response.text
+        # BOE txt.php is an HTML page wrapping the edict in <div id="textoxslt">,
+        # surrounded by ~15KB of site nav/chrome. Returning the raw HTML buries
+        # the actual edict body (causante, DESTINATARIOS, último domicilio) under
+        # menus and blows the downstream truncation budget. Extract just the body.
+        ctype = response.headers.get("Content-Type", "").lower()
+        if "txt.php" in pdf_url or ("html" in ctype) or ("text" in ctype and "pdf" not in ctype):
+            soup = BeautifulSoup(response.text, "html.parser")
+            body = soup.select_one("#textoxslt") or soup.select_one("div.documento")
+            if body:
+                return body.get_text(" ", strip=True)
+            # Fallback: strip script/style/nav, then take page text.
+            for tag in soup(["script", "style", "nav", "header", "footer"]):
+                tag.decompose()
+            return soup.get_text(" ", strip=True)
             
         text_parts = []
         with pdfplumber.open(BytesIO(response.content)) as pdf:
@@ -330,105 +359,225 @@ def parse_boe_document(xml_text: str, doc_id: str) -> EdictRecord | None:
         logger.error("Error parsing doc %s: %s", doc_id, e)
         return None
 
-def scrape_supplemental_leads(days: int) -> list[EdictRecord]:
-    """Scrape TEJU (BOE-J) and Notificaciones (BOE-N) from web summaries."""
-    all_records = []
-    base_url = "https://www.boe.es"
-    
-    # Target supplements
-    supplements = [
-        ("boe_j", "J", "Edictos Judiciales"),
-        ("boe_n", "N", "Notificaciones")
-    ]
-    
-    keywords = [
-        r"\bdeclaraci[oó]n\s+de\s+herederos\b",
-        r"\bsucesi[oó]n\b",
-        r"\babintestato\b",
-        r"\bherederos\s+de\b",
-        r"\bcausante\b",
-        r"\bherencia\b",
-        r"\bfalleci[óo]n?\b",
-        r"\bdefunci[oó]n\b",
-        r"\besquela\b",
-    ]
-    
+# ── TEJU (Tablón Edictal Judicial Único, BOE-J) ────────────────────
+# The daily TEJU index lists ~4,000 edicts/day with generic titles
+# ("BARCELONA. Edicto ... procedimiento civil número 669/2024"), so
+# title-level keyword filtering finds nothing. We use the BOE full-text
+# search instead, which indexes the document body.
+
+TEJU_SEARCH_URL = "https://www.boe.es/buscar/edictos_judiciales.php"
+TEJU_QUERIES = ['"herencia yacente"', "herederos"]
+
+# Names in TEJU edicts appear in ALL CAPS in the DESTINATARIOS block:
+# "Herencia Yacente y Herederos Desconocidos de JOSE MANUEL PUENTE SANCLEMENTE"
+TEJU_CAUSANTE_PATTERN = re.compile(
+    r"(?i:herederos?\s+(?:desconocidos?\s+|ignorados?\s+|inciertos?\s+)?de\s+)"
+    r"(?:D\.?ª?\s+|don\s+|do[ñn]a\s+)?"
+    r"((?:[A-ZÁÉÍÓÚÑÜ]{2,}[\-']?\s+){1,5}[A-ZÁÉÍÓÚÑÜ]{2,})\b"
+)
+TEJU_LOCALIDAD_PATTERN = re.compile(
+    r"Localidad:\s*(.+?)\s+(?:C[oó]digo\s+Postal|Provincia|Tel[eé]fono)"
+)
+TEJU_PROVINCIA_PATTERN = re.compile(
+    r"Provincia:\s*(.+?)\s+(?:Tel[eé]fono|Correo|Fax|PROCEDIMIENTO)"
+)
+
+
+def _search_teju_ids(days: int) -> dict[str, datetime | None]:
+    """Full-text search TEJU for inheritance edicts. Returns {doc_id: pub_date}."""
+    end = datetime.now(UTC)
+    start = end - timedelta(days=days)
+    found: dict[str, datetime | None] = {}
+
+    for query in TEJU_QUERIES:
+        params = {
+            "campo[0]": "DOC", "dato[0]": query, "operador[0]": "and",
+            "campo[2]": "JUR", "dato[2]": "", "operador[2]": "and",
+            "operador[4]": "and", "campo[4]": "FPU",
+            "dato[4][0]": start.strftime("%Y-%m-%d"),
+            "dato[4][1]": end.strftime("%Y-%m-%d"),
+            "page_hits": "1000",
+            "sort_field[0]": "FPU", "sort_order[0]": "desc",
+            "accion": "Buscar",
+        }
+        try:
+            r = SESSION.get(TEJU_SEARCH_URL, params=params, timeout=30)
+            r.raise_for_status()
+        except Exception as e:
+            logger.error("TEJU search failed for %s: %s", query, e)
+            continue
+
+        soup = BeautifulSoup(r.text, "html.parser")
+        hits = 0
+        for li in soup.find_all("li"):
+            a = li.find("a", href=re.compile(r"id=(BOE-J-\d+-\d+)"))
+            if not a:
+                continue
+            doc_id = re.search(r"(BOE-J-\d+-\d+)", a.get("href", "")).group(1)
+            if doc_id in found:
+                continue
+            pub_date = None
+            date_m = re.search(r"de\s+(\d{2})/(\d{2})/(\d{4})", li.get_text(" ", strip=True))
+            if date_m:
+                d, mo, y = date_m.groups()
+                try:
+                    pub_date = datetime(int(y), int(mo), int(d), tzinfo=UTC)
+                except ValueError:
+                    pass
+            found[doc_id] = pub_date
+            hits += 1
+        logger.info("TEJU search %s: %d new doc ids", query, hits)
+
+    return found
+
+
+def _fetch_teju_record(doc_id: str, pub_date: datetime | None) -> EdictRecord | None:
+    """Fetch one TEJU edict text page and build a record."""
+    from nadia_ai.utils.names import is_valid_person_name
+
+    url = f"https://www.boe.es/diario_boe/txt.php?id={doc_id}"
+    try:
+        r = SESSION.get(url, timeout=20)
+        r.raise_for_status()
+    except Exception as e:
+        logger.warning("TEJU doc fetch failed %s: %s", doc_id, e)
+        return None
+
+    soup = BeautifulSoup(r.text, "html.parser")
+    text = " ".join(soup.get_text(" ", strip=True).split())
+    if not re.search(r"herencia\s+yacente|hereder", text, re.IGNORECASE):
+        return None
+
+    causante = None
+    m = TEJU_CAUSANTE_PATTERN.search(text)
+    if m:
+        candidate = _strip_trailing_noise(m.group(1).strip()).title()
+        if is_valid_person_name(candidate):
+            causante = candidate
+    if not causante:
+        candidate = _extract_name(text)
+        if candidate and is_valid_person_name(candidate):
+            causante = candidate
+
+    loc_m = TEJU_LOCALIDAD_PATTERN.search(text)
+    prov_m = TEJU_PROVINCIA_PATTERN.search(text)
+    localidad = loc_m.group(1).strip() if loc_m else None
+    if not localidad and prov_m:
+        localidad = prov_m.group(1).strip()
+
+    rc_match = RC_PATTERN.search(text)
+
+    return EdictRecord(
+        source="boe_teju",
+        source_id=doc_id,
+        referencia_catastral=rc_match.group(1).upper() if rc_match else None,
+        edict_type="inheritance_lead",
+        published_at=pub_date,
+        source_url=url,
+        causante=causante,
+        localidad=localidad,
+        lugar_fallecimiento=prov_m.group(1).strip() if prov_m else None,
+    )
+
+
+def scrape_teju(days: int) -> list[EdictRecord]:
+    """Scrape TEJU judicial inheritance edicts via BOE full-text search."""
+    doc_ids = _search_teju_ids(days)
+    if not doc_ids:
+        return []
+    logger.info("Fetching %d TEJU documents...", len(doc_ids))
+    records = []
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        results = executor.map(lambda kv: _fetch_teju_record(kv[0], kv[1]), doc_ids.items())
+    for rec in results:
+        if rec:
+            records.append(rec)
+    logger.info("TEJU: %d inheritance records", len(records))
+    return records
+
+
+# ── Notarial notifications (BOE-N) ─────────────────────────────────
+# Notarial "declaración de herederos" announcements carry everything in
+# the index title: "NOTARÍA DE <NOTARY> DE <CITY>. Anuncio ... Acta de
+# declaración de herederos Ab intestato de Doña <NAME>." The per-doc
+# text page does not exist (404), so the title is the only — and
+# sufficient — data source.
+
+NOTARIAL_KEYWORDS = re.compile(
+    r"declaraci[oó]n\s+de\s+herederos|ab\s*intestato|herederos\s+de|sucesi[oó]n\s+intestada",
+    re.IGNORECASE,
+)
+NOTARIAL_CAUSANTE_PATTERNS = [
+    # "...de Doña María Isabel García Vidal." (name at end of title)
+    re.compile(
+        r"(?:de\s+)?(?:Don|Do[ñn]a|D\.?ª|Dª|D\.)\s+"
+        r"([A-ZÁÉÍÓÚÑÜ][A-Za-zÁÉÍÓÚÑÜáéíóúñü'\-]+(?:\s+[A-Za-zÁÉÍÓÚÑÜáéíóúñü'\-]+){1,5})\s*\.?\s*$"
+    ),
+    # "...herederos abintestato de Don José Pérez Gil, ..." (name mid-title)
+    re.compile(
+        r"(?i:hereder\w+[^.]{0,40}?\bde\s+)(?:Don|Do[ñn]a|D\.?ª|Dª|D\.)?\s*"
+        r"([A-ZÁÉÍÓÚÑÜ][A-Za-zÁÉÍÓÚÑÜáéíóúñü'\-]+(?:\s+[A-ZÁÉÍÓÚÑÜ][A-Za-zÁÉÍÓÚÑÜáéíóúñü'\-]+){1,5})"
+    ),
+]
+
+
+def scrape_notarial_notifications(days: int) -> list[EdictRecord]:
+    """Scrape BOE-N daily indexes for notarial heir-declaration announcements."""
+    from nadia_ai.utils.names import is_valid_person_name
+
+    records = []
     for i in range(days):
         date_obj = datetime.now(UTC) - timedelta(days=i)
         date_path = date_obj.strftime("%Y/%m/%d")
-        for folder, label, name in supplements:
-            url = f"{base_url}/{folder}/dias/{date_path}/index.php?l={label}"
-            try:
-                r = SESSION.get(url, timeout=15)
-                if r.status_code != 200: continue
-                
-                # Simple HTML parsing with regex
-                items = re.findall(r'<li class="notif">(.*?)</li>', r.text, re.DOTALL)
-                for item_html in items:
-                    title_match = re.search(r'<p>(.*?)</p>', item_html, re.DOTALL)
-                    if not title_match: continue
-                    title = title_match.group(1).strip()
-                    
-                    id_match = re.search(r'id=(BOE-[JN]-\d+-\d+)', item_html)
-                    if not id_match: continue
-                    doc_id = id_match.group(1)
-                    
-                    # Section VI logic: Titles are agencies (e.g. Delegacion de Hacienda)
-                    # We check if the title contains "Hacienda" or "Economía" as these are high-signal for VI
-                    # Or if the title contains a keyword directly
-                    is_potential = any(re.search(kw, title, re.IGNORECASE) for kw in keywords)
-                    if not is_potential and folder == "boe_n":
-                        if "hacienda" in title.lower() or "econom" in title.lower():
-                            is_potential = True
-                    
-                    if is_potential:
-                        # Construct a record.
-                        # For BOE-N, the text URL is different
-                        if folder == "boe_n":
-                            doc_url = f"https://www.boe.es/notificaciones/notificacion.php?id={doc_id}"
-                        else:
-                            doc_url = f"https://www.boe.es/diario_boe/txt.php?id={doc_id}"
+        url = f"https://www.boe.es/boe_n/dias/{date_path}/index.php?l=N"
+        try:
+            r = SESSION.get(url, timeout=30)
+            if r.status_code != 200:
+                continue
+        except Exception as e:
+            logger.warning("BOE-N index fetch failed for %s: %s", date_path, e)
+            continue
 
-                        # Fetch full text to confirm it's not a false positive and extract data
-                        doc_text = ""
-                        clean_text = ""
-                        try:
-                            t_resp = SESSION.get(doc_url, timeout=10)
-                            if t_resp.status_code == 200:
-                                doc_text = t_resp.text
-                                # Use BeautifulSoup to get clean text for matching
-                                soup_doc = BeautifulSoup(doc_text, "html.parser")
-                                clean_text = soup_doc.get_text()
-                        except: pass
+        for item_html in re.findall(r'<li class="notif">(.*?)</li>', r.text, re.DOTALL):
+            title_m = re.search(r"<p>(.*?)</p>", item_html, re.DOTALL)
+            id_m = re.search(r"id=(BOE-N-\d+-\d+)", item_html)
+            if not (title_m and id_m):
+                continue
+            title = " ".join(title_m.group(1).split())
+            if not NOTARIAL_KEYWORDS.search(title):
+                continue
 
-                        # Final verification on body text
-                        if not any(re.search(kw, clean_text, re.IGNORECASE) for kw in keywords):
-                            continue # Skip false positives
-                        
-                        causante = _extract_name(title)
-                        if not causante and clean_text:
-                            # Try extracting name from body if title fails
-                            causante = _extract_name(clean_text[:2000])
+            causante = None
+            for pattern in NOTARIAL_CAUSANTE_PATTERNS:
+                cm = pattern.search(title)
+                if not cm:
+                    continue
+                candidate = cm.group(1).strip().strip(".,")
+                if candidate.isupper():
+                    candidate = candidate.title()
+                if is_valid_person_name(candidate):
+                    causante = candidate
+                    break
 
-                        region = extract_region(title)
-                        if region == "Desconocida" and clean_text:
-                            region = extract_region(clean_text[:3000])
+            # City = last " DE " segment of the notary heading
+            localidad = None
+            head_m = re.match(r"NOTAR[ÍI]A\s+DE\s+(.+?)\.", title, re.IGNORECASE)
+            if head_m and " DE " in head_m.group(1).upper():
+                localidad = re.split(r"\s+DE\s+", head_m.group(1), flags=re.IGNORECASE)[-1]
+                localidad = localidad.strip().title()
 
-                        all_records.append(EdictRecord(
-                            source=f"boe_{folder}",
-                            source_id=doc_id,
-                            edict_type="inheritance_lead",
-                            published_at=date_obj,
-                            source_url=f"https://www.boe.es/diario_boe/txt.php?id={doc_id}",
-                            causante=causante,
-                            localidad=region,
-                            address=None,
-                            full_text=doc_text
-                        ))
-            except Exception as e:
-                logger.warning("Error scraping %s for %s: %s", name, date_path, e)
-                
-    return all_records
+            records.append(EdictRecord(
+                source="boe_n",
+                source_id=id_m.group(1),
+                edict_type="declaracion_herederos_abintestato",
+                published_at=date_obj,
+                source_url=f"https://www.boe.es/boe_n/dias/{date_path}/not.php?id={id_m.group(1)}",
+                causante=causante,
+                localidad=localidad,
+                juzgado=head_m.group(0).rstrip(".").title() if head_m else None,
+            ))
+    logger.info("BOE-N notarial: %d records", len(records))
+    return records
 
 def scrape_boe(days: int = 90) -> list[EdictRecord]:
     """Scrape BOE Section IV, V, TEJU and Notificaciones for inheritance leads."""
@@ -464,9 +613,9 @@ def scrape_boe(days: int = 90) -> list[EdictRecord]:
                     address=None
                 ))
             
-    # 2. Scrape supplements via web summaries
-    supp_records = scrape_supplemental_leads(days)
-    
+    # 2. TEJU judicial edicts via full-text search + notarial announcements
+    supp_records = scrape_teju(days) + scrape_notarial_notifications(days)
+
     all_records = api_records + supp_records
     
     # Dedup by ID

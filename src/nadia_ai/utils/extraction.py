@@ -10,6 +10,7 @@ from pathlib import Path
 
 from nadia_ai.config import OLLAMA_MODEL
 from nadia_ai.scrapers.boe import extract_pdf_text
+from nadia_ai.utils.names import clean_name_list, is_valid_person_name
 
 logger = logging.getLogger(__name__)
 
@@ -83,62 +84,117 @@ def extract_heirs_regex(text: str) -> list[str]:
             n = n.strip()
             if len(n.split()) >= 2: # At least two words (First Last)
                 heirs.append(n.title())
-                
+
     # Pattern for "herederos de D. [NAME]"
     herederos_match = re.findall(r'(?i)herederos\s+de\s+(?:D\.|Doña|Don)?\s*([A-ZÁÉÍÓÚÑ\s]+?)(?=\s+y\s+|\s+o\s+|\s+en\s+|$|[.,])', text)
     for h in herederos_match:
         h = h.strip()
         if len(h.split()) >= 2:
             heirs.append(h.title())
-            
-    return list(set(heirs))
+
+    # Both patterns happily capture title-cased legal boilerplate
+    # ("Si En El Plazo De Un Mes...") — keep only plausible person names.
+    return clean_name_list(heirs)
+
+def _extract_via_anthropic(prompt: str) -> dict | None:
+    """Extract via the Anthropic API (Claude). Best Spanish-legal accuracy and the
+    only path that works in the GitHub Actions cron (no local Ollama there).
+    Returns the raw 5-key dict, or None to let the caller fall back."""
+    from nadia_ai.config import ANTHROPIC_API_KEY, ANTHROPIC_MODEL
+    if not ANTHROPIC_API_KEY:
+        return None
+    try:
+        import anthropic
+    except ImportError:
+        logger.warning("anthropic SDK not installed — falling back to Ollama/regex")
+        return None
+
+    # Structured output guarantees parseable JSON in the exact shape we need.
+    schema = {
+        "type": "object",
+        "properties": {
+            "deceased_name": {"type": ["string", "null"]},
+            "date_of_death": {"type": ["string", "null"]},
+            "list_of_heirs": {"type": "array", "items": {"type": "string"}},
+            "property_address": {"type": ["string", "null"]},
+            "referencia_catastral": {"type": ["string", "null"]},
+        },
+        "required": [
+            "deceased_name", "date_of_death", "list_of_heirs",
+            "property_address", "referencia_catastral",
+        ],
+        "additionalProperties": False,
+    }
+    try:
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        resp = client.messages.create(
+            model=ANTHROPIC_MODEL,
+            max_tokens=1024,
+            messages=[{"role": "user", "content": prompt}],
+            output_config={"format": {"type": "json_schema", "schema": schema}},
+        )
+        if resp.stop_reason == "refusal":
+            logger.warning("Anthropic refused extraction request; falling back")
+            return None
+        content = next((b.text for b in resp.content if b.type == "text"), "")
+        return json.loads(content) if content else None
+    except Exception as e:
+        logger.warning("Anthropic extraction failed, falling back: %s", e)
+        return None
+
+
+def _extract_via_ollama(prompt: str) -> dict | None:
+    """Extract via local Ollama REST API. Free, but only reachable on a host that
+    runs Ollama — not the CI cron. Returns the raw 5-key dict, or None."""
+    import requests
+    from nadia_ai.config import OLLAMA_URL, OLLAMA_MODEL
+    try:
+        response = requests.post(
+            f"{OLLAMA_URL}/api/chat",
+            json={
+                "model": OLLAMA_MODEL,
+                "messages": [{"role": "user", "content": prompt}],
+                "stream": False,
+                "options": {"temperature": 0, "num_ctx": 4096},
+                "format": "json",
+                "keep_alive": "5m",
+            },
+            timeout=120,
+        )
+        response.raise_for_status()
+        content = response.json().get("message", {}).get("content", "")
+        if not content:
+            return None
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError:
+            m = re.search(r"\{.*\}", content, re.DOTALL)
+            return json.loads(m.group(0)) if m else None
+    except Exception as e:
+        logger.warning("Ollama call failed: %s", e)
+        return None
+
 
 def extract_inheritance_data(text: str, causante_hint: str = None) -> dict:
-    """Extract inheritance details using local Ollama REST API with regex fallback."""
+    """Extract inheritance details. Provider chain: Anthropic (Claude) if a key is
+    set → local Ollama → regex. The downstream sanitization is provider-agnostic."""
     try:
-        import requests
         cleaned_text = clean_legal_text(text)
         truncated_text = cleaned_text[:10000]
-        
+
         prompt = f"El fallecido es: {causante_hint}\n\n" + EXTRACTION_PROMPT.format(text=truncated_text)
-        
-        result = None
-        try:
-            response = requests.post(
-                "http://localhost:11434/api/chat",
-                json={
-                    "model": OLLAMA_MODEL,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "stream": False,
-                    "options": {
-                        "temperature": 0,
-                        "num_ctx": 4096,
-                    },
-                    "format": "json",
-                    "keep_alive": "5m"
-                },
-                timeout=120
-            )
-            response.raise_for_status()
-            resp_json = response.json()
-            content = resp_json.get("message", {}).get("content", "")
-            
-            if content:
-                try: result = json.loads(content)
-                except:
-                    m = re.search(r"\{.*\}", content, re.DOTALL)
-                    if m:
-                        try: result = json.loads(m.group(0))
-                        except: pass
-        except Exception as e:
-            logger.warning("Ollama call failed, using regex fallback: %s", e)
+
+        # Try cloud, then local, then regex — each returns None to defer to the next.
+        result = _extract_via_anthropic(prompt) or _extract_via_ollama(prompt)
+        if result is None:
+            logger.info("No LLM available — using regex extraction.")
             result = {
                 "deceased_name": causante_hint,
                 "list_of_heirs": extract_heirs_regex(text),
                 "property_address": None,
-                "referencia_catastral": None
+                "referencia_catastral": None,
             }
-        
+
         if not result: return {}
 
         def is_hallucinated_address(addr):
@@ -150,6 +206,75 @@ def extract_inheritance_data(text: str, causante_hint: str = None) -> dict:
             if re.match(r"^\d+$", addr): return True
             return False
 
+        def is_funeral_address(addr):
+            if not addr: return False
+            from nadia_ai.merge import strip_accents
+            addr_low = strip_accents(str(addr)).lower()
+            
+            funeral_keywords = [
+                "tanatorio", "cementerio", "crematorio", "velatorio", "funeraria", 
+                "parcemasa", "camposanto", "tumba", "nicho", "sepultura", 
+                "morgue", "tanatori", "cementiri", "crematori", "servisa", 
+                "memora", "capilla ardiente", "funeral", "tanatoris", "cementerios"
+            ]
+            if any(k in addr_low for k in funeral_keywords):
+                return True
+                
+            known_tanatorios = [
+                "camino viejo de picassent",
+                "colonia de sta. ines",
+                "colonia de santa ines",
+                "carretera vella de valencia",
+                "avenida de castrelos",
+                "camino de las torres, 73",
+                "camino de las torres 73",
+                "placa pau picasso",
+                "fray julian garces",
+                "fray julian garces",
+                "huerta de la fontanilla",
+                "miguel romero martinez",
+                "loma del esparragal",
+                "calle del desconsuelo",
+                "carretera n-iv",
+                "calle del cementerio",
+                "camino del cementerio",
+                "junto al cementerio",
+                "junto cementerio",
+                "calle caleiro, 81",
+                "calle caleiro 81",
+                "calle caleiro",
+                "avenida da ponte, 106",
+                "avenida da ponte 106",
+                "avenida da ponte",
+                "calle canales, 7",
+                "calle canales 7",
+                "carretera de can ruti",
+                "carretera de montcada, 789",
+                "carretera de montcada 789",
+                "paseo de la sabica",
+                "rambla santa ana, 42",
+                "rambla santa ana 42",
+                "calle aguila",
+                "calle aguila",
+                "camino de acedinos",
+                "camino de san antonio,43",
+                "camino de san antonio 43",
+                "camino de san antonio, 43",
+                "camino de san antonio",
+                "camino de los leneros",
+                "camino de los leneros",
+                "pau redo",
+                "los arenales",
+                "joan cid i mulet",
+                "calle restauracion, 2",
+                "calle restauracion 2",
+                "pol. ind. matallana"
+            ]
+            if any(kt in addr_low for kt in known_tanatorios):
+                return True
+                
+            return False
+
         def sanitize(val):
             if val in (None, "null", "None", "unknown", "Desconocido"): return None
             if any(k in str(val).lower() for k in ("notar", "juzgado", "registro", "colegio")): return None
@@ -159,17 +284,24 @@ def extract_inheritance_data(text: str, causante_hint: str = None) -> dict:
         if isinstance(heirs, str):
             heirs = [h.strip() for h in heirs.split(",") if h.strip()]
         heirs = [h for h in heirs if sanitize(h)]
-        
+        # Drop LLM placeholder echoes ("Nombres completos no proporcionados
+        # en el texto") and any other non-name strings.
+        heirs = clean_name_list(heirs)
+
         # If LLM didn't find heirs but regex does, merge them
         if not heirs:
             heirs = extract_heirs_regex(text)
 
         prop_addr = sanitize(result.get("property_address"))
-        if is_hallucinated_address(prop_addr):
+        if is_hallucinated_address(prop_addr) or is_funeral_address(prop_addr):
             prop_addr = None
 
+        deceased = sanitize(result.get("deceased_name"))
+        if deceased and not is_valid_person_name(str(deceased)):
+            deceased = None
+
         return {
-            "deceased_name": sanitize(result.get("deceased_name")) or causante_hint,
+            "deceased_name": deceased or causante_hint,
             "date_of_death": sanitize(result.get("date_of_death")),
             "list_of_heirs": heirs,
             "property_address": prop_addr,
@@ -188,10 +320,16 @@ def run_heir_extraction(conn):
     conn.row_factory = sqlite3.Row
     
     cursor = conn.execute("""
-        SELECT id, causante, source_urls, tier 
+        SELECT id, causante, source_urls, tier, sources 
         FROM leads 
         WHERE ai_extraction_done = 0 
-        ORDER BY tier ASC, first_seen_at DESC 
+        ORDER BY 
+            CASE 
+                WHEN sources LIKE '%BOE%' OR sources LIKE '%Tablón%' OR sources LIKE '%BOA%' OR sources LIKE '%BOP%' THEN 0 
+                ELSE 1 
+            END ASC,
+            tier ASC, 
+            first_seen_at DESC 
         LIMIT 200
     """)
     leads = cursor.fetchall()
@@ -226,9 +364,12 @@ def run_heir_extraction(conn):
             if full_text: break
         
         if not full_text:
-            # Fallback: if we have no text but have a causante name, we can still mark as done
-            # but maybe we want to keep it pending if text extraction failed.
-            # For now, if no text, we can't extract heirs.
+            # No fetchable text (dead link, PDF-only source, parse failure).
+            # Mark done so the lead stops re-entering the 200-per-run queue
+            # and clogging it for leads whose documents ARE readable.
+            logger.info("Lead %d: no fetchable text — marking extraction done.", lead_id)
+            conn.execute("UPDATE leads SET ai_extraction_done = 1 WHERE id = ?", (lead_id,))
+            conn.commit()
             continue
             
         # 2. Deterministic Funnel: The "Wake Word" check
@@ -238,10 +379,19 @@ def run_heir_extraction(conn):
             conn.commit()
             continue
             
+        # Check if the lead is obituary-only
+        sources_list = json.loads(lead["sources"] or "[]")
+        obituary_only = all(s in ("Esquelas", "Defunciones", "iEsquelas", "rememori") for s in sources_list)
+
         # 3. Extract entities
         data = extract_inheritance_data(full_text, causante_hint=causante)
         if not data: 
             continue
+            
+        if obituary_only:
+            # Obituaries never list residential property addresses
+            data["property_address"] = None
+            data["referencia_catastral"] = None
             
         # 3. Trust but Verify: Catastro Hook
         rc = data.get("referencia_catastral")
@@ -264,6 +414,7 @@ def run_heir_extraction(conn):
         heirs_list = data.get("list_of_heirs", [])
         if not isinstance(heirs_list, list):
             heirs_list = [str(heirs_list)]
+        heirs_list = clean_name_list(heirs_list)
         heirs_json = json.dumps(heirs_list)
         primary_heir = heirs_list[0] if heirs_list else None
         
@@ -272,22 +423,34 @@ def run_heir_extraction(conn):
             death_date = death_date[0] if death_date else None
         death_date = str(death_date) if death_date else None
 
+        prop_addr = data.get("property_address")
+        rc_val = data.get("referencia_catastral")
+        # address_norm / ref_catastral are the match keys used by merge dedup and
+        # enrichment cross-joins — keep them in sync with the display columns so
+        # a resolved RC/address actually participates in obras/subastas matching.
+        from nadia_ai.merge import normalize_address
+        addr_norm = normalize_address(prop_addr) if prop_addr else None
+
         conn.execute("""
-            UPDATE leads 
+            UPDATE leads
             SET heir_names_json = ?,
                 heir_name = ?,
                 direccion = ?,
+                address_norm = COALESCE(?, address_norm),
                 referencia_catastral = ?,
+                ref_catastral = COALESCE(NULLIF(?, ''), ref_catastral),
                 date_of_death = ?,
                 tier = ?,
                 ai_extraction_done = 1,
                 last_updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
         """, (
-            heirs_json, 
-            primary_heir, 
-            data.get("property_address"), 
-            data.get("referencia_catastral"),
+            heirs_json,
+            primary_heir,
+            prop_addr,
+            addr_norm,
+            rc_val,
+            rc_val or "",
             death_date,
             final_tier,
             lead_id

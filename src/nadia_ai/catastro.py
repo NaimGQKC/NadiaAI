@@ -7,7 +7,9 @@ Does NOT access titular name or valor catastral (protected, requires certificate
 
 import contextlib
 import logging
+import re
 import sqlite3
+import time
 import xml.etree.ElementTree as ET
 from datetime import UTC, datetime, timedelta
 
@@ -15,6 +17,7 @@ import requests
 
 from nadia_ai.config import CATASTRO_CACHE_DAYS
 from nadia_ai.db import insert_edict, insert_person, upsert_parcel
+from nadia_ai.merge import strip_accents
 from nadia_ai.models import EdictRecord, ParcelInfo
 
 logger = logging.getLogger("nadia_ai.catastro")
@@ -22,6 +25,48 @@ logger = logging.getLogger("nadia_ai.catastro")
 # Catastro SOAP endpoint for lookup by referencia catastral
 CATASTRO_DNPRC_URL = (
     "https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejero.asmx/Consulta_DNPRC"
+)
+
+# Catastro endpoint for resolving a street address -> referencia catastral
+CATASTRO_DNPLOC_URL = (
+    "https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejero.asmx/Consulta_DNPLOC"
+)
+
+# Street-type abbreviation -> Catastro "Sigla" codes. Catastro's callejero is
+# strict about the via type, so we map common Spanish prefixes to its codes.
+_VIA_SIGLA = {
+    "calle": "CL",
+    "c/": "CL",
+    "c.": "CL",
+    "cl": "CL",
+    "avenida": "AV",
+    "avda": "AV",
+    "avda.": "AV",
+    "av": "AV",
+    "av.": "AV",
+    "plaza": "PZ",
+    "pza": "PZ",
+    "pza.": "PZ",
+    "pl": "PZ",
+    "paseo": "PS",
+    "ps": "PS",
+    "camino": "CM",
+    "cmno": "CM",
+    "carretera": "CR",
+    "ctra": "CR",
+    "ctra.": "CR",
+    "ronda": "RD",
+    "travesia": "TR",
+    "travesía": "TR",
+    "glorieta": "GL",
+    "via": "CL",
+}
+
+# Capture an optional via-type prefix, the street name, and a house number.
+_ADDR_RE = re.compile(
+    r"^\s*(?P<via>[A-Za-zÁÉÍÓÚÑáéíóúñ./]+)?\.?\s*"
+    r"(?P<name>.+?)[,\s]+(?:n[ºo.]*\s*)?(?P<num>\d+)",
+    re.IGNORECASE,
 )
 
 HEADERS = {
@@ -103,6 +148,183 @@ def lookup_by_rc(rc: str) -> ParcelInfo | None:
             logger.error("Catastro request failed for RC %s: %s", rc, e)
             return None
 
+    return None
+
+
+def _parse_address(direccion: str) -> tuple[str, str, str] | None:
+    """Split a free-text Spanish address into (sigla, street_name, number).
+
+    Returns None if no house number can be found — Catastro DNPLOC requires one,
+    so an address with only a city/street and no number is not resolvable.
+    """
+    if not direccion:
+        return None
+    # Take only the part before the first city/postcode separator to avoid
+    # feeding "Calle X 7, 50005 Zaragoza — Comercio" wholesale.
+    head = re.split(r"\b\d{5}\b", direccion)[0]
+    m = _ADDR_RE.match(head)
+    if not m:
+        return None
+    via_raw = (m.group("via") or "").strip().lower().rstrip(".")
+    name = (m.group("name") or "").strip(" ,.-")
+    num = m.group("num")
+    if not name or not num:
+        return None
+    sigla = _VIA_SIGLA.get(via_raw, "")
+    # If the captured "via" wasn't a recognized type, it's part of the name.
+    if not sigla and via_raw:
+        name = f"{via_raw} {name}".strip()
+        sigla = "CL"  # default to Calle
+    elif not sigla:
+        sigla = "CL"
+    # Catastro's callejero stores names without a leading article
+    # ("Avenida de Aragón" -> via=AV, name="ARAGON"). Strip it.
+    name = re.sub(r"^(?:de\s+la\s+|de\s+los\s+|de\s+las\s+|del\s+|de\s+|la\s+|el\s+|los\s+|las\s+)", "", name, flags=re.IGNORECASE)
+    return sigla, name.upper(), num
+
+
+def lookup_rc_by_address(
+    provincia: str, municipio: str, direccion: str
+) -> str | None:
+    """Resolve a referencia catastral from a street address via Consulta_DNPLOC.
+
+    Catastro's callejero is strict (exact via spelling, house number required),
+    so this resolves only a subset of well-formed urban addresses. Returns the
+    14-char parcel RC (pc1+pc2) or None.
+    """
+    parsed = _parse_address(direccion)
+    if not parsed or not provincia or not municipio:
+        return None
+    sigla, calle, numero = parsed
+
+    params = {
+        "Provincia": strip_accents(provincia).upper(),
+        "Municipio": strip_accents(municipio).upper(),
+        "Sigla": sigla,
+        "Calle": strip_accents(calle).upper(),
+        "Numero": numero,
+        "Bloque": "",
+        "Escalera": "",
+        "Planta": "",
+        "Puerta": "",
+    }
+
+    for attempt in range(MAX_RETRIES):
+        try:
+            resp = SESSION.get(CATASTRO_DNPLOC_URL, params=params, timeout=20)
+            if resp.status_code >= 500:
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(RETRY_BACKOFF[attempt])
+                    continue
+                return None
+            resp.raise_for_status()
+            return _parse_rc_from_loc(resp.text)
+        except requests.RequestException as e:
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(RETRY_BACKOFF[attempt])
+                continue
+            logger.info("Catastro DNPLOC failed for '%s': %s", direccion[:50], e)
+            return None
+    return None
+
+
+def _parse_rc_from_loc(xml_text: str) -> str | None:
+    """Extract the first referencia catastral (pc1+pc2) from a DNPLOC response."""
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError:
+        return None
+    # Detect an explicit error response (<cuerr>N</cuerr>, e.g. "LA VÍA NO EXISTE").
+    for el in root.iter():
+        tag = el.tag.split("}")[-1]
+        if tag == "cuerr" and (el.text or "").strip() not in ("", "0"):
+            return None
+    pc1 = pc2 = None
+    for el in root.iter():
+        tag = el.tag.split("}")[-1]
+        if tag == "pc1" and pc1 is None:
+            pc1 = (el.text or "").strip()
+        elif tag == "pc2" and pc2 is None:
+            pc2 = (el.text or "").strip()
+        if pc1 and pc2:
+            break
+    if pc1 and pc2:
+        return f"{pc1}{pc2}"
+    return None
+
+
+def resolve_lead_addresses(conn: sqlite3.Connection, limit: int = 200) -> int:
+    """Backfill referencia_catastral for leads that have a street address but no RC.
+
+    Most leads only carry a `localidad` (city) and therefore cannot be geocoded.
+    This targets the minority with a parseable street-level `direccion`. Returns
+    the count of leads for which an RC was resolved.
+    """
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute(
+        """
+        SELECT id, direccion, localidad
+        FROM leads
+        WHERE (referencia_catastral IS NULL OR referencia_catastral = '')
+          AND direccion IS NOT NULL AND direccion != ''
+          AND direccion GLOB '*[0-9]*'
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+
+    resolved = 0
+    for row in rows:
+        direccion = row["direccion"]
+        # Prefer an explicit municipality; fall back to localidad, then default.
+        municipio = (row["localidad"] or "").strip()
+        if not municipio:
+            # Try to read a city out of the address tail (e.g. "..., Zaragoza").
+            municipio = _city_from_address(direccion) or ""
+        if not municipio:
+            continue
+        provincia = _PROVINCIA_BY_CITY.get(strip_accents(municipio).lower(), municipio)
+
+        rc = lookup_rc_by_address(provincia, municipio, direccion)
+        if not rc:
+            continue
+        conn.execute(
+            "UPDATE leads SET referencia_catastral = ?, ref_catastral = ?, "
+            "last_updated_at = datetime('now') WHERE id = ?",
+            (rc, rc, row["id"]),
+        )
+        resolved += 1
+        logger.info("Resolved RC %s for lead %d from address", rc, row["id"])
+
+    conn.commit()
+    logger.info("Catastro address resolution: %d/%d leads resolved", resolved, len(rows))
+    return resolved
+
+
+# Common Spanish capitals where province == city name.
+_PROVINCIA_BY_CITY = {
+    "zaragoza": "ZARAGOZA",
+    "huesca": "HUESCA",
+    "teruel": "TERUEL",
+    "madrid": "MADRID",
+    "barcelona": "BARCELONA",
+    "valencia": "VALENCIA",
+    "sevilla": "SEVILLA",
+    "malaga": "MALAGA",
+    "granada": "GRANADA",
+    "salamanca": "SALAMANCA",
+    "cadiz": "CADIZ",
+    "tarragona": "TARRAGONA",
+}
+
+
+def _city_from_address(direccion: str) -> str | None:
+    """Best-effort city extraction from the tail of an address string."""
+    if not direccion:
+        return None
+    for city in _PROVINCIA_BY_CITY:
+        if city in strip_accents(direccion).lower():
+            return city.capitalize()
     return None
 
 

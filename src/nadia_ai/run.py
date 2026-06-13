@@ -10,6 +10,7 @@ import sys
 import time
 from datetime import UTC, datetime, timedelta
 
+from nadia_ai.config import SPAIN_WIDE
 from nadia_ai.db import get_connection, init_db, purge_expired_persons
 from nadia_ai.logging_config import setup_logging
 
@@ -90,6 +91,10 @@ def run_pipeline(days: int = 90) -> dict:
         "iesquelas": ("nadia_ai.scrapers.iesquelas", "scrape_iesquelas", {"since": cutoff_date}),
         "cee": ("nadia_ai.scrapers.cee", "scrape_cee", {}),
         "ite": ("nadia_ai.scrapers.ite", "scrape_ite", {}),
+        # NOTE: subastas removed as a lead source per client decision — auctions
+        # are buy-side deals for investors, not listing leads. Kept only as the
+        # subasta_activa context flag in Step 7c enrichment (Tier X, no outreach).
+        "traspasos": ("nadia_ai.scrapers.traspasos", "scrape_traspasos", {"zaragoza_only": not SPAIN_WIDE}),
     }
 
     all_records = []
@@ -120,30 +125,6 @@ def run_pipeline(days: int = 90) -> dict:
                 summary["errors"].append(f"{key}: {e}")
 
     # ── AGGREGATE & PROCESS ────────────────────────────────────────
-
-    # ── IDENTITY RESOLUTION (Early Signals) ──
-    # For obituary leads, try to find addresses to move them to Tier A
-    try:
-        from nadia_ai.utils.resolution import resolve_identity
-        
-        # Scrapers that provide early signals for obituaries
-        obituary_keys = ["esquelas", "defunciones", "iesquelas"]
-        obituary_records = [r for r in all_records if getattr(r, "subsource", "") in obituary_keys]
-        
-        resolved_count = 0
-        for record in obituary_records:
-            if record.address: continue # Already has address
-            
-            res = resolve_identity(record.causante, record.localidad)
-            if res and res.get("address"):
-                record.address = res["address"]
-                record.referencia_catastral = res.get("referencia_catastral")
-                resolved_count += 1
-        
-        if resolved_count > 0:
-            logger.info("Identity Resolution: resolved %d addresses from obituaries", resolved_count)
-    except Exception as e:
-        logger.error("Identity resolution failed: %s", e)
 
     # Step 6: Enrich via Catastro and persist
     try:
@@ -184,6 +165,20 @@ def run_pipeline(days: int = 90) -> dict:
     except Exception as e:
         logger.error("LLM extraction failed (non-critical): %s", e)
         summary["errors"].append(f"llm_extraction: {e}")
+
+    # Step 7b2: Resolve street addresses → referencia catastral via Catastro
+    # callejero. Only leads with a street number are candidates (most obituary
+    # leads are city-only and cannot get an RC). Runs after heir extraction so
+    # any address extracted from edict text is included before the obras join.
+    try:
+        from nadia_ai.catastro import resolve_lead_addresses
+
+        rc_resolved = resolve_lead_addresses(conn)
+        summary["rc_resolved"] = rc_resolved
+        logger.info("Catastro address→RC: %d leads resolved", rc_resolved)
+    except Exception as e:
+        logger.error("Address→RC resolution failed (non-critical): %s", e)
+        summary["errors"].append(f"rc_resolve: {e}")
 
     # Step 7c: Enrichment — cross-join subastas and obras data to leads
     try:
@@ -239,6 +234,29 @@ def run_pipeline(days: int = 90) -> dict:
         summary["leads_today"],
         len(summary["errors"]),
     )
+
+    # Persist the summary so per-scraper counts and errors survive the run.
+    # Scrapers that silently yield 0 records are invisible otherwise.
+    try:
+        import json
+        from pathlib import Path
+
+        logs_dir = Path("logs")
+        logs_dir.mkdir(exist_ok=True)
+        stamp = datetime.now(UTC).strftime("%Y-%m-%d_%H%M%S")
+        summary_path = logs_dir / f"run_summary_{stamp}.json"
+        summary_path.write_text(
+            json.dumps(summary, indent=2, ensure_ascii=False, default=str),
+            encoding="utf-8",
+        )
+        logger.info("Run summary written to %s", summary_path)
+        zero_scrapers = [
+            k.removesuffix("_new") for k, v in summary.items() if k.endswith("_new") and v == 0
+        ]
+        if zero_scrapers:
+            logger.warning("Scrapers with ZERO records this run: %s", ", ".join(zero_scrapers))
+    except Exception as e:
+        logger.error("Failed to write run summary: %s", e)
 
     conn.close()
     return summary

@@ -4,7 +4,14 @@ Province-wide edict board — covers ALL municipalities in Zaragoza province,
 not just the city. This is the single highest-volume source for inheritance
 edicts: 50-150+ per year.
 
-Uses HTML scraping of bop.dpz.es (no JSON API available).
+Uses HTML scraping of boletin.dpz.es (no JSON API available).
+
+NOTE ON HOST: the historical host `bop.dpz.es` and the canonical host
+`boletin.dpz.es` both resolve to the same IP (195.235.225.84) and serve the
+same `/BOPZ/` application; the only difference is virtual-host routing. The
+old code targeted `http://bop.dpz.es` (port 80), which is the form the server
+is least reliable on. We now target `https://boletin.dpz.es`, the host used by
+the live portal and recent edict URLs.
 """
 
 import hashlib
@@ -19,7 +26,7 @@ from nadia_ai.models import EdictRecord
 
 logger = logging.getLogger("nadia_ai.scrapers.bop")
 
-BOP_BASE_URL = "http://bop.dpz.es"
+BOP_BASE_URL = "https://boletin.dpz.es"
 BOP_SEARCH_URL = f"{BOP_BASE_URL}/BOPZ/portalBuscarEdictos.do"
 
 HEADERS = {
@@ -93,7 +100,7 @@ def search_bop(text_query: str, since: datetime | None = None) -> str:
         params["fechaDesde"] = since.strftime("%d/%m/%Y")
         params["fechaHasta"] = datetime.now(UTC).strftime("%d/%m/%Y")
 
-    response = SESSION.get(BOP_SEARCH_URL, params=params, timeout=60)
+    response = SESSION.get(BOP_SEARCH_URL, params=params, timeout=25)
     response.raise_for_status()
     response.encoding = "utf-8"
     return response.text
@@ -222,6 +229,11 @@ def scrape_bop(since: datetime | None = None) -> list[EdictRecord]:
                 if causante:
                     logger.info("BOP lead: %s (id=%s)", causante, eid)
 
+        except (requests.ConnectionError, requests.Timeout) as e:
+            # Server unreachable — remaining queries will also fail; skip them
+            # instead of burning timeout x N (bop.dpz.es has multi-day outages).
+            logger.error("BOP unreachable on query '%s' (%s) — skipping remaining queries", query, e)
+            break
         except requests.RequestException as e:
             logger.error("BOP query '%s' failed: %s", query, e)
 
