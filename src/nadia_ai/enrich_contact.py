@@ -5,10 +5,9 @@ This step answers *how to reach them*: given an heir/causante name + city, it
 queries a search-native model to find a contact path (phone, email, public
 profile) and keeps the source citation.
 
-Why not Claude here: Claude has no web index, so it cannot search. We use
-Perplexity Sonar (primary) — purpose-built for web search, returns citations —
-with optional Gemini-grounding as an alternate provider. The design mirrors
-utils/extraction.py: each provider returns None to defer to the next.
+Search provider: Perplexity Sonar — purpose-built for web search, returns the
+citations we keep for identity verification. A search-native model is required
+here (a plain chat model has no web index).
 
 Legality scope (see docs/LLM_AND_DATA_LEGALITY.md): only run on leads that are
 `outreach_allowed`, have a valid person name, and carry an inheritance/legal

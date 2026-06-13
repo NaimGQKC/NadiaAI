@@ -95,22 +95,22 @@ def extract_heirs_regex(text: str) -> list[str]:
     # ("Si En El Plazo De Un Mes...") — keep only plausible person names.
     return clean_name_list(heirs)
 
-def _extract_via_deepseek(prompt: str) -> dict | None:
-    """Extract via DeepSeek (OpenAI-compatible JSON mode). The cheap cloud LLM for
-    the extraction job; works in CI. Returns the raw 5-key dict, or None to defer
-    to regex."""
-    from nadia_ai.config import DEEPSEEK_API_KEY, DEEPSEEK_API_URL, DEEPSEEK_MODEL
-    if not DEEPSEEK_API_KEY:
+def _extract_via_llm(prompt: str) -> dict | None:
+    """Extract via the configured OpenAI-compatible extraction model (DeepSeek by
+    default; swap to Qwen/MiniMax/etc. via the EXTRACTION_* env vars). Works in CI.
+    Returns the raw 5-key dict, or None to defer to regex."""
+    from nadia_ai.config import EXTRACTION_API_KEY, EXTRACTION_API_URL, EXTRACTION_MODEL
+    if not EXTRACTION_API_KEY:
         return None
     try:
         resp = requests.post(
-            DEEPSEEK_API_URL,
+            EXTRACTION_API_URL,
             headers={
-                "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+                "Authorization": f"Bearer {EXTRACTION_API_KEY}",
                 "Content-Type": "application/json",
             },
             json={
-                "model": DEEPSEEK_MODEL,
+                "model": EXTRACTION_MODEL,
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0,
                 "response_format": {"type": "json_object"},
@@ -127,21 +127,21 @@ def _extract_via_deepseek(prompt: str) -> dict | None:
             m = re.search(r"\{.*\}", content, re.DOTALL)
             return json.loads(m.group(0)) if m else None
     except Exception as e:
-        logger.warning("DeepSeek extraction failed, falling back to regex: %s", e)
+        logger.warning("LLM extraction failed, falling back to regex: %s", e)
         return None
 
 
 def extract_inheritance_data(text: str, causante_hint: str = None) -> dict:
-    """Extract inheritance details with DeepSeek (if DEEPSEEK_API_KEY is set), else
-    regex. The downstream sanitization is identical for both."""
+    """Extract inheritance details with the configured LLM (if EXTRACTION_API_KEY
+    is set), else regex. The downstream sanitization is identical for both."""
     try:
         cleaned_text = clean_legal_text(text)
         truncated_text = cleaned_text[:10000]
 
         prompt = f"El fallecido es: {causante_hint}\n\n" + EXTRACTION_PROMPT.format(text=truncated_text)
 
-        # DeepSeek if a key is set, else regex.
-        result = _extract_via_deepseek(prompt)
+        # Configured cloud extraction model if a key is set, else regex.
+        result = _extract_via_llm(prompt)
         if result is None:
             logger.info("No LLM available — using regex extraction.")
             result = {

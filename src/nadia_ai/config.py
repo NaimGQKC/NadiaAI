@@ -50,7 +50,7 @@ else:
     TARGET_PROVINCES = [p.strip().lower() for p in _provinces_env.split(",") if p.strip()]
 
 # Ollama (local LLM — free; used ONLY by the standalone qa_judge dev tool now,
-# not the pipeline, which runs entirely on Gemini).
+# not the pipeline, which runs on the configured extraction model + Perplexity).
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")
 
@@ -58,18 +58,19 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")
 PHANTOMBUSTER_API_KEY = os.getenv("PHANTOMBUSTER_API_KEY", "")
 
 # ── Two LLMs, one job each ─────────────────────────────────────────────────
-# Extraction (read edict/obituary text → JSON): DeepSeek — cheap, strong at
-# structured extraction. Contact search (name → web → contact path): Perplexity
-# Sonar — search-native, returns citations. Both are OpenAI-compatible APIs and
-# both work in CI. Endpoints/models are overridable (their surfaces drift; e.g.
-# set DEEPSEEK_MODEL=deepseek-v4 when you want to pin that version).
-#
-# NOTE: extraction sends names (deceased + heirs = personal data) to DeepSeek, a
-# China-based provider — a cross-border transfer with no EU adequacy decision.
-# Flagged in docs/LLM_AND_DATA_LEGALITY.md; minimise payloads and confirm terms.
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
-DEEPSEEK_API_URL = os.getenv("DEEPSEEK_API_URL", "https://api.deepseek.com/chat/completions")
-DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")  # maps to latest (V3/V4)
+# Extraction (read edict/obituary text → JSON): a cheap OpenAI-compatible model.
+# Provider-neutral — point the three EXTRACTION_* vars at any of the cheap
+# Chinese models without touching code. Defaults to DeepSeek:
+#   DeepSeek: https://api.deepseek.com/chat/completions                          model deepseek-chat
+#   Qwen:     https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions  model qwen-plus
+#   MiniMax:  https://api.minimax.io/v1/chat/completions (verify current path)   model abab/MiniMax-*
+# (JSON mode via response_format is sent; DeepSeek/Qwen support it. If a provider
+#  rejects it, extraction simply falls back to regex — no crash.)
+# Contact search (name → web → contact): Perplexity Sonar — search-native, cited.
+# Both are OpenAI-compatible and work in CI.
+EXTRACTION_API_KEY = os.getenv("EXTRACTION_API_KEY", "")
+EXTRACTION_API_URL = os.getenv("EXTRACTION_API_URL", "https://api.deepseek.com/chat/completions")
+EXTRACTION_MODEL = os.getenv("EXTRACTION_MODEL", "deepseek-chat")
 
 PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY", "")
 PERPLEXITY_API_URL = os.getenv("PERPLEXITY_API_URL", "https://api.perplexity.ai/chat/completions")

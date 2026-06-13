@@ -2,8 +2,20 @@
 
 _Last updated: 2026-06-13. Not legal advice — see the disclaimer at the bottom._
 
-This document justifies two architectural decisions for NadiaAI: (1) using the
-Claude API for production extraction instead of a local LLM, and (2) how the
+> **CURRENT SETUP (supersedes section 1 below):** the pipeline now uses **two
+> OpenAI-compatible LLMs, one job each** — a cheap model for text→JSON extraction
+> (`EXTRACTION_*` env vars, **DeepSeek** by default; swap to Qwen/MiniMax/etc.
+> without code) and **Perplexity Sonar** for search-native contact discovery.
+> Claude/Gemini are no longer used. Section 1's "why not local LLM" reasoning
+> still holds (a cloud API works in CI; local Ollama does not); only the specific
+> provider changed. **Cross-border note:** DeepSeek (and the other Chinese models)
+> are China-based — extraction sends names (deceased + heirs) there, a transfer
+> with **no EU adequacy decision**. The project owner has accepted this risk for
+> cost/performance; the proper mitigation if revisited is a DPA + data
+> minimisation, or an EU/US-hosted model for the name-bearing payloads.
+
+This document justifies two architectural decisions for NadiaAI: (1) using a
+cloud LLM API for production extraction instead of a local LLM, and (2) how the
 solution sits against EU/Spanish data-protection law.
 
 ---
