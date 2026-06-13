@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS leads (
     contact_profile_url TEXT DEFAULT '',
     contact_source_url TEXT DEFAULT '',
     contact_confidence TEXT DEFAULT '',
+    contact_source TEXT DEFAULT '',
     contact_enriched_at TEXT DEFAULT '',
     -- Tracking
     sources TEXT NOT NULL DEFAULT '[]',
@@ -338,6 +339,7 @@ _LEADS_MIGRATIONS = [
     ("contact_profile_url", "ALTER TABLE leads ADD COLUMN contact_profile_url TEXT DEFAULT ''"),
     ("contact_source_url", "ALTER TABLE leads ADD COLUMN contact_source_url TEXT DEFAULT ''"),
     ("contact_confidence", "ALTER TABLE leads ADD COLUMN contact_confidence TEXT DEFAULT ''"),
+    ("contact_source", "ALTER TABLE leads ADD COLUMN contact_source TEXT DEFAULT ''"),
     ("contact_enriched_at", "ALTER TABLE leads ADD COLUMN contact_enriched_at TEXT DEFAULT ''"),
 ]
 
