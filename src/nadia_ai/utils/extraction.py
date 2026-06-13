@@ -113,9 +113,12 @@ def _extract_via_llm(prompt: str) -> dict | None:
                 "model": EXTRACTION_MODEL,
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0,
+                # Generous cap so reasoning models (e.g. MiniMax M3) have room to
+                # think AND still emit the JSON — too small truncates to empty.
+                "max_tokens": 2000,
                 "response_format": {"type": "json_object"},
             },
-            timeout=60,
+            timeout=90,
         )
         resp.raise_for_status()
         content = resp.json()["choices"][0]["message"]["content"]
