@@ -34,3 +34,7 @@ service-account*.json
 
 # CSV fallback files
 leads_*.csv
+
+# Runtime logs and run artifacts
+logs/
+*.log

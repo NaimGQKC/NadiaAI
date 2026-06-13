@@ -25,25 +25,14 @@ jobs:
       - name: Install dependencies
         run: pip install -e .
 
-      - name: Write service account JSON
-        run: |
-          echo "${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON_B64 }}" | base64 -d > /tmp/sa.json
-        env:
-          GOOGLE_SERVICE_ACCOUNT_JSON_B64: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON_B64 }}
-
       - name: Run pipeline
         env:
-          GOOGLE_SERVICE_ACCOUNT_JSON: /tmp/sa.json
-          LEADS_SHEET_ID: ${{ secrets.LEADS_SHEET_ID }}
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-          MAMA_EMAIL: ${{ secrets.MAMA_EMAIL }}
-          DEV_ALERT_EMAIL: ${{ secrets.DEV_ALERT_EMAIL }}
+          # Delivery is now the self-hosted dashboard (reads the DB the cron commits);
+          # Google Sheets + Gmail were discontinued. ANTHROPIC_API_KEY powers heir/
+          # address extraction in CI (no Ollama on the runner). Optional: set
+          # NADIA_ANTHROPIC_MODEL to claude-haiku-4-5 to cut extraction cost ~5x.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python -m nadia_ai --cron
-
-      - name: Clean up service account
-        if: always()
-        run: rm -f /tmp/sa.json
 
   on-failure:
     needs: run-pipeline

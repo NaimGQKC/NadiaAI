@@ -1,0 +1,71 @@
+BUG INVESTIGATION 2026-06-13
+============================
+
+=== BUG 1: ~19% of obituary leads missing date_of_death ===
+
+DB query results:
+  Total leads: 3396
+  Missing date_of_death: 645 (18%)
+
+Breakdown by subsource:
+  BOE-TEJU: 431/431 missing — expected (legal edicts, no death date)
+  BOE-N: 63/115 missing — expected (notarial, often no explicit date)
+  Traspasos: 59/59 missing — expected (B2B, not deaths)
+  Defunciones: 52/2018 missing — BUG! These should have a fallback date
+  BOE-V.B: 23/23 missing — expected
+  Tablón: 17/17 missing — expected (inheritance edicts, rarely have death date)
+  iEsquelas: 0/1 missing — OK
+  Esquelas (Memora): 0/732 missing — OK
+
+ROOT CAUSE (BUG 1a): "defunciones" not in _resolve_date_of_death obituary fallback list.
+  _resolve_date_of_death checks ("esquelas", "defunciones", "iesquelas") — wait, it does!
+
+  Re-investigation: The 52 Defunciones leads with missing date_of_death have NULL in DB,
+  not empty string. The check `date_of_death IS NULL OR date_of_death = ''` caught them.
+
+  Looking at merge.py line 595: dod = _resolve_date_of_death(record)
+  defunciones.py sets published_at=datetime.now(UTC) on each record.
+  But _resolve_date_of_death line 418: if record.source in ("esquelas", "defunciones", "iesquelas")
+    → "defunciones" IS in the list.
+
+  The real issue: these 52 leads are from 2026-05-13 when defunciones.py had a different
+  code path. When merge found a matching lead by name (merged, not created), the
+  _merge_into_existing uses COALESCE(NULLIF(dod, ''), date_of_death) — so if an existing
+  lead already had date_of_death=NULL, it wouldn't overwrite with the new date.
+
+  Actually simpler: the 52 leads were created when the merge code didn't include
+  "defunciones" in the fallback list (that was added later). The DB records still have NULL.
+
+ROOT CAUSE (BUG 1b): "rememori" is MISSING from the fallback list in _resolve_date_of_death.
+  rememori scraper sets published_at correctly (parsed from date_str), but merge.py
+  line 418 only has ("esquelas", "defunciones", "iesquelas") — excludes rememori.
+
+FIX:
+  1. Add "rememori" to the tuple in _resolve_date_of_death
+  2. Repair script to backfill the 52 existing Defunciones leads using edict published_at
+
+=== BUG 2: malformed causante ===
+
+Invalid causante values in non-B2B sources: 25 leads
+  - "D" (Tablón) — honorific fragment
+  - "Dª MARÍA CARMEN JASA PUEYO" (Tablón) — name with honorific prefix; actually valid name after stripping
+  - Various Defunciones names with prefixes ("A Nieves...", "El Senor...", "La Joven...", "De La...")
+  - Some with encoding artifacts ("Ferna 769 Ndez")
+  - Some too long (7+ words)
+  - One Esquelas entry with trailing "+" character
+
+ROOT CAUSE: No causante validation gate in merge.py. Junk strings that fail
+is_valid_person_name are stored directly in the causante field.
+
+Note on "Dª MARÍA CARMEN JASA PUEYO": the name AFTER stripping the "Dª" honorific is
+"MARÍA CARMEN JASA PUEYO" which IS a valid name. But is_valid_person_name rejects the
+whole string because of the "Dª" prefix. For this specific case, the name is valid
+after honorific removal. However: the Tablón scraper should strip honorifics before storing.
+This is in tablon.py (not our file to edit). The fix: null causante if it fails validation.
+
+B2B sources exempt: Traspasos, BORME-I, BORME-II — their "causante" is a business name.
+
+FIX:
+  1. Add _sanitize_causante() helper in merge.py that nullifies invalid non-B2B causantes
+  2. Apply in both _create_new_lead and _merge_into_existing
+  3. Repair script to clean existing invalid values

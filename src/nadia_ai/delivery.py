@@ -87,43 +87,22 @@ def compute_todays_leads(conn: sqlite3.Connection) -> list[LeadRow]:
 
 
 def deliver(leads: list[LeadRow], summary: dict) -> None:
-    """Deliver leads to Google Sheets and send email summary.
+    """Surface today's leads.
 
-    Fallback chain: if Sheets write fails, write CSV locally and email as attachment.
+    Delivery is now the self-hosted dashboard (nadia_ai.dashboard.app), which
+    reads nadia_ai.db live — so the pipeline only needs to populate the DB, which
+    the merge step already did. Google Sheets and the daily Gmail summary were
+    discontinued; their helper functions remain only for the INE calibration cron.
+
+    Here we just write a local CSV snapshot (a cheap offline backup of the day's
+    delta) and log the count. No external services, no credentials, no failures.
     """
-    sheet_ok = False
-
-    # Step 1: Try Google Sheets
-    if GOOGLE_SERVICE_ACCOUNT_JSON and LEADS_SHEET_ID:
-        try:
-            write_to_sheets(leads)
-            sheet_ok = True
-        except Exception as e:
-            logger.error("Google Sheets write failed: %s", e)
-            summary["errors"].append(f"sheets: {e}")
-
-    if not sheet_ok:
-        if not GOOGLE_SERVICE_ACCOUNT_JSON or not LEADS_SHEET_ID:
-            logger.warning("Google Sheets not configured — writing CSV fallback")
-        csv_path = write_csv_fallback(leads)
-        logger.info("CSV fallback written to %s", csv_path)
-
-    # Step 2: Send email
-    if MAMA_EMAIL and SMTP_USER and SMTP_PASSWORD:
-        try:
-            send_email(leads, sheet_ok)
-        except Exception as e:
-            logger.error("Email send failed: %s", e)
-            summary["errors"].append(f"email: {e}")
-
-            # Alert dev if configured
-            if DEV_ALERT_EMAIL:
-                try:
-                    send_dev_alert(str(e))
-                except Exception:
-                    logger.error("Dev alert email also failed")
-    else:
-        logger.warning("Email not configured — skipping email delivery")
+    csv_path = write_csv_fallback(leads)
+    logger.info(
+        "%d lead(s) today written to %s — view live in the dashboard (nadia_ai.dashboard)",
+        len(leads),
+        csv_path,
+    )
 
 
 def write_to_sheets(leads: list[LeadRow]) -> None:
