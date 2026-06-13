@@ -10,6 +10,7 @@ import sys
 import time
 from datetime import UTC, datetime, timedelta
 
+from nadia_ai.config import SPAIN_WIDE
 from nadia_ai.db import get_connection, init_db, purge_expired_persons
 from nadia_ai.logging_config import setup_logging
 
@@ -52,9 +53,7 @@ def run_pipeline(days: int = 90) -> dict:
         "cee_new": 0,
         "traspasos_new": 0,
         "ite_new": 0,
-        "subastas_leads_new": 0,
         "enriched": 0,
-        "subastas_enriched": 0,
         "obras_enriched": 0,
         "deadlines_recomputed": 0,
         "heirs_extracted": 0,
@@ -74,189 +73,58 @@ def run_pipeline(days: int = 90) -> dict:
         logger.error("Deadline recomputation failed: %s", e)
         summary["errors"].append(f"deadlines: {e}")
 
-    # Calculate the cutoff date for scraping
+    # Step 2-5: Parallel Scraping
+    import concurrent.futures
+    
     cutoff_date = datetime.now(UTC) - timedelta(days=days)
+    
+    # Mapping of scraper keys to (module_path, function_name, args)
+    scrapers_config = {
+        "tablon": ("nadia_ai.scrapers.tablon", "scrape_tablon", {"since": cutoff_date}),
+        "boa": ("nadia_ai.scrapers.boa", "scrape_boa", {"since": cutoff_date}),
+        "bop": ("nadia_ai.scrapers.bop", "scrape_bop", {"since": cutoff_date}),
+        "boe": ("nadia_ai.scrapers.boe", "scrape_boe", {"days": 10}), # Increased days for deeper scan
+        "borme": ("nadia_ai.scrapers.borme", "scrape_borme", {}),
+        "esquelas": ("nadia_ai.scrapers.esquelas", "scrape_esquelas", {"since": cutoff_date}),
+        "defunciones": ("nadia_ai.scrapers.defunciones", "scrape_defunciones", {"since": cutoff_date}),
+        "rememori": ("nadia_ai.scrapers.rememori", "scrape_rememori", {"since": cutoff_date}),
+        "iesquelas": ("nadia_ai.scrapers.iesquelas", "scrape_iesquelas", {"since": cutoff_date}),
+        "cee": ("nadia_ai.scrapers.cee", "scrape_cee", {}),
+        "ite": ("nadia_ai.scrapers.ite", "scrape_ite", {}),
+        # NOTE: subastas removed as a lead source per client decision — auctions
+        # are buy-side deals for investors, not listing leads. Kept only as the
+        # subasta_activa context flag in Step 7c enrichment (Tier X, no outreach).
+        "traspasos": ("nadia_ai.scrapers.traspasos", "scrape_traspasos", {"zaragoza_only": not SPAIN_WIDE}),
+    }
 
-    # ── PRIMARY ADMIN SOURCES ──────────────────────────────────────
+    all_records = []
+    logger.info("Starting concurrent scrapers (ThreadPoolExecutor)...")
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        future_to_key = {}
+        for key, (mod_path, func_name, kwargs) in scrapers_config.items():
+            try:
+                # Dynamic import
+                module = __import__(mod_path, fromlist=[func_name])
+                func = getattr(module, func_name)
+                future = executor.submit(func, **kwargs)
+                future_to_key[future] = key
+            except Exception as e:
+                logger.error("Failed to submit scraper %s: %s", key, e)
+                summary["errors"].append(f"submit_{key}: {e}")
 
-    # Step 2: Scrape Tablón de Edictos (Zaragoza city)
-    tablon_records = []
-    try:
-        from nadia_ai.scrapers.tablon import scrape_tablon
-
-        tablon_records = scrape_tablon(since=cutoff_date)
-        summary["tablon_new"] = len(tablon_records)
-        logger.info("Tablón: %d new records", len(tablon_records))
-    except Exception as e:
-        logger.error("Tablón scraper failed: %s", e)
-        summary["errors"].append(f"tablon: {e}")
-
-    # Step 3: Scrape BOA (Boletín Oficial de Aragón)
-    boa_records = []
-    try:
-        from nadia_ai.scrapers.boa import scrape_boa
-
-        boa_records = scrape_boa(since=cutoff_date)
-        summary["boa_new"] = len(boa_records)
-        logger.info("BOA: %d new records", len(boa_records))
-    except Exception as e:
-        logger.error("BOA scraper failed: %s", e)
-        summary["errors"].append(f"boa: {e}")
-
-    # Step 3b: Scrape BOP Zaragoza (province-wide edicts)
-    bop_records = []
-    try:
-        from nadia_ai.scrapers.bop import scrape_bop
-
-        bop_records = scrape_bop(since=cutoff_date)
-        summary["bop_new"] = len(bop_records)
-        logger.info("BOP: %d new records", len(bop_records))
-    except Exception as e:
-        logger.error("BOP scraper failed: %s", e)
-        summary["errors"].append(f"bop: {e}")
-
-    # Step 3c: Scrape BOE (TEJU judicial edicts + Section V state-as-heir)
-    try:
-        from nadia_ai.scrapers.boe import scrape_boe
-
-        boe_records = scrape_boe(days=days)
-        summary["boe_new"] = len(boe_records)
-        logger.info("BOE: %d new records", len(boe_records))
-    except Exception as e:
-        logger.error("BOE scraper failed: %s", e)
-        summary["errors"].append(f"boe: {e}")
-        boe_records = []
-
-    # Step 3d: Scrape BORME (company death/dissolution events)
-    borme_records = []
-    try:
-        from nadia_ai.scrapers.borme import scrape_borme
-
-        borme_records = scrape_borme()
-        summary["borme_new"] = len(borme_records)
-        logger.info("BORME: %d new records", len(borme_records))
-    except Exception as e:
-        logger.error("BORME scraper failed: %s", e)
-        summary["errors"].append(f"borme: {e}")
-
-    # ── EARLY-SIGNAL SOURCES (Obituaries) ──
-    esquelas_records = []
-    try:
-        from nadia_ai.scrapers.esquelas import scrape_esquelas
-
-        esquelas_records = scrape_esquelas(since=cutoff_date)
-        summary["esquelas_new"] = len(esquelas_records)
-        logger.info("Esquelas: %d new records", len(esquelas_records))
-    except Exception as e:
-        logger.error("Esquelas scraper failed: %s", e)
-        summary["errors"].append(f"esquelas: {e}")
-
-    # Step 4b: Scrape defunciones.es (second obituary source with municipality data)
-    defunciones_records = []
-    try:
-        from nadia_ai.scrapers.defunciones import scrape_defunciones
-
-        defunciones_records = scrape_defunciones(since=cutoff_date)
-        summary["defunciones_new"] = len(defunciones_records)
-        logger.info("Defunciones: %d new records", len(defunciones_records))
-    except Exception as e:
-        logger.error("Defunciones scraper failed: %s", e)
-        summary["errors"].append(f"defunciones: {e}")
-
-    # Step 4c: Scrape iEsquelas.com (third obituary source — aggregator)
-    iesquelas_records = []
-    try:
-        from nadia_ai.scrapers.iesquelas import scrape_iesquelas
-
-        iesquelas_records = scrape_iesquelas(since=cutoff_date)
-        summary["iesquelas_new"] = len(iesquelas_records)
-        logger.info("iEsquelas: %d new records", len(iesquelas_records))
-    except Exception as e:
-        logger.error("iEsquelas scraper failed: %s", e)
-        summary["errors"].append(f"iesquelas: {e}")
-
-    # ── CAPEX SIGNALS ──────────────────────────────────────────────
-
-    # Step 5a: Scrape CEE Aragón energy certificates
-    cee_records = []
-    try:
-        from nadia_ai.scrapers.cee import scrape_cee
-
-        cee_records = scrape_cee()
-        summary["cee_new"] = len(cee_records)
-        logger.info("CEE: %d new records", len(cee_records))
-    except Exception as e:
-        logger.error("CEE scraper failed: %s", e)
-        summary["errors"].append(f"cee: {e}")
-
-    # Step 5b: Scrape Traspasos Aragón business transfers
-    traspasos_records = []
-    try:
-        from nadia_ai.scrapers.traspasos import scrape_traspasos
-
-        traspasos_records = scrape_traspasos()
-        summary["traspasos_new"] = len(traspasos_records)
-        logger.info("Traspasos: %d new records", len(traspasos_records))
-    except Exception as e:
-        logger.error("Traspasos scraper failed: %s", e)
-        summary["errors"].append(f"traspasos: {e}")
-
-    # Step 5c: Scrape ITE Zaragoza building inspections (desfavorable only)
-    ite_records = []
-    try:
-        from nadia_ai.scrapers.ite import scrape_ite
-
-        ite_records = scrape_ite()
-        summary["ite_new"] = len(ite_records)
-        logger.info("ITE: %d new records", len(ite_records))
-    except Exception as e:
-        logger.error("ITE scraper failed: %s", e)
-        summary["errors"].append(f"ite: {e}")
-
-    # ── DISTRESS SIGNALS ───────────────────────────────────────────
-
-    # Step 5d: Scrape Subastas BOE (Tier X — judicial auctions)
-    subastas_lead_records = []
-    try:
-        from nadia_ai.scrapers.subastas import scrape_subastas_leads
-
-        subastas_lead_records = scrape_subastas_leads()
-        summary["subastas_leads_new"] = len(subastas_lead_records)
-        logger.info("Subastas leads: %d new records", len(subastas_lead_records))
-    except Exception as e:
-        logger.error("Subastas lead gen failed: %s", e)
-        summary["errors"].append(f"subastas_leads: {e}")
-
+        for future in concurrent.futures.as_completed(future_to_key):
+            key = future_to_key[future]
+            try:
+                records = future.result()
+                all_records.extend(records)
+                summary[f"{key}_new"] = len(records)
+                logger.info("%s: %d new records", key.capitalize(), len(records))
+            except Exception as e:
+                logger.error("%s scraper failed: %s", key.capitalize(), e)
+                summary["errors"].append(f"{key}: {e}")
 
     # ── AGGREGATE & PROCESS ────────────────────────────────────────
-
-    # ── IDENTITY RESOLUTION (Early Signals) ──
-    # For obituary leads, try to find addresses to move them to Tier A
-    try:
-        from nadia_ai.utils.resolution import resolve_identity
-        
-        resolved_count = 0
-        for record in esquelas_records + defunciones_records + iesquelas_records:
-            if record.address: continue # Already has address
-            
-            # This is where the magic happens: Name + City -> Address
-            # Currently a placeholder in resolution.py, but structure is ready
-            res = resolve_identity(record.causante, record.localidad)
-            if res and res.get("address"):
-                record.address = res["address"]
-                record.referencia_catastral = res.get("referencia_catastral")
-                resolved_count += 1
-        
-        if resolved_count > 0:
-            logger.info("Identity Resolution: resolved %d addresses from obituaries", resolved_count)
-    except Exception as e:
-        logger.error("Identity resolution failed: %s", e)
-
-    all_records = (
-        tablon_records + boa_records + bop_records + boe_records + borme_records
-        + esquelas_records + defunciones_records + iesquelas_records
-        + cee_records + traspasos_records + ite_records + subastas_lead_records
-    )
 
     # Step 6: Enrich via Catastro and persist
     try:
@@ -297,6 +165,33 @@ def run_pipeline(days: int = 90) -> dict:
     except Exception as e:
         logger.error("LLM extraction failed (non-critical): %s", e)
         summary["errors"].append(f"llm_extraction: {e}")
+
+    # Step 7b2: Resolve street addresses → referencia catastral via Catastro
+    # callejero. Only leads with a street number are candidates (most obituary
+    # leads are city-only and cannot get an RC). Runs after heir extraction so
+    # any address extracted from edict text is included before the obras join.
+    try:
+        from nadia_ai.catastro import resolve_lead_addresses
+
+        rc_resolved = resolve_lead_addresses(conn)
+        summary["rc_resolved"] = rc_resolved
+        logger.info("Catastro address→RC: %d leads resolved", rc_resolved)
+    except Exception as e:
+        logger.error("Address→RC resolution failed (non-critical): %s", e)
+        summary["errors"].append(f"rc_resolve: {e}")
+
+    # Step 7b3: Contact discovery — search-native LLM (Perplexity Sonar) turns an
+    # heir/causante name + city into a contact path. Cost-capped per run; skips
+    # silently if no search key is set. Scoped to outreach-allowed, named leads.
+    try:
+        from nadia_ai.enrich_contact import run_contact_enrichment
+
+        contacts = run_contact_enrichment(conn)
+        summary["contacts_found"] = contacts
+        logger.info("Contact enrichment: %d leads got a contact path", contacts)
+    except Exception as e:
+        logger.error("Contact enrichment failed (non-critical): %s", e)
+        summary["errors"].append(f"contact_enrichment: {e}")
 
     # Step 7c: Enrichment — cross-join subastas and obras data to leads
     try:
@@ -352,6 +247,29 @@ def run_pipeline(days: int = 90) -> dict:
         summary["leads_today"],
         len(summary["errors"]),
     )
+
+    # Persist the summary so per-scraper counts and errors survive the run.
+    # Scrapers that silently yield 0 records are invisible otherwise.
+    try:
+        import json
+        from pathlib import Path
+
+        logs_dir = Path("logs")
+        logs_dir.mkdir(exist_ok=True)
+        stamp = datetime.now(UTC).strftime("%Y-%m-%d_%H%M%S")
+        summary_path = logs_dir / f"run_summary_{stamp}.json"
+        summary_path.write_text(
+            json.dumps(summary, indent=2, ensure_ascii=False, default=str),
+            encoding="utf-8",
+        )
+        logger.info("Run summary written to %s", summary_path)
+        zero_scrapers = [
+            k.removesuffix("_new") for k, v in summary.items() if k.endswith("_new") and v == 0
+        ]
+        if zero_scrapers:
+            logger.warning("Scrapers with ZERO records this run: %s", ", ".join(zero_scrapers))
+    except Exception as e:
+        logger.error("Failed to write run summary: %s", e)
 
     conn.close()
     return summary

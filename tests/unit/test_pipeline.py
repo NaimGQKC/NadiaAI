@@ -107,12 +107,9 @@ class TestDeliver:
         deliver([], summary)
         # No crash, just warnings in logs
 
-    @patch("nadia_ai.delivery.GOOGLE_SERVICE_ACCOUNT_JSON", "fake.json")
-    @patch("nadia_ai.delivery.LEADS_SHEET_ID", "sheet123")
-    @patch("nadia_ai.delivery.MAMA_EMAIL", "")
-    @patch("nadia_ai.delivery.write_to_sheets", side_effect=Exception("Auth failed"))
-    def test_deliver_sheets_failure_falls_back_to_csv(self, mock_sheets):
-        """When Sheets fails, should write CSV fallback."""
+    def test_deliver_writes_csv_snapshot_no_external_services(self):
+        """Delivery is now the self-hosted dashboard. deliver() must only write a
+        local CSV snapshot and never touch Sheets/email or record their errors."""
         from nadia_ai.delivery import deliver
         from nadia_ai.models import LeadRow
 
@@ -125,9 +122,15 @@ class TestDeliver:
         ]
         summary = {"errors": []}
 
-        with patch("nadia_ai.delivery.write_csv_fallback") as mock_csv:
+        with (
+            patch("nadia_ai.delivery.write_csv_fallback") as mock_csv,
+            patch("nadia_ai.delivery.write_to_sheets") as mock_sheets,
+            patch("nadia_ai.delivery.send_email") as mock_email,
+        ):
             mock_csv.return_value = "leads_2026-04-28.csv"
             deliver(leads, summary)
 
         mock_csv.assert_called_once()
-        assert any("sheets" in e for e in summary["errors"])
+        mock_sheets.assert_not_called()
+        mock_email.assert_not_called()
+        assert summary["errors"] == []

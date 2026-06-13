@@ -16,6 +16,7 @@ import unicodedata
 from datetime import UTC, datetime
 
 from nadia_ai.models import EdictRecord
+from nadia_ai.utils.names import is_valid_person_name
 
 logger = logging.getLogger("nadia_ai.merge")
 
@@ -52,6 +53,14 @@ CREATE TABLE IF NOT EXISTS leads (
     heir_names_json TEXT NOT NULL DEFAULT '[]',
     heir_name TEXT DEFAULT '',
     social_profile_url TEXT DEFAULT '',
+    -- Contact discovery (search-native LLM enrichment)
+    contact_phone TEXT DEFAULT '',
+    contact_email TEXT DEFAULT '',
+    contact_profile_url TEXT DEFAULT '',
+    contact_source_url TEXT DEFAULT '',
+    contact_confidence TEXT DEFAULT '',
+    contact_source TEXT DEFAULT '',
+    contact_enriched_at TEXT DEFAULT '',
     -- Tracking
     sources TEXT NOT NULL DEFAULT '[]',
     source_urls TEXT NOT NULL DEFAULT '[]',
@@ -96,6 +105,9 @@ SOURCE_LABELS = {
     "bop": "BOP Zaragoza",
     "boe_teju": "BOE (TEJU)",
     "boe_secv": "BOE (Sec.V)",
+    "boe_n": "BOE Notarial",
+    "boe_nationwide": "BOE",
+    "rememori": "Rememori",
     "borme_i": "BORME-I",
     "borme_ii": "BORME-II",
     "subastas": "Subastas BOE",
@@ -113,6 +125,9 @@ SUBSOURCE_CODES = {
     "bop": "BOPZ",
     "boe_teju": "BOE-TEJU",
     "boe_secv": "BOE-V.B",
+    "boe_n": "BOE-N",
+    "boe_nationwide": "BOE",
+    "rememori": "Rememori",
     "borme_i": "BORME-I",
     "borme_ii": "BORME-II",
     "esquelas": "Esquelas",
@@ -318,6 +333,14 @@ _LEADS_MIGRATIONS = [
     ("kanban_status", "ALTER TABLE leads ADD COLUMN kanban_status TEXT DEFAULT 'new_to_call'"),
     ("region", "ALTER TABLE leads ADD COLUMN region TEXT DEFAULT ''"),
     ("ai_extraction_done", "ALTER TABLE leads ADD COLUMN ai_extraction_done INTEGER DEFAULT 0"),
+    # Contact discovery (search-native LLM enrichment)
+    ("contact_phone", "ALTER TABLE leads ADD COLUMN contact_phone TEXT DEFAULT ''"),
+    ("contact_email", "ALTER TABLE leads ADD COLUMN contact_email TEXT DEFAULT ''"),
+    ("contact_profile_url", "ALTER TABLE leads ADD COLUMN contact_profile_url TEXT DEFAULT ''"),
+    ("contact_source_url", "ALTER TABLE leads ADD COLUMN contact_source_url TEXT DEFAULT ''"),
+    ("contact_confidence", "ALTER TABLE leads ADD COLUMN contact_confidence TEXT DEFAULT ''"),
+    ("contact_source", "ALTER TABLE leads ADD COLUMN contact_source TEXT DEFAULT ''"),
+    ("contact_enriched_at", "ALTER TABLE leads ADD COLUMN contact_enriched_at TEXT DEFAULT ''"),
 ]
 
 
@@ -402,16 +425,50 @@ def _get_parcel_data(conn: sqlite3.Connection, rc: str | None) -> dict:
 def _resolve_date_of_death(record: EdictRecord) -> str:
     """Extract and standardize date of death from multiple sources.
 
-    Priority: date_of_death > fecha_fallecimiento > published_at (for esquelas).
+    Priority: date_of_death > fecha_fallecimiento > published_at (for obituary sources).
+    Obituaries are published within days of death, so publish date ≈ death date.
     """
     if record.date_of_death:
         return record.date_of_death
     if record.fecha_fallecimiento:
         return record.fecha_fallecimiento
-    # For obituary sources, published_at IS roughly the death date
-    if record.source in ("esquelas", "defunciones", "iesquelas") and record.published_at:
+    # For obituary sources, published_at IS roughly the death date.
+    # "rememori" parses a real publication date from the page; include it here
+    # alongside the other obituary aggregators.
+    if record.source in ("esquelas", "defunciones", "iesquelas", "rememori") and record.published_at:
         return record.published_at.strftime("%Y-%m-%d")
     return ""
+
+
+# Sources that legitimately use a business/entity name instead of a person name.
+# is_valid_person_name would reject them, but we must not null them out.
+_B2B_SOURCES = {"traspasos", "borme_i", "borme_ii"}
+
+
+def _sanitize_causante(record: EdictRecord) -> str | None:
+    """Return a cleaned causante value, or None if it is junk.
+
+    For obituary and legal sources (non-B2B), a causante that fails
+    person-name validation is dropped rather than stored.  This prevents
+    single-letter fragments ("D"), honorific prefixes, and title-cased
+    boilerplate from polluting the leads table.
+
+    B2B sources (traspasos, borme) are exempt — their causante is a
+    company/entity name, which legitimately fails person-name checks.
+    """
+    causante = record.causante
+    if not causante:
+        return None
+    if record.source in _B2B_SOURCES:
+        # B2B entity names — keep as-is regardless of validation
+        return causante
+    if is_valid_person_name(causante):
+        return causante
+    # Junk for a person-name source — drop it
+    logger.debug(
+        "Dropping invalid causante %r from source %r", causante, record.source
+    )
+    return None
 
 
 def _update_lead_classification(conn: sqlite3.Connection, lead_id: int) -> None:
@@ -523,6 +580,9 @@ def _merge_into_existing(
     # Resolve best date of death
     dod = _resolve_date_of_death(record) or existing.get("date_of_death") or ""
 
+    # Validate causante: drop junk values from person-name sources
+    clean_causante = _sanitize_causante(record) or ""
+
     conn.execute(
         """UPDATE leads SET
             causante = COALESCE(NULLIF(?, ''), causante),
@@ -550,8 +610,8 @@ def _merge_into_existing(
             last_updated_at = datetime('now')
         WHERE id = ?""",
         (
-            record.causante or "",
-            normalize_name(record.causante),
+            clean_causante,
+            normalize_name(clean_causante) if clean_causante else None,
             best_address,
             normalize_address(best_address),
             getattr(record, "localidad", None) or "",
@@ -592,6 +652,9 @@ def _create_new_lead(
     deadline = compute_tax_deadline(dod)
     heir_name = record.heir_names[0] if record.heir_names else ""
 
+    # Validate causante: drop junk values from person-name sources
+    clean_causante = _sanitize_causante(record) or ""
+
     cursor = conn.execute(
         """INSERT INTO leads (
             causante_norm, ref_catastral, address_norm,
@@ -604,10 +667,10 @@ def _create_new_lead(
             heir_names_json, heir_name, region
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
-            normalize_name(record.causante),
+            normalize_name(clean_causante) if clean_causante else None,
             record.referencia_catastral,
             normalize_address(best_address),
-            record.causante or "",
+            clean_causante,
             best_address,
             getattr(record, "localidad", None) or "",
             getattr(record, "fecha_fallecimiento", None) or "",

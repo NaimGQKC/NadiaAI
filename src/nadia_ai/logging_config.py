@@ -28,6 +28,18 @@ class StructuredFormatter(logging.Formatter):
 
 def setup_logging(structured: bool = False, level: int = logging.INFO) -> None:
     """Configure logging for the pipeline. No PII — use ref catastral, not names."""
+    # Windows defaults stdout/stderr to cp1252, which raises UnicodeEncodeError
+    # on accented Spanish names and the occasional emoji in scraped listing
+    # titles (e.g. a "Pizzería … 🍕" traspaso). Force UTF-8 so neither logging
+    # nor bare print() can abort a pipeline step on non-Latin-1 characters.
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            try:
+                reconfigure(encoding="utf-8", errors="replace")
+            except (ValueError, OSError):
+                pass
+
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(StructuredFormatter(structured=structured))
 

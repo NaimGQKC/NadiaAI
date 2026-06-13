@@ -740,6 +740,15 @@ def _enrich_from_pdf(record: EdictRecord) -> EdictRecord:
     return record
 
 
+# BOA's TITU-C search returns mostly archival results sorted newest-first and
+# the API silently ignores the PUBL-GE date parameter. Inheritance edicts are
+# published irregularly (a handful per year), so a strict 90-day window drops
+# 100% of results. We therefore apply an independent, much wider acceptance
+# window for BOA. Downstream merge dedups by (source, source_id), so re-importing
+# the same archival records across runs is harmless.
+BOA_MAX_AGE_DAYS = 1825  # ~5 years
+
+
 def scrape_boa(since: datetime | None = None) -> list[EdictRecord]:
     """Scrape BOA for inheritance-related publications.
 
@@ -748,6 +757,12 @@ def scrape_boa(since: datetime | None = None) -> list[EdictRecord]:
     """
     if since is None:
         since = datetime.now(UTC) - timedelta(days=365)
+
+    # BOA-specific acceptance floor. The caller's `since` (typically 90 days) is
+    # far too narrow for BOA's sparse, archival publication cadence, and the API
+    # ignores server-side date filtering anyway. Accept anything within
+    # BOA_MAX_AGE_DAYS so genuinely-relevant edicts are not silently discarded.
+    accept_since = min(since, datetime.now(UTC) - timedelta(days=BOA_MAX_AGE_DAYS))
 
     seen_ids = set()
     all_records = []
@@ -760,8 +775,9 @@ def scrape_boa(since: datetime | None = None) -> list[EdictRecord]:
             for raw in raw_results:
                 record = parse_boa_record(raw, query_label=query)
                 if record and record.source_id not in seen_ids:
-                    # Client-side date filter — BOA API ignores PUBL-GE
-                    if record.published_at and record.published_at < since:
+                    # Client-side date filter — BOA API ignores PUBL-GE. Use the
+                    # wide BOA-specific floor, not the narrow caller `since`.
+                    if record.published_at and record.published_at < accept_since:
                         continue
                     seen_ids.add(record.source_id)
                     all_records.append(record)

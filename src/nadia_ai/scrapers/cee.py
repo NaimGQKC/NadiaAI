@@ -5,21 +5,31 @@ at https://aplicaciones.aragon.es/regcee/consulta.xhtml. A new energy
 certificate is a high-intent signal for imminent residential listings — the
 owner is preparing the property for sale or rent (legally required in Spain).
 
-Strategy:
-  1. GET the JSF form page → extract javax.faces.ViewState + JSESSIONID
-  2. POST the form with municipality="Zaragoza"
-  3. Parse the HTML results table
-  4. Filter by inscription date (last N days)
-  5. Return EdictRecord objects
+Implementation notes (verified against the live form, 2026-06):
+  * The page is a single MyFaces/JSF form with id ``consultasForm``.
+  * The real search fields are ``consultasForm:provSearch`` (province SELECT:
+    Zaragoza = option value "4") and ``consultasForm:muniSearch`` (municipality
+    SELECT, AJAX-populated; "Cualquiera" = "1").
+  * Submission is a STANDARD (non-AJAX) form POST using the ``Buscar`` submit
+    button (``consultasForm:j_idt34``); the server replies with a full HTML
+    page, NOT a ``<partial-response>`` XML fragment.
+  * The results table (``<table class="izquierda ancho100">``) has columns:
+    Certificado | Tipo Edificio | Estado Edificio | Provincia | Municipio | Ver.
+    It carries NO cadastral reference, NO street address and NO date — those
+    live only behind per-certificate detail postbacks. We therefore emit
+    list-level Tier-B records keyed on the certificate number, whose prefix
+    encodes the inscription year (e.g. ``2026ZEVV-000233711`` → 2026).
+  * Results are returned newest-first (descending certificate number), so we
+    page a bounded number of pages to capture the freshest certificates.
 
 These are NOT inheritance edicts — they're energy certificate registrations.
-Leads from this source are Tier B (address/RC, no causante).
+Leads from this source are Tier B (address/RC resolved later, no causante).
 """
 
 import hashlib
 import logging
 import re
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 import requests
 from bs4 import BeautifulSoup
@@ -29,318 +39,224 @@ from nadia_ai.models import EdictRecord
 logger = logging.getLogger("nadia_ai.scrapers.cee")
 
 CONSULTA_URL = "https://aplicaciones.aragon.es/regcee/consulta.xhtml"
+FORM_ID = "consultasForm"
+
+# Province option values in the provSearch <select>.
+PROV_ZARAGOZA = "4"
+PROV_HUESCA = "2"
+PROV_TERUEL = "3"
+MUNI_ANY = "1"
+
+# How many result pages (20 rows each) to walk. The list is newest-first, so a
+# handful of pages covers the most recent certificates without hammering the
+# server (the full set is ~100k rows / ~5.5k pages).
+MAX_PAGES = 5
 
 SESSION = requests.Session()
 SESSION.headers.update({
-    "User-Agent": "NadiaAI/1.0 (real-estate lead pipeline; polite scraper)",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0 Safari/537.36 NadiaAI/1.0",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9",
     "Accept-Language": "es-ES,es;q=0.9",
 })
 
-# Cadastral reference pattern (20-char standard format)
-RC_PATTERN = re.compile(r"\b(\d{7}[A-Z]{2}\d{4}[A-Z]\d{4}[A-Z]{2})\b", re.IGNORECASE)
-
-# Date patterns: DD/MM/YYYY or YYYY-MM-DD
-DATE_PATTERN_DMY = re.compile(r"(\d{2}/\d{2}/\d{4})")
-DATE_PATTERN_ISO = re.compile(r"(\d{4}-\d{2}-\d{2})")
+# Certificate numbers look like "2026ZEVV-000233711"; the leading 4 digits are
+# the inscription year, then the province letter (Z = Zaragoza), type code, etc.
+CERT_RE = re.compile(r"^(\d{4})[A-Z]")
 
 
-def _extract_viewstate(html: str) -> str | None:
-    """Extract javax.faces.ViewState from the JSF form page."""
+def _get_viewstate(html: str) -> str | None:
+    """Extract javax.faces.ViewState from a JSF response."""
     soup = BeautifulSoup(html, "html.parser")
-    vs_input = soup.find("input", {"name": "javax.faces.ViewState"})
-    if vs_input:
-        return vs_input.get("value", "")
-    # Fallback: regex search
-    m = re.search(
-        r'name="javax\.faces\.ViewState"\s+value="([^"]+)"', html
-    )
+    vs = soup.find("input", {"name": "javax.faces.ViewState"})
+    if vs and vs.get("value"):
+        return vs["value"]
+    m = re.search(r'name="javax\.faces\.ViewState"[^>]*value="([^"]*)"', html)
     return m.group(1) if m else None
 
 
-def _extract_form_id(html: str) -> str:
-    """Extract the main form ID from the JSF page."""
+def _form_action(html: str) -> str:
+    """Absolute action URL for consultasForm (carries the jsessionid)."""
     soup = BeautifulSoup(html, "html.parser")
-    form = soup.find("form")
-    if form and form.get("id"):
-        return form["id"]
-    return "j_idt6"  # Common default for JSF forms
+    form = soup.find("form", {"id": FORM_ID}) or soup.find("form")
+    action = form.get("action") if form else None
+    if action:
+        if action.startswith("http"):
+            return action
+        return "https://aplicaciones.aragon.es" + action
+    return CONSULTA_URL
 
 
-def _parse_date(text: str) -> datetime | None:
-    """Try to parse a date string in DD/MM/YYYY or YYYY-MM-DD format."""
-    m = DATE_PATTERN_DMY.search(text)
-    if m:
-        try:
-            return datetime.strptime(m.group(1), "%d/%m/%Y").replace(tzinfo=UTC)
-        except ValueError:
-            pass
-    m = DATE_PATTERN_ISO.search(text)
-    if m:
-        try:
-            return datetime.fromisoformat(m.group(1)).replace(tzinfo=UTC)
-        except ValueError:
-            pass
+def _base_fields(province: str, viewstate: str) -> dict:
+    """Common form fields shared by the search and pagination posts."""
+    return {
+        FORM_ID: FORM_ID,
+        f"{FORM_ID}:certSearch": "",
+        f"{FORM_ID}:refcatSearch": "",
+        f"{FORM_ID}:provSearch": province,
+        f"{FORM_ID}:muniSearch": MUNI_ANY,
+        f"{FORM_ID}:nomViaSearch": "",
+        f"{FORM_ID}:numeroVia": "",
+        "javax.faces.ViewState": viewstate,
+    }
+
+
+def _make_source_id(cert_number: str) -> str:
+    return hashlib.md5(f"cee:{cert_number}".encode()).hexdigest()[:12]
+
+
+def _cert_year(cert_number: str) -> str | None:
+    m = CERT_RE.match(cert_number)
+    return m.group(1) if m else None
+
+
+def _find_results_table(soup: BeautifulSoup):
+    """Locate the results table by its 'Certificado' header."""
+    for table in soup.find_all("table"):
+        rows = table.find_all("tr")
+        if not rows:
+            continue
+        header = [c.get_text(strip=True).lower() for c in rows[0].find_all(["th", "td"])]
+        if header and header[0].startswith("certificado"):
+            return table
     return None
 
 
-def _make_source_id(ref_catastral: str, inscription_year: str) -> str:
-    """Generate a stable source_id from RC + inscription year.
-
-    Using RC + year ensures that a property getting a new certificate
-    years later is recognized as a new event for the same property.
-    """
-    key = f"cee:{ref_catastral}:{inscription_year}"
-    return hashlib.md5(key.encode()).hexdigest()[:12]
-
-
-def _parse_results_table(html: str, cutoff: datetime) -> list[EdictRecord]:
-    """Parse the CEE results table from the consulta page HTML."""
+def _parse_results_page(html: str) -> list[EdictRecord]:
     soup = BeautifulSoup(html, "html.parser")
+    table = _find_results_table(soup)
+    if table is None:
+        return []
+
     records: list[EdictRecord] = []
-    seen_ids: set[str] = set()
-
-    # Find all data tables — the results are typically in a <table> with class
-    # containing "data" or "list" or within a panel
-    tables = soup.find_all("table")
-    if not tables:
-        # Try finding results in a <div> with datalist/results
-        logger.info("CEE: No tables found in results page")
-        return records
-
-    for table in tables:
-        rows = table.find_all("tr")
-        if len(rows) < 2:
+    for row in table.find_all("tr")[1:]:
+        cells = [c.get_text(" ", strip=True) for c in row.find_all("td")]
+        if len(cells) < 5:
             continue
 
-        # Detect header row
-        headers = []
-        header_row = rows[0]
-        for th in header_row.find_all(["th", "td"]):
-            headers.append(th.get_text(strip=True).lower())
-
-        if not headers:
+        cert_number = cells[0].strip()
+        tipo = cells[1]
+        estado = cells[2]
+        provincia = cells[3]
+        municipio = cells[4]
+        if not cert_number:
             continue
 
-        # Map column indices by keyword matching
-        col_map = {}
-        for idx, h in enumerate(headers):
-            if "catastral" in h or "referencia" in h:
-                col_map["rc"] = idx
-            elif "inscripci" in h or "fecha" in h or "registro" in h:
-                col_map["fecha"] = idx
-            elif "calificaci" in h or "energ" in h or "clase" in h:
-                col_map["calificacion"] = idx
-            elif "direcci" in h or "ubicaci" in h or "localizaci" in h:
-                col_map["direccion"] = idx
-            elif "municipio" in h or "localidad" in h:
-                col_map["municipio"] = idx
+        year = _cert_year(cert_number)
+        published_at = None
+        if year:
+            try:
+                published_at = datetime(int(year), 1, 1, tzinfo=UTC)
+            except ValueError:
+                published_at = None
 
-        # Need at least RC or address to be useful
-        if "rc" not in col_map and "direccion" not in col_map:
-            continue
+        addr_parts = [p for p in (tipo, estado) if p]
+        composite = " — ".join(addr_parts) if addr_parts else None
 
-        # Parse data rows
-        for row in rows[1:]:
-            cells = row.find_all(["td", "th"])
-            if len(cells) < max(col_map.values(), default=0) + 1:
-                continue
-
-            def _cell(key: str) -> str:
-                idx = col_map.get(key)
-                if idx is not None and idx < len(cells):
-                    return cells[idx].get_text(strip=True)
-                return ""
-
-            rc = _cell("rc").upper().replace(" ", "")
-            fecha_str = _cell("fecha")
-            calificacion = _cell("calificacion").upper()
-            direccion = _cell("direccion")
-            municipio = _cell("municipio") or "Zaragoza"
-
-            # Validate RC format if present
-            if rc and not RC_PATTERN.match(rc):
-                # Try to find an RC in the cell text
-                rc_match = RC_PATTERN.search(rc)
-                rc = rc_match.group(1).upper() if rc_match else ""
-
-            # Parse inscription date
-            fecha = _parse_date(fecha_str) if fecha_str else None
-            if fecha and fecha < cutoff:
-                continue  # Older than our cutoff
-
-            # Build composite address
-            addr_parts = []
-            if direccion:
-                addr_parts.append(direccion)
-            if calificacion:
-                addr_parts.append(f"Calificación: {calificacion}")
-            composite_address = " — ".join(addr_parts) if addr_parts else None
-
-            if not rc and not composite_address:
-                continue  # No useful data
-
-            inscription_year = fecha.strftime("%Y") if fecha else "unknown"
-            source_id = _make_source_id(rc or (direccion or "")[:50], inscription_year)
-
-            if source_id in seen_ids:
-                continue
-            seen_ids.add(source_id)
-
-            record = EdictRecord(
+        records.append(
+            EdictRecord(
                 source="cee",
-                source_id=source_id,
+                source_id=_make_source_id(cert_number),
                 edict_type="certificado_energetico",
-                published_at=fecha,
+                published_at=published_at,
                 source_url=CONSULTA_URL,
-                referencia_catastral=rc or None,
-                address=composite_address,
-                localidad=municipio,
+                referencia_catastral=None,
+                address=composite,
+                localidad=municipio.title() if municipio else (provincia.title() or "Zaragoza"),
             )
-            records.append(record)
-            logger.info(
-                "CEE: %s | %s | %s | %s",
-                rc or "-",
-                calificacion or "-",
-                (direccion or "-")[:60],
-                fecha_str or "-",
-            )
-
+        )
     return records
 
 
-def scrape_cee(since_days: int = 90) -> list[EdictRecord]:
-    """Scrape CEE Aragón energy certificates for Zaragoza municipality.
+def scrape_cee(province: str = PROV_ZARAGOZA, max_pages: int = MAX_PAGES) -> list[EdictRecord]:
+    """Scrape CEE Aragón energy certificates (Zaragoza province by default).
 
     Args:
-        since_days: Only include certificates inscribed in the last N days.
+        province: provSearch option value ("4" = Zaragoza, "2" = Huesca,
+            "3" = Teruel).
+        max_pages: number of newest-first result pages to walk (20 rows each).
 
     Returns:
-        List of EdictRecord objects with source="cee".
+        List of EdictRecord objects with source="cee" (newest certificates
+        first), deduped by certificate number.
     """
-    cutoff = datetime.now(UTC) - timedelta(days=since_days)
-
-    # Step 1: GET the form page to extract JSF state
+    # Step 1: GET the form page → ViewState + jsessionid action URL.
     try:
         logger.info("CEE: Fetching consulta form page")
         form_resp = SESSION.get(CONSULTA_URL, timeout=30)
         form_resp.raise_for_status()
-        form_resp.encoding = "utf-8"
     except requests.RequestException as e:
         logger.error("CEE: Failed to fetch consulta form: %s", e)
         return []
 
-    viewstate = _extract_viewstate(form_resp.text)
-    form_id = _extract_form_id(form_resp.text)
-
+    viewstate = _get_viewstate(form_resp.text)
+    action = _form_action(form_resp.text)
     if not viewstate:
-        logger.error("CEE: Could not extract javax.faces.ViewState — JSF form may have changed")
+        logger.error("CEE: Could not extract javax.faces.ViewState — form may have changed")
         return []
+    logger.info("CEE: ViewState ok (%d chars), action=%s", len(viewstate), action)
 
-    logger.info("CEE: Extracted ViewState (%d chars), form_id=%s", len(viewstate), form_id)
-
-    # Step 2: POST the search form with municipality = Zaragoza
-    # JSF forms use the form ID as prefix for field names
-    post_data = {
-        "javax.faces.ViewState": viewstate,
-        "javax.faces.partial.ajax": "true",
-        "javax.faces.source": f"{form_id}:btnBuscar",
-        "javax.faces.partial.execute": "@all",
-        "javax.faces.partial.render": "@all",
-        f"{form_id}": form_id,
-        f"{form_id}:btnBuscar": f"{form_id}:btnBuscar",
-    }
-
-    # Try common field name patterns for municipality input
-    municipality_field_names = [
-        f"{form_id}:municipio",
-        f"{form_id}:municipio_input",
-        f"{form_id}:txtMunicipio",
-        f"{form_id}:selectMunicipio",
-        f"{form_id}:localidad",
-        f"{form_id}:inputMunicipio",
-    ]
-    for field_name in municipality_field_names:
-        post_data[field_name] = "Zaragoza"
-
-    # Province field (Zaragoza = 50)
-    province_field_names = [
-        f"{form_id}:provincia",
-        f"{form_id}:selectProvincia",
-        f"{form_id}:provincia_input",
-    ]
-    for field_name in province_field_names:
-        post_data[field_name] = "Zaragoza"
-
-    # Also try without AJAX (standard form submit)
-    post_headers = {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Faces-Request": "partial/ajax",
-        "X-Requested-With": "XMLHttpRequest",
-        "Referer": CONSULTA_URL,
-    }
-
+    # Step 2: standard (non-AJAX) POST with the Buscar submit button.
+    data = _base_fields(province, viewstate)
+    data[f"{FORM_ID}:j_idt34"] = "Buscar"
     try:
-        logger.info("CEE: Submitting search form (AJAX POST)")
-        search_resp = SESSION.post(
-            CONSULTA_URL,
-            data=post_data,
-            headers=post_headers,
+        logger.info("CEE: Submitting search (province=%s)", province)
+        resp = SESSION.post(
+            action,
+            data=data,
+            headers={"Referer": CONSULTA_URL, "Content-Type": "application/x-www-form-urlencoded"},
             timeout=60,
         )
-        search_resp.raise_for_status()
-        search_resp.encoding = "utf-8"
+        resp.raise_for_status()
     except requests.RequestException as e:
-        logger.error("CEE: Form submission failed: %s", e)
-        # Try standard (non-AJAX) POST as fallback
-        try:
-            logger.info("CEE: Retrying with standard POST (non-AJAX)")
-            post_data_simple = {
-                "javax.faces.ViewState": viewstate,
-                f"{form_id}": form_id,
-                f"{form_id}:btnBuscar": "Buscar",
-            }
-            for field_name in municipality_field_names:
-                post_data_simple[field_name] = "Zaragoza"
-            for field_name in province_field_names:
-                post_data_simple[field_name] = "Zaragoza"
+        logger.error("CEE: Search POST failed: %s", e)
+        return []
 
-            search_resp = SESSION.post(
-                CONSULTA_URL,
-                data=post_data_simple,
+    records: list[EdictRecord] = []
+    seen: set[str] = set()
+
+    def _absorb(html: str) -> int:
+        added = 0
+        for rec in _parse_results_page(html):
+            if rec.source_id in seen:
+                continue
+            seen.add(rec.source_id)
+            records.append(rec)
+            added += 1
+        return added
+
+    n = _absorb(resp.text)
+    logger.info("CEE: page 1 → %d records", n)
+    if n == 0:
+        logger.warning("CEE: results page had no rows — selectors or form may have changed")
+        return []
+
+    # Step 3: paginate via the 'next' image button. ViewState rotates each post.
+    current_html = resp.text
+    for page in range(2, max_pages + 1):
+        vs = _get_viewstate(current_html)
+        if not vs:
+            break
+        page_data = _base_fields(province, vs)
+        page_data[f"{FORM_ID}:j_idt63_acsc_btn_next.x"] = "5"
+        page_data[f"{FORM_ID}:j_idt63_acsc_btn_next.y"] = "5"
+        try:
+            resp = SESSION.post(
+                action,
+                data=page_data,
+                headers={"Referer": CONSULTA_URL,
+                         "Content-Type": "application/x-www-form-urlencoded"},
                 timeout=60,
             )
-            search_resp.raise_for_status()
-            search_resp.encoding = "utf-8"
-        except requests.RequestException as e2:
-            logger.error("CEE: Standard POST also failed: %s", e2)
-            return []
+            resp.raise_for_status()
+        except requests.RequestException as e:
+            logger.error("CEE: pagination POST failed at page %d: %s", page, e)
+            break
+        added = _absorb(resp.text)
+        logger.info("CEE: page %d → %d new records", page, added)
+        current_html = resp.text
+        if added == 0:
+            break
 
-    result_html = search_resp.text
-
-    # Check if we got an AJAX partial response — extract the HTML content
-    if "<partial-response>" in result_html or "CDATA" in result_html:
-        # Extract HTML from AJAX response: <![CDATA[...]]>
-        cdata_match = re.search(r"<!\[CDATA\[(.*?)\]\]>", result_html, re.DOTALL)
-        if cdata_match:
-            result_html = cdata_match.group(1)
-
-    # Step 3: Parse results
-    records = _parse_results_table(result_html, cutoff)
-
-    # If AJAX returned no results, try fetching the page again (server may
-    # have updated the view state and the results are now rendered)
-    if not records:
-        try:
-            logger.info("CEE: Re-fetching page after form submission")
-            page_resp = SESSION.get(CONSULTA_URL, timeout=30)
-            page_resp.raise_for_status()
-            page_resp.encoding = "utf-8"
-            records = _parse_results_table(page_resp.text, cutoff)
-        except requests.RequestException:
-            pass
-
-    logger.info(
-        "CEE scrape complete: %d records (last %d days)", len(records), since_days
-    )
+    logger.info("CEE scrape complete: %d records", len(records))
     return records

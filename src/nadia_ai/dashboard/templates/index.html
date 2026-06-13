@@ -18,7 +18,6 @@
             <div class="stat stat-a"><span class="stat-value" id="stat-a">-</span><span class="stat-label">Tier A</span></div>
             <div class="stat stat-b"><span class="stat-value" id="stat-b">-</span><span class="stat-label">Tier B</span></div>
             <div class="stat stat-urgent"><span class="stat-value" id="stat-urgent">-</span><span class="stat-label">Urgente</span></div>
-            <div class="stat stat-regions"><span class="stat-value" id="stat-regions">-</span><span class="stat-label">Regiones</span></div>
         </div>
     </header>
 
@@ -37,6 +36,21 @@
                     <option value="B">Tier B</option>
                     <option value="C">Tier C</option>
                     <option value="X">Tier X</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Tipo de Activo</label>
+                <select id="filter-asset">
+                    <option value="all" selected>Todas</option>
+                    <option value="Residential">🏠 Residencial</option>
+                    <option value="Commercial">🏢 Comercial / Traspasos</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Fuente BOE</label>
+                <select id="filter-boe">
+                    <option value="all">Todas las fuentes</option>
+                    <option value="BOE (Sec.V)">Solo Sección V</option>
                 </select>
             </div>
             <div class="filter-group">
@@ -71,6 +85,7 @@
                     <th style="width: 80px;">Días</th>
                     <th style="width: 60px;">Tier</th>
                     <th>Dirección</th>
+                    <th style="width: 80px;">URL</th>
                 </tr>
             </thead>
             <tbody id="leads-tbody">

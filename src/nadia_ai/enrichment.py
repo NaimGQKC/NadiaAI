@@ -493,14 +493,16 @@ def enrich_leads_from_subastas(conn: sqlite3.Connection) -> int:
     _ensure_lead_columns(conn)
     enriched = 0
 
-    # Match by referencia catastral
+    # Match by referencia catastral (aligned at 14-char parcel level)
     rows_rc = conn.execute(
         """SELECT l.id AS lead_id, s.url, s.tipo_subasta
            FROM leads l
            INNER JOIN enrichment_subastas s
                ON l.ref_catastral IS NOT NULL
                AND l.ref_catastral != ''
-               AND l.ref_catastral = s.referencia_catastral
+               AND s.referencia_catastral IS NOT NULL
+               AND s.referencia_catastral != ''
+               AND substr(l.ref_catastral, 1, 14) = substr(s.referencia_catastral, 1, 14)
            WHERE (l.subasta_activa IS NULL OR l.subasta_activa = '')"""
     ).fetchall()
 
@@ -572,33 +574,61 @@ def enrich_leads_from_subastas(conn: sqlite3.Connection) -> int:
 
 
 def enrich_leads_from_obras(conn: sqlite3.Connection) -> int:
-    """Cross-join obras to leads. Returns count of leads enriched."""
+    """Cross-join obras to leads. Returns count of leads enriched.
+
+    Matches on two keys, in priority order:
+      1. referencia catastral — the Zaragoza obras feed always carries a 14-char
+         parcel RC (``claveCatastro``); leads carry an RC once Catastro address
+         resolution has run. Leads' 20-char RC is truncated to 14 to align with
+         the obras parcel RC.
+      2. normalized address — fallback for leads/obras that have a street address
+         but no RC.
+    """
     init_enrichment_schema(conn)
     _ensure_lead_columns(conn)
     enriched = 0
 
-    rows = conn.execute(
+    # Match on referencia catastral at parcel level (first 14 chars).
+    rows_rc = conn.execute(
+        """SELECT l.id AS lead_id, o.tipo_licencia, o.fecha
+           FROM leads l
+           INNER JOIN enrichment_obras o
+               ON l.ref_catastral IS NOT NULL
+               AND l.ref_catastral != ''
+               AND o.referencia_catastral IS NOT NULL
+               AND o.referencia_catastral != ''
+               AND substr(l.ref_catastral, 1, 14) = substr(o.referencia_catastral, 1, 14)
+           WHERE (l.obras_recientes IS NULL OR l.obras_recientes = '')"""
+    ).fetchall()
+
+    # Fallback: match on normalized address.
+    rows_addr = conn.execute(
         """SELECT l.id AS lead_id, o.tipo_licencia, o.fecha
            FROM leads l
            INNER JOIN enrichment_obras o
                ON l.address_norm IS NOT NULL
                AND l.address_norm != ''
+               AND o.address_norm IS NOT NULL
+               AND o.address_norm != ''
                AND l.address_norm = o.address_norm
            WHERE (l.obras_recientes IS NULL OR l.obras_recientes = '')"""
     ).fetchall()
 
+    rows = list(rows_rc) + list(rows_addr)
+
     # Group by lead_id — a lead may match multiple obras
     from collections import defaultdict
 
-    obras_by_lead: dict[int, list[dict]] = defaultdict(list)
+    obras_by_lead: dict[int, list[tuple[str, str]]] = defaultdict(list)
     for row in rows:
-        obras_by_lead[row["lead_id"]].append(
-            {"tipo": row["tipo_licencia"] or "?", "fecha": row["fecha"] or "?"}
-        )
+        entry = (row["tipo_licencia"] or "?", row["fecha"] or "?")
+        # A lead matched by both RC and address can yield the same obra twice.
+        if entry not in obras_by_lead[row["lead_id"]]:
+            obras_by_lead[row["lead_id"]].append(entry)
 
     for lead_id, obras_list in obras_by_lead.items():
         # Build a compact summary string
-        parts = [f"{o['tipo']} ({o['fecha']})" for o in obras_list[:5]]
+        parts = [f"{tipo} ({fecha})" for tipo, fecha in obras_list[:5]]
         summary = "; ".join(parts)
 
         conn.execute(
