@@ -129,7 +129,6 @@ def test_provider_unavailable_returns_none(monkeypatch):
 
 def test_no_provider_key_skips(monkeypatch):
     monkeypatch.setattr(ec, "PERPLEXITY_API_KEY", "")
-    monkeypatch.setattr(ec, "GEMINI_API_KEY", "")
     conn = _make_conn()
     _insert_lead(conn)
     assert run_contact_enrichment(conn) == 0
