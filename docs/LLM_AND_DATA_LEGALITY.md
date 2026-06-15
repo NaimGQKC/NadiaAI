@@ -2,17 +2,21 @@
 
 _Last updated: 2026-06-13. Not legal advice — see the disclaimer at the bottom._
 
-> **CURRENT SETUP (supersedes section 1 below):** the pipeline now uses **two
+> **CURRENT SETUP (supersedes section 1 below):** the pipeline uses **two
 > OpenAI-compatible LLMs, one job each** — a cheap model for text→JSON extraction
-> (`EXTRACTION_*` env vars, **DeepSeek** by default; swap to Qwen/MiniMax/etc.
-> without code) and **Perplexity Sonar** for search-native contact discovery.
-> Claude/Gemini are no longer used. Section 1's "why not local LLM" reasoning
-> still holds (a cloud API works in CI; local Ollama does not); only the specific
-> provider changed. **Cross-border note:** DeepSeek (and the other Chinese models)
-> are China-based — extraction sends names (deceased + heirs) there, a transfer
-> with **no EU adequacy decision**. The project owner has accepted this risk for
-> cost/performance; the proper mitigation if revisited is a DPA + data
-> minimisation, or an EU/US-hosted model for the name-bearing payloads.
+> (`EXTRACTION_*` env vars) and **Perplexity Sonar** for search-native contact
+> discovery. Claude/Gemini are no longer the production path. The extraction
+> endpoint is provider-neutral; the **current deployment points at MiniMax `minimax-m3`
+> via OpenRouter** (`https://openrouter.ai/api/v1`), defaulting to DeepSeek if the
+> env vars are unset. The OpenRouter free trial is credit-capped, so extraction has
+> an adaptive `max_tokens`/preflight guard and a "defer, don't regex-clobber" failure
+> mode (see `utils/extraction.py`). Section 1's "why not local LLM" reasoning still
+> holds (a cloud API works in CI; local Ollama does not); only the provider changed.
+> **Cross-border note:** MiniMax/DeepSeek are China-based and OpenRouter routes via a
+> US intermediary — extraction sends names (deceased + heirs) outside the EU, a
+> transfer with **no adequacy decision**. The owner has accepted this for
+> cost/performance; the proper mitigation if revisited is a DPA + data minimisation,
+> or an EU/US-hosted model for the name-bearing payloads.
 
 This document justifies two architectural decisions for NadiaAI: (1) using a
 cloud LLM API for production extraction instead of a local LLM, and (2) how the
@@ -102,14 +106,17 @@ We process two kinds of people:
 1. **Transparency (Arts. 13–14).** "Public source" ≠ "no duties". When data is
    obtained from a source other than the data subject and then used to contact them,
    GDPR Art. 14 requires giving them privacy-notice information (who we are, why,
-   legal basis, their rights) **at the latest at first contact**. Any outreach script
-   must include this. This is the single biggest open compliance item.
+   legal basis, their rights) **at the latest at first contact**. ✅ **Implemented**
+   2026-06-15: `outreach.RGPD_NOTICE_FULL` is attached centrally to every outbound
+   message in `render_outreach`, so no channel can ship a first contact without the
+   notice (controller, purpose, legal basis, source, rights, AEPD).
 2. **Legitimate-interest balancing test.** The Art. 6(1)(f) basis requires a
-   documented LIA (legitimate-interest assessment) weighing our commercial interest
-   against the individual's reasonable expectations — people in grief have a high
-   privacy expectation. This should be written down before scaled outreach, and it
-   shapes *who* we contact (heirs of a public inheritance edict is more defensible
-   than scraping obituary mourners).
+   documented LIA weighing our commercial interest against the individual's
+   reasonable expectations — people in grief have a high privacy expectation.
+   ✅ **Written** 2026-06-15: [LIA_legitimate_interest.md](./LIA_legitimate_interest.md).
+   Its conclusion is binding on the pipeline: public-procedure cohorts (notarial/
+   judicial) and FSBO pass; pure obituary/esquela contact does **not** clearly pass,
+   so a death is a *watch* signal, not a contact trigger.
 3. **Cross-border processing → Anthropic.** Sending names/localities to the Claude
    API is a transfer to a US processor. Needs a **Data Processing Agreement** and a
    valid transfer mechanism (SCCs / adequacy). Anthropic offers commercial terms with
@@ -119,7 +126,10 @@ We process two kinds of people:
 4. **Right to object & ePrivacy on outreach.** Individuals can object to
    legitimate-interest processing, and B2B/cold outreach is also governed by Spanish
    ePrivacy rules (LSSI) — email/phone outreach has its own consent/opt-out regime
-   separate from GDPR. A suppression list must be honoured.
+   separate from GDPR. A suppression list must be honoured. ✅ **Implemented**
+   2026-06-15: `nadia_ai.suppression` (do-not-contact ledger; `tools/suppress.py` to
+   add an entry) is enforced as a gate in the outreach builder — every candidate is
+   filtered before rendering, so an opt-out can never reappear in a worklist.
 5. **PhantomBuster social enrichment is the sharpest edge.** Scraping public social
    profiles to attach a contact path materially increases privacy intrusion and
    platform-ToS risk. It is defensible for *named heirs of public inheritance edicts*
@@ -129,11 +139,22 @@ We process two kinds of people:
 ### Bottom line
 
 The ingestion side (public official bulletins, minimised storage, outreach flags,
-masking) is on reasonably solid ground. The exposure concentrates on the **outreach
-and enrichment** end: an Art. 14 privacy notice at first contact, a written
-legitimate-interest assessment, a DPA + zero-retention tier with Anthropic, and an
-opt-out/suppression mechanism. None of these are blockers — they are paperwork and a
-few guardrails — but they should exist before outreach scales beyond pilot.
+masking) is on reasonably solid ground. The exposure was concentrated on the
+**outreach and enrichment** end, and most of it is now closed in code/docs (2026-06-15):
+the **Art. 14 notice** ships on every message, the **LIA** is written and binds the
+pipeline to the defensible cohorts, and an **opt-out/suppression** gate is enforced.
+
+**Remaining before scaled commercial outreach** (esp. selling the tool to other
+agents, who become joint/independent controllers):
+1. A **DPA + valid international-transfer mechanism** for the extraction LLM — note
+   the processor is now **OpenRouter/MiniMax (non-EU)**, *not* Anthropic; either sign
+   SCCs + minimise the payload, or move name-bearing extraction to an EU/US-hosted
+   model. This is the sharpest open item.
+2. A **qualified Spanish DPA-lawyer sign-off** on the LIA and the notice text.
+3. If reselling: a controller/processor map per agent-client and a template DPA.
+
+These are paperwork/contracts, not engineering blockers — but they should exist
+before outreach scales beyond a supervised pilot.
 
 ---
 

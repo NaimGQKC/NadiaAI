@@ -471,13 +471,27 @@ def run_heir_extraction(conn, limit: int = 200, extra_where: str = ""):
         # address_norm / ref_catastral are the match keys used by merge dedup and
         # enrichment cross-joins — keep them in sync with the display columns so
         # a resolved RC/address actually participates in obras/subastas matching.
-        from nadia_ai.merge import normalize_address
+        from nadia_ai.merge import normalize_address, normalize_name
         addr_norm = normalize_address(prop_addr) if prop_addr else None
+
+        # Backfill the causante (deceased) when the scrape-time title parse left it
+        # empty but the document body named them. Notarial BOE-N declarations are the
+        # worst offender: the index title sometimes fails the NOTARIAL_CAUSANTE regex,
+        # so the lead is created heir-rich but causante-blank ("16 heirs, no deceased")
+        # — useless for the agent. The not.php body always carries "...Ab intestato de
+        # Don/Doña <NAME>...", which the extractor returns as deceased_name. Only fill
+        # when currently empty; never clobber a name we already trust.
+        extracted_deceased = (data.get("deceased_name") or "").strip() or None
+        current_causante = (causante or "").strip()
+        final_causante = current_causante or extracted_deceased
+        final_causante_norm = normalize_name(final_causante) if final_causante else None
 
         conn.execute("""
             UPDATE leads
             SET heir_names_json = ?,
                 heir_name = ?,
+                causante = ?,
+                causante_norm = COALESCE(?, causante_norm),
                 direccion = ?,
                 address_norm = COALESCE(?, address_norm),
                 referencia_catastral = ?,
@@ -490,6 +504,8 @@ def run_heir_extraction(conn, limit: int = 200, extra_where: str = ""):
         """, (
             heirs_json,
             primary_heir,
+            final_causante,
+            final_causante_norm,
             prop_addr,
             addr_norm,
             rc_val,

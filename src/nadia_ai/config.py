@@ -81,6 +81,21 @@ PERPLEXITY_MODEL = os.getenv("PERPLEXITY_MODEL", "sonar")
 # implementation are added, at which point it slots into the waterfall as tier 1.
 EINFORMA_API_KEY = os.getenv("EINFORMA_API_KEY", "")
 
+# ── Heir contact-resolution providers (see contact_resolve.py / docs/contact_methods.md)
+# Both OFF by default (empty key) — same stub pattern as EINFORMA_API_KEY: the
+# resolver self-skips until a key + an implementation exist, so the contact
+# waterfall falls through to the deterministic postal/notaría paths. No secrets.
+#
+# Registro de la Propiedad "Servicio de Índices": resolve an heir's NAME (+NIF) to
+# the municipalities where they hold property, then a nota simple (~€9/finca) for
+# the registered domicile. Paid + gated on a register-vetted interés legítimo.
+REGISTRO_INDICES_API_KEY = os.getenv("REGISTRO_INDICES_API_KEY", "")
+
+# Paid skip-trace / "localización de personas" broker (debt-collection / detective
+# grade). The only realistic name→phone path in Spain; modest cold-name coverage,
+# needs a DPA. One slot, env-gated, no real key.
+CONTACT_SKIPTRACE_API_KEY = os.getenv("CONTACT_SKIPTRACE_API_KEY", "")
+
 # Cost control: cap how many leads we spend a paid contact-search on per run.
 # DEFAULT 0 (off): measured 2026-06-14, web contact-search for citizen heirs yields
 # ~0% — Spain has no public phone directory (páginas blancas were restricted) and
@@ -108,6 +123,12 @@ OUTREACH_MODEL = os.getenv("OUTREACH_MODEL", EXTRACTION_MODEL)
 AGENT_NAME = os.getenv("NADIA_AGENT_NAME", "[Tu nombre]")
 AGENT_AGENCY = os.getenv("NADIA_AGENT_AGENCY", "RE/MAX")
 AGENT_PHONE = os.getenv("NADIA_AGENT_PHONE", "[tu teléfono]")
+
+# FSBO ("venta por particular") feed — pisos.com localidad slugs to sweep in the
+# daily run (home market by default). Comma list, e.g. "zaragoza_capital,huesca".
+FSBO_LOCALIDADES = [
+    s.strip() for s in os.getenv("FSBO_LOCALIDADES", "zaragoza_capital").split(",") if s.strip()
+]
 
 # Dashboard
 DASHBOARD_PORT = int(os.getenv("DASHBOARD_PORT", "5000"))

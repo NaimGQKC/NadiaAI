@@ -124,6 +124,25 @@ def test_scrape_fsbo_dedupes_by_id(monkeypatch):
     assert len(ids) == len(set(ids)) == 2  # two unique cards, duplicates dropped
 
 
+def test_annotate_motivation_flags_below_zone_pricing():
+    from nadia_ai.scrapers.fsbo import annotate_motivation
+
+    leads = [
+        {"localidad": "z", "price_eur": 100000, "m2": 100},  # 1000 €/m²  (-50% vs median)
+        {"localidad": "z", "price_eur": 200000, "m2": 100},  # 2000 €/m²  (median)
+        {"localidad": "z", "price_eur": 300000, "m2": 100},  # 3000 €/m²  (+50%)
+    ]
+    annotate_motivation(leads)
+    assert leads[0]["eur_per_m2"] == 1000
+    assert "competitivo" in leads[0]["motivation"].lower()
+    assert "zona" in leads[1]["motivation"].lower()
+    assert "encima" in leads[2]["motivation"].lower()
+    # Missing m² -> no crash, empty motivation.
+    solo = [{"localidad": "z", "price_eur": 100000, "m2": None}]
+    annotate_motivation(solo)
+    assert solo[0]["eur_per_m2"] is None and solo[0]["motivation"] == ""
+
+
 def test_extract_detail_phone_prefers_owner_over_switchboard():
     """The owner's number must win; pisos.com's switchboard must be excluded."""
     from nadia_ai.scrapers.fsbo import extract_detail_phone

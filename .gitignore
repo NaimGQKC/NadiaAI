@@ -35,6 +35,13 @@ service-account*.json
 # CSV fallback files
 leads_*.csv
 
+# Generated worklists / exports — contain real personal data (heir/deceased
+# names, owner phones). NEVER commit to a public repo.
+exports/
+
 # Runtime logs and run artifacts
 logs/
 *.log
+
+# Claude Code local state (worktrees, session data)
+.claude/

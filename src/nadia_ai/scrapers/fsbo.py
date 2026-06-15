@@ -23,7 +23,9 @@ single thing that turns this from a property list into a call list.
 
 import logging
 import re
+import statistics
 import time
+from collections import defaultdict
 from datetime import date
 
 import requests
@@ -206,6 +208,37 @@ def _fetch_detail_phone(url: str) -> str | None:
     return extract_detail_phone(resp.text)
 
 
+def annotate_motivation(leads: list[dict]) -> list[dict]:
+    """Add ``eur_per_m2`` and a ``motivation`` label per listing.
+
+    Signal: a flat priced clearly below its zone's median €/m² is priced to sell —
+    a hotter, more motivated owner. We compute the median €/m² per localidad (the
+    practical 'zone' unit; barrio-level samples are too sparse) and label each
+    listing relative to it. Mutates and returns the same list.
+    """
+    by_loc: dict[str, list[int]] = defaultdict(list)
+    for lead in leads:
+        price, m2 = lead.get("price_eur"), lead.get("m2")
+        lead["eur_per_m2"] = round(price / m2) if (price and m2) else None
+        if lead["eur_per_m2"]:
+            by_loc[lead.get("localidad") or ""].append(lead["eur_per_m2"])
+    medians = {loc: statistics.median(v) for loc, v in by_loc.items() if v}
+
+    for lead in leads:
+        e, median = lead.get("eur_per_m2"), medians.get(lead.get("localidad") or "")
+        if not e or not median:
+            lead["motivation"] = ""
+            continue
+        pct = round(100 * (e - median) / median)
+        if pct <= -10:
+            lead["motivation"] = f"Precio competitivo ({pct}% vs zona)"
+        elif pct >= 10:
+            lead["motivation"] = f"Por encima de zona (+{pct}%)"
+        else:
+            lead["motivation"] = "En precio de zona"
+    return leads
+
+
 def scrape_fsbo(
     localidades: list[str] | None = None,
     max_per_loc: int = 60,
@@ -292,5 +325,6 @@ def scrape_fsbo(
             filled, len(targets),
         )
 
+    annotate_motivation(results)
     logger.info("pisos.com FSBO scrape complete: %d listings", len(results))
     return results

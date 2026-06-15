@@ -8,6 +8,7 @@ Nationwide XML API Engine:
 
 import hashlib
 import logging
+import os
 import re
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
@@ -497,15 +498,22 @@ def scrape_teju(days: int) -> list[EdictRecord]:
 
 
 # ── Notarial notifications (BOE-N) ─────────────────────────────────
-# Notarial "declaración de herederos" announcements carry everything in
-# the index title: "NOTARÍA DE <NOTARY> DE <CITY>. Anuncio ... Acta de
-# declaración de herederos Ab intestato de Doña <NAME>." The per-doc
-# text page does not exist (404), so the title is the only — and
-# sufficient — data source.
+# Notarial "declaración de herederos" announcements carry the causante + notary
+# city in the index title: "NOTARÍA DE <NOTARY> DE <CITY>. Anuncio ... Acta de
+# declaración de herederos Ab intestato de Doña <NAME>." That title alone makes a
+# usable lead. The richer prize is in the per-doc not.php body, which the heir
+# extraction step (utils/extraction.run_heir_extraction) fetches: it contains the
+# FULL list of declared heirs (measured ~82% yield, frequently many heirs per
+# declaration). This is the project's primary heir-name engine.
 
-# Notarial heir-declarations are the highest-yield BOE signal (Sección V) and
-# the index scan is cheap, so we sweep a wider window than the main BOE pass.
-NOTARIAL_LOOKBACK_DAYS = 30
+# Notarial heir-declarations are the highest-yield BOE signal (Sección V): the
+# per-doc not.php page carries the FULL heir list (measured ~82% yield, often many
+# heirs per declaration), and the index scan is cheap (one GET/day, no XML). So we
+# sweep a much wider window than the main BOE pass. Estate sales run 3-18 months
+# after the declaration, so a 90-day-old declaration is still a fresh listing lead —
+# wider lookback = more sellable heir leads, not stale ones. Env-tunable per
+# deployment via NADIA_NOTARIAL_DAYS (validated volumes: 10d→91, 30d→295).
+NOTARIAL_LOOKBACK_DAYS = int(os.getenv("NADIA_NOTARIAL_DAYS", "90"))
 
 NOTARIAL_KEYWORDS = re.compile(
     r"declaraci[oó]n\s+de\s+herederos|ab\s*intestato|herederos\s+de|sucesi[oó]n\s+intestada",

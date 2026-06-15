@@ -301,6 +301,41 @@ def run_pipeline(days: int = 90) -> dict:
             logger.error("Call-list export failed (non-critical): %s", e)
             summary["errors"].append(f"call_list: {e}")
 
+    # Step 8c: FSBO ("venta por particular") feed — scrape pisos.com ONCE and write
+    # the FSBO call-list, then hand the same listings to the outreach pack (8d) so
+    # the owner-phone scrape isn't repeated. Standalone product (NOT merged into the
+    # inheritance DB); never break the run.
+    fsbo_leads: list = []
+    if isinstance(conn, sqlite3.Connection):
+        try:
+            from nadia_ai.config import FSBO_LOCALIDADES
+            from nadia_ai.scrapers.fsbo import scrape_fsbo
+            from tools.fsbo_export import build as build_fsbo
+
+            fsbo_leads = scrape_fsbo(localidades=FSBO_LOCALIDADES, max_per_loc=60)
+            fsbo_xlsx = build_fsbo(leads=fsbo_leads)
+            summary["fsbo_listings"] = len(fsbo_leads)
+            summary["fsbo_with_phone"] = sum(1 for x in fsbo_leads if x.get("phone"))
+            logger.info("FSBO feed: %d listings (%d w/ phone) -> %s",
+                        len(fsbo_leads), summary["fsbo_with_phone"], fsbo_xlsx)
+        except Exception as e:
+            logger.error("FSBO feed failed (non-critical): %s", e)
+            summary["errors"].append(f"fsbo: {e}")
+
+    # Step 8d: Outreach pack — per-lead, channel-appropriate Spanish copy (FSBO call
+    # scripts + inheritance/obituary letters). Deterministic by default (free, no
+    # LLM); reuses the Step-8c FSBO listings. The agent's ready-to-send morning pack.
+    if isinstance(conn, sqlite3.Connection):
+        try:
+            from tools.generate_outreach import build as build_outreach
+
+            outreach_xlsx = build_outreach(fsbo_leads=fsbo_leads, use_llm=False)
+            summary["outreach_export"] = outreach_xlsx
+            logger.info("Outreach pack -> %s", outreach_xlsx)
+        except Exception as e:
+            logger.error("Outreach pack failed (non-critical): %s", e)
+            summary["errors"].append(f"outreach: {e}")
+
     elapsed = time.monotonic() - start
     summary["elapsed_seconds"] = round(elapsed, 2)
     logger.info(

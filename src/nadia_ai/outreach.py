@@ -59,6 +59,38 @@ TIPO_LABEL = {
 }
 
 
+# ── GDPR Art. 14 privacy notice (the single biggest open compliance item) ─────
+# When personal data is obtained from a source other than the data subject and
+# then used to contact them, RGPD Art. 14 requires giving the subject the notice
+# information AT THE LATEST AT FIRST CONTACT: controller identity, purpose, legal
+# basis, the source, and how to exercise their rights (incl. objection). We attach
+# it to every cold-contact message centrally (here) rather than per-template, so a
+# channel can never ship without it. Pairs with the suppression list, which is what
+# actually honours an objection. {agency}/{agent}/{phone} are filled locally.
+RGPD_NOTICE_FULL = (
+    "\n\n— — —\n"
+    "Información de protección de datos (RGPD / LOPDGDD): el responsable del tratamiento es "
+    "{agency}. Sus datos identificativos (nombre y localidad) se han obtenido de una fuente de "
+    "acceso público —el Boletín Oficial del Estado / registro público— y se tratan con la única "
+    "finalidad de ofrecerle servicios inmobiliarios, sobre la base del interés legítimo "
+    "(art. 6.1.f RGPD). No se cederán a terceros. Puede ejercer gratuitamente sus derechos de "
+    "acceso, rectificación, supresión y oposición —y solicitar que no volvamos a contactarle— "
+    "ante {agent}, tel. {phone}, y reclamar ante la Agencia Española de Protección de Datos "
+    "(www.aepd.es)."
+)
+# FSBO owners published their own ad soliciting contact — lighter footing, but we
+# still disclose the source and the opt-out (and keep "RGPD" present for parity).
+RGPD_NOTICE_FSBO = (
+    " (RGPD: sus datos proceden de su anuncio público en pisos.com y los usa {agency} para "
+    "ofrecerle servicios inmobiliarios; dígame si no desea que le contacte y le suprimo.)"
+)
+
+
+def _rgpd_notice(ltype: str) -> str:
+    """The Art. 14 notice text appropriate to the channel (unfilled placeholders)."""
+    return RGPD_NOTICE_FSBO if ltype == "fsbo" else RGPD_NOTICE_FULL
+
+
 # ── Deterministic templates (Spanish, RE/MAX captación, RGPD-aware) ──────────
 # Placeholders ({agent}, {agency}, {phone}, {causante}, {localidad}, {barrio},
 # {precio}, {notaria}, {familia}) are filled locally in render_outreach().
@@ -101,9 +133,7 @@ TEMPLATES: dict[str, dict] = {
             "ofrecerles una valoración gratuita y, si lo desean, encargarme de toda la gestión de "
             "la venta, sin compromiso alguno.\n\n"
             "Quedo a su entera disposición en el teléfono {phone}.\n\n"
-            "Un cordial saludo,\n{agent} — {agency}\n\n"
-            "(En cumplimiento del RGPD: sus datos proceden de una fuente de acceso público (BOE). "
-            "Puede solicitar su supresión respondiendo a esta carta.)"
+            "Un cordial saludo,\n{agent} — {agency}"
         ),
         "asunto": "Ayuda profesional con la venta de un inmueble heredado",
         "notas": (
@@ -121,8 +151,7 @@ TEMPLATES: dict[str, dict] = {
             "{procedimiento} relativo a D./Dª {causante}, del que he tenido conocimiento por la "
             "publicación oficial (BOE). Soy {agent}, de {agency} en {localidad}. Si hubiera un "
             "inmueble que en su momento deseen vender, quedo a su disposición para una valoración "
-            "sin compromiso.\n\n{agent} — {agency} — {phone}\n\n"
-            "(Datos de fuente pública (BOE); puede solicitar su supresión.)"
+            "sin compromiso.\n\n{agent} — {agency} — {phone}"
         ),
         "asunto": "Inmueble en proceso de herencia — {localidad}",
         "notas": (
@@ -297,12 +326,18 @@ def render_outreach(lead: dict, use_llm: bool = False) -> dict:
     def fill(text: str) -> str:
         return text.format_map(vals) if text else ""
 
+    # Attach the Art. 14 notice to the outbound message centrally, so no channel
+    # can ship a first contact without it (filled in the same pass as the body).
+    mensaje = tpl.get("mensaje", "")
+    if mensaje:
+        mensaje = mensaje + _rgpd_notice(ltype)
+
     return {
         "lead_ref": lead.get("id") or lead.get("listing_id") or "",
         "tipo": TIPO_LABEL[ltype],
         "canal": tpl["canal"],
         "guion_llamada": fill(tpl.get("guion_llamada", "")),
-        "mensaje": fill(tpl.get("mensaje", "")),
+        "mensaje": fill(mensaje),
         "asunto": fill(tpl.get("asunto", "")),
         "notas": fill(tpl.get("notas", "")),
     }
