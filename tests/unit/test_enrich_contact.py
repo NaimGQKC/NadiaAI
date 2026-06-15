@@ -13,10 +13,12 @@ import sqlite3
 import nadia_ai.enrich_contact as ec
 from nadia_ai.enrich_contact import (
     ContactResult,
+    _normalize_es_phone,
     _parse_json_blob,
     discover_contact,
     enrich_lead,
     get_leads_for_contact,
+    resolve_office_phones,
     run_contact_enrichment,
 )
 from nadia_ai.merge import init_leads_schema
@@ -161,7 +163,9 @@ def test_enrichment_writes_and_marks(monkeypatch):
     )
     conn = _make_conn()
     lead_id = _insert_lead(conn)
-    found = run_contact_enrichment(conn)
+    # Explicit limit: the production default cap is 0 (web search is gated off as
+    # ~0%-yield for citizen heirs); this test exercises the write/marking logic.
+    found = run_contact_enrichment(conn, limit=50)
     assert found == 1
     row = conn.execute(
         "SELECT contact_phone, contact_confidence, contact_enriched_at FROM leads WHERE id = ?",
@@ -178,7 +182,7 @@ def test_transient_failure_leaves_unmarked(monkeypatch):
     monkeypatch.setattr(ec, "discover_contact", lambda name, city, ctx: None)
     conn = _make_conn()
     lead_id = _insert_lead(conn)
-    assert run_contact_enrichment(conn) == 0
+    assert run_contact_enrichment(conn, limit=50) == 0
     row = conn.execute(
         "SELECT contact_enriched_at FROM leads WHERE id = ?", (lead_id,)
     ).fetchone()
@@ -232,7 +236,7 @@ def test_waterfall_all_defer_returns_none(monkeypatch):
 def test_b2b_lead_skips_person_sources():
     """A company lead (no heir, B2B source) is not web-searched as a person."""
     lead = {"heir_name": "", "causante": "BAR PEPE SL", "sources": "Traspasos"}
-    # einforma stub returns None (no key), paginas/search_llm self-skip B2B → None
+    # einforma stub returns None (no key), search_llm self-skips B2B → None
     assert enrich_lead(lead) is None
 
 
@@ -249,8 +253,47 @@ def test_contact_source_tag_persisted(monkeypatch):
     )
     conn = _make_conn()
     lead_id = _insert_lead(conn)
-    run_contact_enrichment(conn)
+    run_contact_enrichment(conn, limit=50)
     row = conn.execute(
         "SELECT contact_source FROM leads WHERE id = ?", (lead_id,)
     ).fetchone()
     assert row["contact_source"] == "search_llm"
+
+
+# ── Office (notaría) phone resolution ──────────────────────────────────────
+
+class TestNormalizeEsPhone:
+    def test_strips_spaces_and_prefix(self):
+        assert _normalize_es_phone("981 775 959") == "981775959"
+        assert _normalize_es_phone("+34 965 43 09 91") == "965430991"
+        assert _normalize_es_phone("914922930") == "914922930"
+
+    def test_rejects_non_phones(self):
+        assert _normalize_es_phone("no disponible") == ""
+        assert _normalize_es_phone("123") == ""
+        assert _normalize_es_phone(None) == ""
+
+
+def test_office_phone_written_when_cited(monkeypatch):
+    monkeypatch.setattr(ec, "PERPLEXITY_API_KEY", "test")
+    monkeypatch.setattr(
+        ec, "_search_via_perplexity",
+        lambda prompt: ({"phone": "976 123 456"}, ["https://notariado.org/x"]),
+    )
+    conn = _make_conn()
+    lid = _insert_lead(conn, subsource="BOE-N", juzgado="Notaría De X De Zaragoza", contact_phone="")
+    assert resolve_office_phones(conn, subsources=("BOE-N",)) == 1
+    row = conn.execute("SELECT contact_phone, contact_confidence FROM leads WHERE id=?", (lid,)).fetchone()
+    assert row["contact_phone"] == "976123456"
+    assert row["contact_confidence"] == "oficina"
+
+
+def test_office_phone_dropped_without_citation(monkeypatch):
+    # A number with no search citation is treated as a possible hallucination.
+    monkeypatch.setattr(ec, "PERPLEXITY_API_KEY", "test")
+    monkeypatch.setattr(ec, "_search_via_perplexity", lambda prompt: ({"phone": "976123456"}, []))
+    conn = _make_conn()
+    lid = _insert_lead(conn, subsource="BOE-N", juzgado="Notaría De X De Zaragoza", contact_phone="")
+    assert resolve_office_phones(conn, subsources=("BOE-N",)) == 0
+    row = conn.execute("SELECT contact_phone FROM leads WHERE id=?", (lid,)).fetchone()
+    assert (row["contact_phone"] or "") == ""

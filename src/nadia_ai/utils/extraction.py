@@ -95,43 +95,90 @@ def extract_heirs_regex(text: str) -> list[str]:
     # ("Si En El Plazo De Un Mes...") — keep only plausible person names.
     return clean_name_list(heirs)
 
+def _parse_json_response(content: str) -> dict | None:
+    """Tolerant parse — models wrap JSON in ```json fences and/or trailing prose."""
+    if not content:
+        return None
+    cleaned = re.sub(r"```(?:json)?", "", content).strip()
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        m = re.search(r"\{.*\}", cleaned, re.DOTALL)
+        if not m:
+            return None
+        try:
+            return json.loads(m.group(0))
+        except json.JSONDecodeError:
+            return None
+
+
 def _extract_via_llm(prompt: str) -> dict | None:
     """Extract via the configured OpenAI-compatible extraction model (DeepSeek by
     default; swap to Qwen/MiniMax/etc. via the EXTRACTION_* env vars). Works in CI.
-    Returns the raw 5-key dict, or None to defer to regex."""
+    Returns the raw 5-key dict, or None to defer to regex.
+
+    IMPORTANT: we deliberately do NOT send response_format={"type":"json_object"}.
+    Measured 2026-06-14: the configured MiniMax M3 reasoning model returns EMPTY
+    content ~2 of every 3 calls when that param is set (6/6 succeed without it),
+    which silently killed extraction and forced a regex-only fallback. The model
+    reliably emits JSON on its own (sometimes fenced / with trailing prose), which
+    the tolerant parser handles. We retry a couple times because reasoning models
+    occasionally emit reasoning-only with an empty body."""
     from nadia_ai.config import EXTRACTION_API_KEY, EXTRACTION_API_URL, EXTRACTION_MODEL
     if not EXTRACTION_API_KEY:
         return None
-    try:
-        resp = requests.post(
-            EXTRACTION_API_URL,
-            headers={
-                "Authorization": f"Bearer {EXTRACTION_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": EXTRACTION_MODEL,
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0,
-                # Generous cap so reasoning models (e.g. MiniMax M3) have room to
-                # think AND still emit the JSON — too small truncates to empty.
-                "max_tokens": 2000,
-                "response_format": {"type": "json_object"},
-            },
-            timeout=90,
-        )
-        resp.raise_for_status()
-        content = resp.json()["choices"][0]["message"]["content"]
-        if not content:
-            return None
+    headers = {
+        "Authorization": f"Bearer {EXTRACTION_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    # OpenRouter FREE-TIER reserves the full max_tokens worth of credits up front
+    # and 402s if that reservation exceeds the affordable amount ("requires more
+    # credits, or fewer max_tokens"). The affordable ceiling shrinks as the $5
+    # trial balance is spent, so we start conservative (1500 — ample for reasoning
+    # + the short JSON) and HALVE on that specific 402 so extraction self-heals
+    # instead of dying. ~2000 is the cap near a full balance; 1500 leaves headroom.
+    max_tokens = 1500
+    for attempt in range(4):
+        payload = {
+            "model": EXTRACTION_MODEL,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0,
+            "max_tokens": max_tokens,
+        }
         try:
-            return json.loads(content)
-        except json.JSONDecodeError:
-            m = re.search(r"\{.*\}", content, re.DOTALL)
-            return json.loads(m.group(0)) if m else None
-    except Exception as e:
-        logger.warning("LLM extraction failed, falling back to regex: %s", e)
-        return None
+            resp = requests.post(EXTRACTION_API_URL, headers=headers, json=payload, timeout=90)
+            if resp.status_code == 402:
+                body = resp.text.lower()
+                if "max_tokens" in body:
+                    # Adaptive: the affordability/reservation cap — halve and retry.
+                    new_mt = max(500, max_tokens // 2)
+                    logger.warning(
+                        "Extraction 402 max_tokens cap; shrinking %d -> %d and retrying",
+                        max_tokens, new_mt,
+                    )
+                    if new_mt == max_tokens:
+                        return None
+                    max_tokens = new_mt
+                    continue
+                # Definitive billing block ("insufficient credits" / never purchased):
+                # retrying only wastes calls. Stop immediately on the first one.
+                logger.error(
+                    "Extraction LLM 402 (account billing / out of credits): %s — "
+                    "stopping, no retry. Purchase OpenRouter credits to resume.",
+                    resp.text[:200],
+                )
+                return None
+            resp.raise_for_status()
+            content = resp.json()["choices"][0]["message"].get("content") or ""
+            parsed = _parse_json_response(content)
+            if parsed is not None:
+                return parsed
+            logger.info(
+                "Extraction LLM returned empty/garbled body (attempt %d/4), retrying", attempt + 1
+            )
+        except Exception as e:
+            logger.warning("LLM extraction call failed (attempt %d/4): %s", attempt + 1, e)
+    return None
 
 
 def extract_inheritance_data(text: str, causante_hint: str = None) -> dict:
@@ -144,9 +191,18 @@ def extract_inheritance_data(text: str, causante_hint: str = None) -> dict:
         prompt = f"El fallecido es: {causante_hint}\n\n" + EXTRACTION_PROMPT.format(text=truncated_text)
 
         # Configured cloud extraction model if a key is set, else regex.
+        from nadia_ai.config import EXTRACTION_API_KEY
         result = _extract_via_llm(prompt)
         if result is None:
-            logger.info("No LLM available — using regex extraction.")
+            if EXTRACTION_API_KEY:
+                # The LLM IS configured but this call failed (402 / timeout / etc).
+                # Do NOT fall back to regex: regex returns a single guessed heir and
+                # the caller would WRITE it over good prior data and mark the lead
+                # done — exactly the degradation seen on the 2026-06-14 OpenRouter
+                # 402 cascade. Return {} so the caller defers (leaves it pending).
+                logger.info("Extraction LLM unavailable for this lead — deferring (no regex clobber).")
+                return {}
+            logger.info("No LLM configured — using regex extraction.")
             result = {
                 "deceased_name": causante_hint,
                 "list_of_heirs": extract_heirs_regex(text),
@@ -280,7 +336,23 @@ def run_heir_extraction(conn, limit: int = 200, extra_where: str = ""):
     for targeted/pilot runs.
     """
     from nadia_ai.catastro import lookup_by_rc
+    from nadia_ai.config import EXTRACTION_API_KEY
     conn.row_factory = sqlite3.Row
+
+    # Preflight guard: if an extraction LLM IS configured but unreachable (402 out
+    # of credits / auth / network), abort. Otherwise every lead would fall back to
+    # the regex extractor, which OVERWRITES good multi-heir LLM data with a single
+    # guessed name AND marks the lead done — silently degrading the data during a
+    # transient outage (this exact loss happened 2026-06-14 on an OpenRouter 402).
+    # Leaving leads pending lets a clean retry recover them once the LLM is back.
+    # (No key configured = regex is the intended path, so we don't preflight.)
+    if EXTRACTION_API_KEY and _extract_via_llm('Responde solo: {"ok": true}') is None:
+        logger.error(
+            "Extraction LLM is configured but unreachable (out of credits / auth / "
+            "network). Aborting heir extraction to avoid regex clobbering good data; "
+            "leads left pending for retry."
+        )
+        return 0
 
     where = "ai_extraction_done = 0"
     if extra_where:
@@ -305,7 +377,21 @@ def run_heir_extraction(conn, limit: int = 200, extra_where: str = ""):
         lead_id = lead["id"]
         causante = lead["causante"]
         urls = json.loads(lead["source_urls"] or "[]")
-        
+
+        # Obituary-only sources (Memora esquelas / defunciones / iEsquelas /
+        # rememori) are a name+city death SIGNAL, not a heir document: the detail
+        # page is just name, date and tanatorio — no family members are published.
+        # Verified ~0% heir yield across ~900 such leads, so the fetch+LLM is pure
+        # waste. Mark done without spending: this frees the 200/run extraction
+        # queue for BOE notarial (Sección V) leads, which yield heirs ~65%.
+        sources_list = json.loads(lead["sources"] or "[]")
+        if sources_list and all(
+            s in ("Esquelas", "Defunciones", "iEsquelas", "rememori") for s in sources_list
+        ):
+            conn.execute("UPDATE leads SET ai_extraction_done = 1 WHERE id = ?", (lead_id,))
+            conn.commit()
+            continue
+
         # 1. Fetch full text
         full_text = ""
         for url in urls:
@@ -345,20 +431,11 @@ def run_heir_extraction(conn, limit: int = 200, extra_where: str = ""):
             conn.commit()
             continue
             
-        # Check if the lead is obituary-only
-        sources_list = json.loads(lead["sources"] or "[]")
-        obituary_only = all(s in ("Esquelas", "Defunciones", "iEsquelas", "rememori") for s in sources_list)
-
         # 3. Extract entities
         data = extract_inheritance_data(full_text, causante_hint=causante)
-        if not data: 
+        if not data:
             continue
-            
-        if obituary_only:
-            # Obituaries never list residential property addresses
-            data["property_address"] = None
-            data["referencia_catastral"] = None
-            
+
         # 3. Trust but Verify: Catastro Hook
         rc = data.get("referencia_catastral")
         if rc:

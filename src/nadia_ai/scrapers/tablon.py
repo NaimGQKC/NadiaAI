@@ -15,6 +15,7 @@ from datetime import UTC, datetime, timedelta
 import requests
 
 from nadia_ai.models import EdictRecord
+from nadia_ai.utils.names import is_valid_person_name, strip_honorific
 
 logger = logging.getLogger("nadia_ai.scrapers.tablon")
 
@@ -133,8 +134,17 @@ def extract_name_from_title(title: str) -> str | None:
         match = pattern.search(title)
         if match:
             name = match.group(1).strip()
-            # Normalize: titles are often ALL CAPS
-            return name.title() if name.isupper() else name
+            # Strip a leading courtesy title FIRST ("Dª María Carmen…" → "María
+            # Carmen…"); the "Dª" ordinal otherwise defeats the isupper() check
+            # below and leaves the name ALL CAPS.
+            name = strip_honorific(name)
+            # Normalize: titles are often ALL CAPS.
+            if name.isupper():
+                name = name.title()
+            # Reject non-names ("D", boilerplate) via the shared validator —
+            # mandatory for all name extraction.
+            if is_valid_person_name(name):
+                return name
     return None
 
 

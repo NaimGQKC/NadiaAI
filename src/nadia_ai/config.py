@@ -81,8 +81,33 @@ PERPLEXITY_MODEL = os.getenv("PERPLEXITY_MODEL", "sonar")
 # implementation are added, at which point it slots into the waterfall as tier 1.
 EINFORMA_API_KEY = os.getenv("EINFORMA_API_KEY", "")
 
-# Cost control: cap how many leads we spend a paid search on per run.
-CONTACT_ENRICH_MAX_PER_RUN = int(os.getenv("CONTACT_ENRICH_MAX_PER_RUN", "50"))
+# Cost control: cap how many leads we spend a paid contact-search on per run.
+# DEFAULT 0 (off): measured 2026-06-14, web contact-search for citizen heirs yields
+# ~0% — Spain has no public phone directory (páginas blancas were restricted) and
+# common names can't be disambiguated from homonyms, so Perplexity correctly returns
+# identity_match=false. Spending here is pure waste. The real contact path is the
+# handling office (notaría/juzgado), now filled deterministically from the edict text
+# by utils.edict_parse — no LLM needed. Re-enable (set >0) only for B2B/registry
+# enrichment via a real skip-trace provider (EINFORMA_API_KEY), or to run a manual
+# pass on a hand-picked high-value cohort.
+CONTACT_ENRICH_MAX_PER_RUN = int(os.getenv("CONTACT_ENRICH_MAX_PER_RUN", "0"))
+
+# ── Outreach generation (lead → ready-to-send Spanish call script / WhatsApp /
+# letter) ──────────────────────────────────────────────────────────────────────
+# Reuses the provider-neutral OpenAI-compatible endpoint by default. Override
+# OUTREACH_MODEL to point at a more capable model for customer-facing copy — the
+# quality bar is higher here than for extraction. The LLM only ever polishes a
+# *template with {placeholders}* (no personal data leaves the machine); real names
+# are filled locally, so this stays GDPR-clean. Falls back to hand-written
+# deterministic templates when no key is set — outreach never depends on the LLM.
+OUTREACH_API_KEY = os.getenv("OUTREACH_API_KEY", EXTRACTION_API_KEY)
+OUTREACH_API_URL = os.getenv("OUTREACH_API_URL", EXTRACTION_API_URL)
+OUTREACH_MODEL = os.getenv("OUTREACH_MODEL", EXTRACTION_MODEL)
+
+# Agent identity injected into generated outreach (personalize per deployment).
+AGENT_NAME = os.getenv("NADIA_AGENT_NAME", "[Tu nombre]")
+AGENT_AGENCY = os.getenv("NADIA_AGENT_AGENCY", "RE/MAX")
+AGENT_PHONE = os.getenv("NADIA_AGENT_PHONE", "[tu teléfono]")
 
 # Dashboard
 DASHBOARD_PORT = int(os.getenv("DASHBOARD_PORT", "5000"))

@@ -1,6 +1,21 @@
 """Tests for person-name validation (utils/names.py)."""
 
-from nadia_ai.utils.names import clean_name_list, is_valid_person_name
+from nadia_ai.utils.names import clean_name_list, is_valid_person_name, strip_honorific
+
+
+class TestStripHonorific:
+    def test_removes_leading_titles(self):
+        assert strip_honorific("Doña Carmen Alejandre Sabio") == "Carmen Alejandre Sabio"
+        assert strip_honorific("Don José Javier Gil") == "José Javier Gil"
+        assert strip_honorific("D. Florentino Gabás") == "Florentino Gabás"
+        assert strip_honorific("Dña. María Pérez") == "María Pérez"
+        assert strip_honorific("Sra. Ana López Ruiz") == "Ana López Ruiz"
+
+    def test_idempotent_and_safe(self):
+        assert strip_honorific("Carmen Alejandre Sabio") == "Carmen Alejandre Sabio"
+        assert strip_honorific(strip_honorific("Doña Carmen Sabio")) == "Carmen Sabio"
+        assert strip_honorific("") == ""
+        assert strip_honorific(None) == ""
 
 
 class TestIsValidPersonName:
@@ -50,6 +65,21 @@ class TestIsValidPersonName:
 
     def test_rejects_single_word(self):
         assert not is_valid_person_name("Zaragoza")
+
+    def test_rejects_relationship_phrases(self):
+        # Notarial titles often yield a kinship descriptor, not a name.
+        for phrase in [
+            "Hijo De Don Federico",
+            "Viuda de Antonio Pérez",
+            "Esposa Del Causante",
+            "Hermanos Garcia Lopez",
+        ]:
+            assert not is_valid_person_name(phrase), phrase
+
+    def test_still_accepts_honorific_prefixed_name(self):
+        # "Don"/"Doña" are honorifics, not kinship words — keep these valid.
+        assert is_valid_person_name("Don Iván Raúl Cabrera Cerpa")
+        assert is_valid_person_name("Doña Silvia Puente Gil")
 
 
 class TestCleanNameList:
