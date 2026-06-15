@@ -503,6 +503,10 @@ def scrape_teju(days: int) -> list[EdictRecord]:
 # text page does not exist (404), so the title is the only — and
 # sufficient — data source.
 
+# Notarial heir-declarations are the highest-yield BOE signal (Sección V) and
+# the index scan is cheap, so we sweep a wider window than the main BOE pass.
+NOTARIAL_LOOKBACK_DAYS = 30
+
 NOTARIAL_KEYWORDS = re.compile(
     r"declaraci[oó]n\s+de\s+herederos|ab\s*intestato|herederos\s+de|sucesi[oó]n\s+intestada",
     re.IGNORECASE,
@@ -613,8 +617,14 @@ def scrape_boe(days: int = 90) -> list[EdictRecord]:
                     address=None
                 ))
             
-    # 2. TEJU judicial edicts via full-text search + notarial announcements
-    supp_records = scrape_teju(days) + scrape_notarial_notifications(days)
+    # 2. TEJU judicial edicts via full-text search + notarial announcements.
+    # Notarial (Sección V "declaración de herederos") yields heirs ~65% vs ~3%
+    # for judicial TEJU, and its scan is cheap (one index GET per day, no
+    # per-doc XML). So give it a wider lookback than the expensive XML/TEJU
+    # window — a 30-day sweep captures ~3x the notarial leads (validated:
+    # 10d→91, 30d→295) that a 10-day daily window would otherwise miss.
+    notarial_days = max(days, NOTARIAL_LOOKBACK_DAYS)
+    supp_records = scrape_teju(days) + scrape_notarial_notifications(notarial_days)
 
     all_records = api_records + supp_records
     

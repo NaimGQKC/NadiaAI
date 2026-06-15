@@ -27,16 +27,15 @@ jobs:
 
       - name: Run pipeline
         env:
-          # Delivery is now the self-hosted dashboard (reads the DB the cron commits);
-          # Google Sheets + Gmail were discontinued. ANTHROPIC_API_KEY powers heir/
-          # address extraction in CI (no Ollama on the runner). Optional: set
-          # NADIA_ANTHROPIC_MODEL to claude-haiku-4-5 to cut extraction cost ~5x.
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          # Search-native contact discovery. Set EITHER key (graceful if unset):
-          # GEMINI_API_KEY is the cheapest path — Google-grounding is free up to
-          # 1,500 req/day, ample at this volume. PERPLEXITY_API_KEY (Sonar) is the
-          # richer-citation alternative. CONTACT_ENRICH_MAX_PER_RUN caps cost/run.
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # Delivery is the self-hosted dashboard (reads the DB the cron commits).
+          # Two LLMs, one job each — both graceful if unset:
+          #   EXTRACTION_*  → text→JSON extraction (MiniMax M3 via OpenRouter)
+          #   PERPLEXITY_API_KEY → search-native contact discovery (Sonar)
+          # KEYS come from GitHub Secrets; URL/MODEL are plain config (not secret).
+          # CONTACT_ENRICH_MAX_PER_RUN caps search spend per run.
+          EXTRACTION_API_KEY: ${{ secrets.EXTRACTION_API_KEY }}
+          EXTRACTION_API_URL: https://openrouter.ai/api/v1/chat/completions
+          EXTRACTION_MODEL: minimax/minimax-m3
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
         run: python -m nadia_ai --cron
 

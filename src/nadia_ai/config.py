@@ -50,7 +50,7 @@ else:
     TARGET_PROVINCES = [p.strip().lower() for p in _provinces_env.split(",") if p.strip()]
 
 # Ollama (local LLM — free; used ONLY by the standalone qa_judge dev tool now,
-# not the pipeline, which runs entirely on Gemini).
+# not the pipeline, which runs on the configured extraction model + Perplexity).
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")
 
@@ -58,18 +58,19 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")
 PHANTOMBUSTER_API_KEY = os.getenv("PHANTOMBUSTER_API_KEY", "")
 
 # ── Two LLMs, one job each ─────────────────────────────────────────────────
-# Extraction (read edict/obituary text → JSON): DeepSeek — cheap, strong at
-# structured extraction. Contact search (name → web → contact path): Perplexity
-# Sonar — search-native, returns citations. Both are OpenAI-compatible APIs and
-# both work in CI. Endpoints/models are overridable (their surfaces drift; e.g.
-# set DEEPSEEK_MODEL=deepseek-v4 when you want to pin that version).
-#
-# NOTE: extraction sends names (deceased + heirs = personal data) to DeepSeek, a
-# China-based provider — a cross-border transfer with no EU adequacy decision.
-# Flagged in docs/LLM_AND_DATA_LEGALITY.md; minimise payloads and confirm terms.
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
-DEEPSEEK_API_URL = os.getenv("DEEPSEEK_API_URL", "https://api.deepseek.com/chat/completions")
-DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")  # maps to latest (V3/V4)
+# Extraction (read edict/obituary text → JSON): a cheap OpenAI-compatible model.
+# Provider-neutral — point the three EXTRACTION_* vars at any of the cheap
+# Chinese models without touching code. Defaults to DeepSeek:
+#   DeepSeek: https://api.deepseek.com/chat/completions                          model deepseek-chat
+#   Qwen:     https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions  model qwen-plus
+#   MiniMax:  https://api.minimax.io/v1/chat/completions (verify current path)   model abab/MiniMax-*
+# (JSON mode via response_format is sent; DeepSeek/Qwen support it. If a provider
+#  rejects it, extraction simply falls back to regex — no crash.)
+# Contact search (name → web → contact): Perplexity Sonar — search-native, cited.
+# Both are OpenAI-compatible and work in CI.
+EXTRACTION_API_KEY = os.getenv("EXTRACTION_API_KEY", "")
+EXTRACTION_API_URL = os.getenv("EXTRACTION_API_URL", "https://api.deepseek.com/chat/completions")
+EXTRACTION_MODEL = os.getenv("EXTRACTION_MODEL", "deepseek-chat")
 
 PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY", "")
 PERPLEXITY_API_URL = os.getenv("PERPLEXITY_API_URL", "https://api.perplexity.ai/chat/completions")
@@ -80,8 +81,33 @@ PERPLEXITY_MODEL = os.getenv("PERPLEXITY_MODEL", "sonar")
 # implementation are added, at which point it slots into the waterfall as tier 1.
 EINFORMA_API_KEY = os.getenv("EINFORMA_API_KEY", "")
 
-# Cost control: cap how many leads we spend a paid search on per run.
-CONTACT_ENRICH_MAX_PER_RUN = int(os.getenv("CONTACT_ENRICH_MAX_PER_RUN", "50"))
+# Cost control: cap how many leads we spend a paid contact-search on per run.
+# DEFAULT 0 (off): measured 2026-06-14, web contact-search for citizen heirs yields
+# ~0% — Spain has no public phone directory (páginas blancas were restricted) and
+# common names can't be disambiguated from homonyms, so Perplexity correctly returns
+# identity_match=false. Spending here is pure waste. The real contact path is the
+# handling office (notaría/juzgado), now filled deterministically from the edict text
+# by utils.edict_parse — no LLM needed. Re-enable (set >0) only for B2B/registry
+# enrichment via a real skip-trace provider (EINFORMA_API_KEY), or to run a manual
+# pass on a hand-picked high-value cohort.
+CONTACT_ENRICH_MAX_PER_RUN = int(os.getenv("CONTACT_ENRICH_MAX_PER_RUN", "0"))
+
+# ── Outreach generation (lead → ready-to-send Spanish call script / WhatsApp /
+# letter) ──────────────────────────────────────────────────────────────────────
+# Reuses the provider-neutral OpenAI-compatible endpoint by default. Override
+# OUTREACH_MODEL to point at a more capable model for customer-facing copy — the
+# quality bar is higher here than for extraction. The LLM only ever polishes a
+# *template with {placeholders}* (no personal data leaves the machine); real names
+# are filled locally, so this stays GDPR-clean. Falls back to hand-written
+# deterministic templates when no key is set — outreach never depends on the LLM.
+OUTREACH_API_KEY = os.getenv("OUTREACH_API_KEY", EXTRACTION_API_KEY)
+OUTREACH_API_URL = os.getenv("OUTREACH_API_URL", EXTRACTION_API_URL)
+OUTREACH_MODEL = os.getenv("OUTREACH_MODEL", EXTRACTION_MODEL)
+
+# Agent identity injected into generated outreach (personalize per deployment).
+AGENT_NAME = os.getenv("NADIA_AGENT_NAME", "[Tu nombre]")
+AGENT_AGENCY = os.getenv("NADIA_AGENT_AGENCY", "RE/MAX")
+AGENT_PHONE = os.getenv("NADIA_AGENT_PHONE", "[tu teléfono]")
 
 # Dashboard
 DASHBOARD_PORT = int(os.getenv("DASHBOARD_PORT", "5000"))

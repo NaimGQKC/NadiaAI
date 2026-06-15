@@ -5,10 +5,9 @@ This step answers *how to reach them*: given an heir/causante name + city, it
 queries a search-native model to find a contact path (phone, email, public
 profile) and keeps the source citation.
 
-Why not Claude here: Claude has no web index, so it cannot search. We use
-Perplexity Sonar (primary) — purpose-built for web search, returns citations —
-with optional Gemini-grounding as an alternate provider. The design mirrors
-utils/extraction.py: each provider returns None to defer to the next.
+Search provider: Perplexity Sonar — purpose-built for web search, returns the
+citations we keep for identity verification. A search-native model is required
+here (a plain chat model has no web index).
 
 Legality scope (see docs/LLM_AND_DATA_LEGALITY.md): only run on leads that are
 `outreach_allowed`, have a valid person name, and carry an inheritance/legal
@@ -155,19 +154,30 @@ def discover_contact(name: str, city: str, context: str) -> dict | None:
     }
 
 
-def get_leads_for_contact(conn: sqlite3.Connection, limit: int) -> list[dict]:
-    """Tier A/B, outreach-allowed leads with a valid name and no contact yet."""
+def get_leads_for_contact(conn: sqlite3.Connection, limit: int, extra_where: str = "") -> list[dict]:
+    """Tier A/B, outreach-allowed leads with a valid name and no contact yet.
+
+    `extra_where` is an optional extra SQL filter ANDed on for targeted runs
+    (e.g. "localidad LIKE '%aragoza%' AND heir_name != ''")."""
     init_leads_schema(conn)
+    where = (
+        "tier IN ('A', 'B') AND outreach_allowed = 1"
+        " AND (contact_enriched_at IS NULL OR contact_enriched_at = '')"
+        " AND ((heir_name IS NOT NULL AND heir_name != '')"
+        "      OR (causante IS NOT NULL AND causante != ''))"
+        # Exclude B2B company leads (BORME/Traspasos with no named heir): the
+        # person-search waterfall can't act on them (einforma is a stub), so they
+        # would defer every run and silently eat the per-run cap that real heir
+        # leads need. They belong to the registry path, not web contact-search.
+        " AND NOT ((heir_name IS NULL OR heir_name = '')"
+        "          AND (sources LIKE '%BORME%' OR sources LIKE '%raspaso%'))"
+    )
+    if extra_where:
+        where += f" AND ({extra_where})"
     rows = conn.execute(
-        """SELECT id, causante, heir_name, localidad, sources, tier, urgency_phase
+        f"""SELECT id, causante, heir_name, localidad, sources, tier, urgency_phase
            FROM leads
-           WHERE tier IN ('A', 'B')
-             AND outreach_allowed = 1
-             AND (contact_enriched_at IS NULL OR contact_enriched_at = '')
-             AND (
-                 (heir_name IS NOT NULL AND heir_name != '')
-                 OR (causante IS NOT NULL AND causante != '')
-             )
+           WHERE {where}
            ORDER BY CASE tier WHEN 'A' THEN 0 ELSE 1 END,
                     days_since_death DESC NULLS LAST
            LIMIT ?""",
@@ -213,18 +223,8 @@ def _source_einforma(lead: dict, name: str, city: str, context: str) -> ContactR
     return None
 
 
-def _source_paginas_blancas(lead: dict, name: str, city: str, context: str) -> ContactResult | None:
-    """TIER 2 — free public phone directory (paginasblancas.es). Best for older
-    heirs with a listed landline; zero cost so it runs before any paid search.
-    Stub: implement a directory lookup that returns ContactResult or None."""
-    if _is_b2b_lead(lead):
-        return None
-    # TODO: implement free directory lookup (no key required).
-    return None
-
-
 def _source_search_llm(lead: dict, name: str, city: str, context: str) -> ContactResult | None:
-    """TIER 3 — search-native LLM (Perplexity Sonar). The pragmatic substitute for
+    """TIER 2 — search-native LLM (Perplexity Sonar). The pragmatic substitute for
     the Spanish skip-trace broker that doesn't exist."""
     if _is_b2b_lead(lead):
         return None
@@ -246,7 +246,6 @@ def _source_search_llm(lead: dict, name: str, city: str, context: str) -> Contac
 # Priority order: cheapest / highest-precision first.
 CONTACT_SOURCES = [
     ("einforma", _source_einforma),
-    ("paginas_blancas", _source_paginas_blancas),
     ("search_llm", _source_search_llm),
 ]
 
@@ -275,9 +274,9 @@ def enrich_lead(lead: dict) -> ContactResult | None:
     return ContactResult(source="none", has_contact=False) if ran_any else None
 
 
-def run_contact_enrichment(conn: sqlite3.Connection, limit: int | None = None) -> int:
+def run_contact_enrichment(conn: sqlite3.Connection, limit: int | None = None, extra_where: str = "") -> int:
     """Run the contact waterfall over eligible leads. Returns the count with a
-    contact found."""
+    contact found. `extra_where` scopes the candidate query for targeted runs."""
     if not (PERPLEXITY_API_KEY or EINFORMA_API_KEY):
         logger.warning(
             "No enrichment source configured (PERPLEXITY_API_KEY / EINFORMA_API_KEY) "
@@ -286,7 +285,7 @@ def run_contact_enrichment(conn: sqlite3.Connection, limit: int | None = None) -
         return 0
 
     limit = limit if limit is not None else CONTACT_ENRICH_MAX_PER_RUN
-    leads = get_leads_for_contact(conn, limit)
+    leads = get_leads_for_contact(conn, limit, extra_where)
     if not leads:
         logger.info("No leads pending contact enrichment")
         return 0
@@ -329,6 +328,94 @@ def run_contact_enrichment(conn: sqlite3.Connection, limit: int | None = None) -
 
     logger.info("Contact enrichment: %d/%d leads got a contact path", found, len(leads))
     return found
+
+
+# ── Office (notaría) phone resolution ──────────────────────────────────────
+# Distinct from heir contact-search above, and the reason it works where that
+# fails: a notaría is a PUBLIC business listed in the Registro de Notarios and the
+# páginas amarillas, so a search-native model resolves its phone ~reliably (verified
+# 3/3, area codes matching the city). BOE-N notarial leads already carry the notary
+# NAME + city from the edict text but no phone (the edict doesn't print one); this
+# fills it, making the warmest cohort (active declaración de herederos) callable.
+# The notaría is the agent's legal point of entry — NOT the heir's personal line.
+
+_PHONE_RE = re.compile(r"(?:\+?34[\s.-]*)?([6-9]\d(?:[\s.-]*\d){7})")
+
+
+def _normalize_es_phone(raw: str | None) -> str:
+    """Return a 9-digit Spanish phone (spaces stripped) or '' if it doesn't look
+    like one — a cheap guard against the model echoing a non-number."""
+    if not raw:
+        return ""
+    m = _PHONE_RE.search(str(raw))
+    if not m:
+        return ""
+    digits = re.sub(r"\D", "", m.group(1))
+    return digits if len(digits) == 9 else ""
+
+
+_OFFICE_PROMPT = (
+    "Devuelve SOLO un JSON {{\"phone\": \"...\", \"address\": \"...\"}} con el teléfono "
+    "y la dirección PÚBLICOS de esta notaría española (constan en el Registro de "
+    "Notarios y en páginas amarillas). Notaría: {office}. Localidad: {city}. "
+    "Si no estás seguro del teléfono, pon phone=null. No inventes."
+)
+
+
+def resolve_office_phones(
+    conn: sqlite3.Connection, limit: int = 400, subsources: tuple[str, ...] = ("BOE-N",)
+) -> int:
+    """Fill `contact_phone` for notarial leads that have a notary name but no phone,
+    by resolving the notaría's public number. Requires a search citation and a
+    valid ES phone shape before writing, so hallucinated numbers are dropped.
+    Returns the count of phones filled."""
+    if not PERPLEXITY_API_KEY:
+        logger.warning("No PERPLEXITY_API_KEY — skipping office-phone resolution")
+        return 0
+    init_leads_schema(conn)
+    conn.row_factory = sqlite3.Row
+    placeholders = ",".join("?" for _ in subsources)
+    rows = conn.execute(
+        f"""SELECT id, juzgado, localidad FROM leads
+            WHERE subsource IN ({placeholders})
+              AND juzgado IS NOT NULL AND juzgado != ''
+              AND (contact_phone IS NULL OR contact_phone = '')
+            ORDER BY (edict_window_days > 0) DESC, edict_window_days ASC
+            LIMIT ?""",
+        (*subsources, limit),
+    ).fetchall()
+    if not rows:
+        logger.info("No notarial leads pending office-phone resolution")
+        return 0
+
+    filled = 0
+    for lead in rows:
+        prompt = _OFFICE_PROMPT.format(office=lead["juzgado"], city=lead["localidad"] or "España")
+        result = _search_via_perplexity(prompt)
+        if result is None:
+            continue  # transient / no provider — leave for retry
+        data, citations = result
+        phone = _normalize_es_phone((data or {}).get("phone"))
+        if not phone or not citations:
+            # No verifiable number — don't write a guess; leave for a later pass.
+            continue
+        conn.execute(
+            """UPDATE leads SET
+                contact_phone = ?,
+                contact_source = COALESCE(NULLIF(contact_source, ''), 'notaria'),
+                contact_confidence = 'oficina',
+                contact_source_url = COALESCE(NULLIF(contact_source_url, ''), ?),
+                contact_enriched_at = ?,
+                last_updated_at = CURRENT_TIMESTAMP
+               WHERE id = ?""",
+            (phone, citations[0] if citations else "",
+             datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S"), lead["id"]),
+        )
+        conn.commit()
+        filled += 1
+        logger.info("Lead %d: notaría phone %s", lead["id"], phone)
+    logger.info("Office-phone resolution: %d/%d notarial leads got a phone", filled, len(rows))
+    return filled
 
 
 def main() -> None:
