@@ -32,8 +32,10 @@ Thumbs.db
 # Service account keys (allow fixtures)
 service-account*.json
 
-# CSV fallback files
+# Lead worklist artifacts (contain personal data) — any location/extension
 leads_*.csv
+leads_*.xlsx
+*.xlsx
 
 # Generated worklists / exports — contain real personal data (heir/deceased
 # names, owner phones). NEVER commit to a public repo.
