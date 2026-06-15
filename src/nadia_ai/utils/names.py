@@ -30,6 +30,20 @@ _BLACKLIST_SUBSTRINGS = [
     "secretaria", "tanatorio", "cementerio", "funeraria",
 ]
 
+# Kinship/role words. A real person name never contains these as a standalone
+# token — when they appear it's a relationship descriptor captured instead of a
+# name (e.g. notarial titles: "Hijo de Don Federico", "Viuda de ..."). Note: the
+# honorifics "Don"/"Doña" are deliberately NOT here — they legitimately prefix
+# real heir names ("Don Iván Raúl Cabrera Cerpa").
+_RELATIONSHIP_WORDS = {
+    "hijo", "hija", "hijos", "hijas", "viudo", "viuda", "viudos", "viudas",
+    "esposo", "esposa", "esposos", "esposas", "conyuge", "consorte",
+    "nieto", "nieta", "nietos", "nietas", "sobrino", "sobrina", "sobrinos",
+    "sobrinas", "hermano", "hermana", "hermanos", "hermanas", "padre", "madre",
+    "heredero", "heredera", "herederos", "herederas", "legatario", "legataria",
+    "primo", "prima", "primos", "primas", "abuelo", "abuela", "tio", "tia",
+}
+
 # A name should not *start* with a function word — that signals a captured
 # clause, not a name ("En Cualquier Caso", "Cuyo Intento...", "De Los...").
 _BAD_FIRST_WORDS = {
@@ -41,6 +55,27 @@ _BAD_FIRST_WORDS = {
 
 # À-ÖØ-öø-ÿ covers Spanish, Catalan, and Galician accented letters (à è ò ï ç…)
 _WORD_RE = re.compile(r"^[A-Za-zÀ-ÖØ-öø-ÿ'\-]+\.?$")
+
+# Leading courtesy titles that prefix a name in prose/headlines but are not part
+# of it ("Doña Carmen Alejandre" → "Carmen Alejandre"). Sources whose name regex
+# already excludes the honorific (BOE/BOA) don't need this; raw-title sources
+# (Heraldo esquelas) do. Order matters — longer/accented forms first.
+# Trailing [.ªº]* absorbs the abbreviated feminine forms "Dª", "D.ª", "D.º".
+_HONORIFIC_RE = re.compile(
+    r"^(?:do[ñn]a|don|d[ñn]a|sr(?:a|ta)?|se[ñn]or(?:a|ita)?|d)[.ªº]*\s+",
+    re.IGNORECASE,
+)
+
+
+def strip_honorific(name: str | None) -> str:
+    """Strip a leading Spanish courtesy title (Don/Doña/Dña/D./Sr./Sra.) from a
+    name. Idempotent; returns the input unchanged when no honorific is present."""
+    if not name:
+        return name or ""
+    cleaned = _HONORIFIC_RE.sub("", name.strip(), count=1).strip()
+    # Only accept the strip if something substantive remains; otherwise the
+    # "name" was just a title and we keep the original for the validator to reject.
+    return cleaned or name.strip()
 
 
 def _strip_accents(text: str) -> str:
@@ -66,6 +101,10 @@ def is_valid_person_name(name: str | None) -> bool:
     if len(words) < 2 or len(words) > 6:
         return False
     if _strip_accents(words[0]).lower() in _BAD_FIRST_WORDS:
+        return False
+    # A kinship/role token anywhere means we captured a relationship phrase
+    # ("Hijo De Don Federico"), not a name.
+    if any(_strip_accents(w).lower() in _RELATIONSHIP_WORDS for w in words):
         return False
     if not all(_WORD_RE.match(w) for w in words):
         return False

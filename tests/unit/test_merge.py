@@ -12,14 +12,89 @@ import json
 from datetime import UTC, datetime, timedelta
 
 from nadia_ai.merge import (
+    compute_inheritance_window_days,
     compute_outreach,
     compute_tier,
     get_todays_leads,
     merge_leads,
     normalize_address,
     normalize_name,
+    province_for_localidad,
+    recompute_edict_windows,
 )
 from nadia_ai.models import EdictRecord
+
+
+class TestInheritanceWindow:
+    def test_open_window_for_recent_notarial(self):
+        pub = (datetime.now(UTC) - timedelta(days=5)).isoformat()
+        w = compute_inheritance_window_days(pub, "declaracion_herederos_abintestato")
+        assert w is not None and 24 <= w <= 26  # 30 - ~5 days elapsed
+
+    def test_closed_window_for_old_edict(self):
+        pub = (datetime.now(UTC) - timedelta(days=400)).isoformat()
+        assert compute_inheritance_window_days(pub, "inheritance_lead") < 0
+
+    def test_inheritance_lead_cohort_gets_a_window(self):
+        # Regression: `inheritance_lead` (BOE-TEJU herencia-yacente + BOE-V.B) is
+        # the largest open-window source. The original map keyed an invented
+        # `herencia_yacente` that matched zero rows, so this whole cohort silently
+        # got None. It must now resolve to an open window.
+        pub = (datetime.now(UTC) - timedelta(days=2)).isoformat()
+        w = compute_inheritance_window_days(pub, "inheritance_lead")
+        assert w is not None and w > 0
+
+    def test_none_for_non_window_edict_types(self):
+        now = datetime.now(UTC).isoformat()
+        # Obituaries open no claim window — they must stay None even when fresh.
+        assert compute_inheritance_window_days(now, "defuncion_esquela") is None
+        assert compute_inheritance_window_days(now, "subasta_municipal") is None
+        assert compute_inheritance_window_days(now, "traspaso_negocio") is None
+
+    def test_none_for_missing_or_bad_inputs(self):
+        assert compute_inheritance_window_days(None, "inheritance_lead") is None
+        assert compute_inheritance_window_days("not-a-date", "inheritance_lead") is None
+
+    def test_recompute_picks_most_open_window(self, db_conn):
+        # Two linked edicts: an old (closed) and a fresh (open) one — the fresh
+        # window must win.
+        for sid, days_ago in (("OLD", 200), ("NEW", 3)):
+            pub = (datetime.now(UTC) - timedelta(days=days_ago)).isoformat()
+            db_conn.execute(
+                "INSERT INTO edicts (source, source_id, edict_type, published_at) VALUES (?,?,?,?)",
+                ("boe_n", sid, "declaracion_herederos_abintestato", pub),
+            )
+        db_conn.execute("INSERT INTO leads (causante) VALUES ('Persona De Prueba')")
+        lid = db_conn.execute("SELECT id FROM leads").fetchone()["id"]
+        for sid in ("OLD", "NEW"):
+            eid = db_conn.execute("SELECT id FROM edicts WHERE source_id=?", (sid,)).fetchone()["id"]
+            db_conn.execute("INSERT INTO lead_edicts (lead_id, edict_id) VALUES (?,?)", (lid, eid))
+        db_conn.commit()
+
+        n = recompute_edict_windows(db_conn)
+        assert n == 1
+        w = db_conn.execute("SELECT edict_window_days FROM leads WHERE id=?", (lid,)).fetchone()[0]
+        assert 26 <= w <= 28  # from the NEW edict (30 - ~3), not the closed OLD one
+
+
+class TestProvinceForLocalidad:
+    def test_city_is_its_own_province(self):
+        assert province_for_localidad("Zaragoza") == "Zaragoza"
+
+    def test_zaragoza_province_towns_roll_up(self):
+        for town in ["Calatayud", "Ejea de los Caballeros", "Caspe", "Utebo", "Alagón"]:
+            assert province_for_localidad(town) == "Zaragoza", town
+
+    def test_tolerates_province_suffix(self):
+        assert province_for_localidad("Ejea de los Caballeros (Zaragoza)") == "Zaragoza"
+
+    def test_non_aragon_keeps_localidad(self):
+        assert province_for_localidad("Madrid") == "Madrid"
+        assert province_for_localidad("Sevilla") == "Sevilla"
+
+    def test_empty(self):
+        assert province_for_localidad("") == ""
+        assert province_for_localidad(None) == ""
 
 
 class TestNormalizeName:

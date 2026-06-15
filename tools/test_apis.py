@@ -53,8 +53,9 @@ def test_extraction() -> bool:
         "model": config.EXTRACTION_MODEL,
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0,
-        "max_tokens": 2000,  # room for reasoning models to think AND emit JSON
-        "response_format": {"type": "json_object"},
+        "max_tokens": 3000,
+        # NO response_format json_object: it makes MiniMax M3 return empty content
+        # ~2/3 of the time (measured). Mirror the production extraction call.
     }
     headers = {
         "Authorization": f"Bearer {config.EXTRACTION_API_KEY}",
@@ -79,8 +80,9 @@ def test_extraction() -> bool:
 
     if not content:
         fr = choice.get("finish_reason")
-        _fail(f"empty content (finish_reason={fr}). If 'length', the model ran out "
-              f"of tokens on reasoning -- raise max_tokens.")
+        _fail(f"empty content (finish_reason={fr}). Common cause: a response_format "
+              f"json_object param this model can't honor — remove it. Production "
+              f"retries on empty; a one-off here can be transient.")
         return False
 
     data = None

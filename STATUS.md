@@ -125,6 +125,18 @@ The 6 all-time-zero scrapers were investigated and fixed. Verify any scraper in 
 
 **Actionability (2026-06-13 assessment):** Identity 92% (causante) + location 99% (city) + date_of_death 81% + 100% outreach_allowed = a strong **prospecting list**. But **0% contact path** (`social_profile_url`) and **0% property linkage** (RC) mean it's not yet a turnkey call-list — each lead needs manual lookup. High-signal actionable core ≈ 296 leads (9%) from real inheritance edicts (BOE judicial/notarial + Tablón). **#1 lever to raise actionability: get PhantomBuster social enrichment producing profiles (currently exports CSV, 0 returned).**
 
+## Actionability Sprint (2026-06-14 PM)
+Goal: turn the prospecting list into a worklist. Findings + what shipped:
+
+| Lever | Result |
+|---|---|
+| **Edict-window clock was dead** | `INHERITANCE_WINDOW_DAYS` keyed invented edict_types (`herencia_yacente`, `declaracion_herederos_bop`) matching **0 rows**; the real `inheritance_lead` cohort (BOE-TEJU+V.B) got no window. Fixed the keys → **746 leads now show an open legal deadline**, sorted to the top. Regression test added. |
+| **Heir web-search is a dead end** | Measured: Perplexity contact-search on 15 named heirs = **0/15**. Structural, not config — Spain has no public phone directory + homonym ambiguity, so `identity_match=false` every time. Gated OFF (`CONTACT_ENRICH_MAX_PER_RUN` default 0). Stops a ~50-call/run daily waste. |
+| **The real contact path was in the edict text, unparsed** | BOE-TEJU edicts carry court + **phone + email + procedure №** (label is "Tribunal de Instancia", never "Juzgado" — why the old scrape was 0%). BOE-N edicts carry notary + causante + heir + último domicilio. New `utils/edict_parse.py` (deterministic, no LLM) backfilled **700 offices, 376 court phones, 108 recovered causantes, 41 missed heirs**. Wired as run.py Step 7b2b; idempotent. |
+| **No agent-facing worklist** | New `tools/export_call_list.py` (run.py Step 8b) → `exports/leads_accionables_<date>.xlsx`: ranked by open deadline + action class (1·LLAMAR notarial / 2·INVESTIGAR judicial / 3·SEGUIMIENTO obituary), split into Zaragoza-Aragón vs España sheets + Guía. |
+
+**Reframed actionable core:** **723 inheritance leads** (notarial/judicial with a named office or heir + outreach-allowed), 721 with an open legal window — up from the 296 "high-signal" estimate. Honest caveat: the BOE notarial/judicial signal is **nationwide**; the Aragón home-market inheritance slice is thin (~15), so the product's value for this client is the nationwide notarial cohort (resale/referral) plus local obituary monitoring. Obituary heir-extraction confirmed structurally ~0% (Memora pages name no survivors) — the blanket skip stays correct.
+
 ## Geography (2026-06-12)
 Obituary scrapers (esquelas, defunciones, rememori) and traspasos now run **Spain-wide by default** (50 provinces, Zaragoza/Huesca/Teruel scraped first). Per-client deployments narrow via `NADIA_PROVINCES=zaragoza` (comma list). `NADIA_PROVINCES=all` (default) = whole country. Every lead keeps its provincia so output can be filtered per client when reselling to agents outside Zaragoza.
 

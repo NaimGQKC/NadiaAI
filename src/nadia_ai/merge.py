@@ -114,6 +114,7 @@ SOURCE_LABELS = {
     "esquelas": "Esquelas",
     "defunciones": "Defunciones",
     "iesquelas": "iEsquelas",
+    "heraldo": "Heraldo",
     "cee": "CEE Aragón",
     "traspasos": "Traspasos Aragón",
     "ite": "ITE Zaragoza",
@@ -133,6 +134,7 @@ SUBSOURCE_CODES = {
     "esquelas": "Esquelas",
     "defunciones": "Defunciones",
     "iesquelas": "iEsquelas",
+    "heraldo": "Heraldo",
     "cee": "CEE",
     "traspasos": "Traspasos",
     "ite": "ITE",
@@ -173,6 +175,44 @@ def normalize_address(address: str | None) -> str | None:
     )
     s = re.sub(r"\s+", " ", s).strip()
     return s if len(s) >= 5 else None
+
+
+# ── Province rollup ────────────────────────────────────────────────
+# `region` used to be set to the raw localidad (city), so Zaragoza-PROVINCE towns
+# (Calatayud, Ejea, Caspe…) were invisible to a `region = 'Zaragoza'` client
+# filter — only the city matched. Map the towns that matter (Zaragoza metro +
+# comarcal capitals, plus the other Aragón capitals) to their province so the
+# client gets the whole territory. Provincial capitals fall through to
+# province == city. Unknown localities keep their own name (no regression).
+_TOWN_TO_PROVINCE = {
+    # Zaragoza province — metro belt + comarcal heads
+    town: "Zaragoza"
+    for town in (
+        "zaragoza", "utebo", "cuarte de huerva", "cuarte", "la muela", "muela",
+        "villanueva de gallego", "san mateo de gallego", "zuera", "alagon",
+        "pinseque", "casetas", "pina de ebro", "fuentes de ebro", "maria de huerva",
+        "cadrete", "ejea de los caballeros", "ejea", "tauste", "gallur",
+        "calatayud", "la almunia de dona godina", "la almunia", "epila", "carinena",
+        "caspe", "tarazona", "borja", "daroca", "ateca", "sadaba", "sastago",
+        "quinto", "belchite", "mallen", "remolinos",
+    )
+}
+# Other Aragón capitals (province == city) for completeness.
+_TOWN_TO_PROVINCE.update({"huesca": "Huesca", "teruel": "Teruel"})
+
+
+def province_for_localidad(localidad: str | None) -> str:
+    """Map a locality to its province for the `region` rollup. Returns the
+    province for known Aragón towns/capitals, else the localidad unchanged (so
+    non-Aragón leads keep a sensible region and nothing regresses)."""
+    if not localidad:
+        return ""
+    key = strip_accents(localidad).lower().strip()
+    if key in _TOWN_TO_PROVINCE:
+        return _TOWN_TO_PROVINCE[key]
+    # tolerate "Ejea de los Caballeros (Zaragoza)" style suffixes
+    base = re.split(r"\s*[(/,]", key, maxsplit=1)[0].strip()
+    return _TOWN_TO_PROVINCE.get(base, localidad)
 
 
 # ── Plusvalía Clock ────────────────────────────────────────────────
@@ -221,6 +261,88 @@ def compute_tax_deadline(date_of_death_str: str | None) -> str:
         return ""
 
 
+# ── Edict-window clock ─────────────────────────────────────────────
+# Distinct from the death-date Plusvalía Clock above: when a notarial/judicial
+# "declaración de herederos" or a "herencia yacente" call is PUBLISHED, heirs
+# have ~1 month from that publication to come forward; an Aragón "sucesión
+# legal" (State-takeover) call is likewise a 1-month claim window (Ley 10/2023).
+# While the window is open the heir faces a hard, imminent deadline → maximum
+# motivation to act. We surface days-remaining as a ranking signal that
+# complements (does not replace) the death-date clock. Obituaries, subastas,
+# and B2B edicts open no such window and map to None.
+#
+# Keys MUST be the literal `edicts.edict_type` values the scrapers write — the
+# clock joins on them. The original map was written against invented names
+# (`herencia_yacente`, `declaracion_herederos_bop`) that match ZERO rows, so the
+# whole TEJU/V.B judicial cohort — `inheritance_lead`, the largest open-window
+# source (~465 leads) — silently got no window. The live taxonomy is:
+#   declaracion_herederos_abintestato → BOE-N notarial + Tablón
+#   inheritance_lead                  → BOE-TEJU herencia-yacente + BOE-V.B state succession
+#   sucesion_legal_boa                → BOA Junta Distribuidora
+# 30d is the uniform proxy for all three (the actual judicial/notarial term
+# varies); it's a ranking signal, not a legal deadline. `declaracion_herederos_bop`
+# is retained for when BOP Zaragoza comes online (currently firewalled, 0 rows).
+INHERITANCE_WINDOW_DAYS = {
+    "declaracion_herederos_abintestato": 30,
+    "inheritance_lead": 30,
+    "sucesion_legal_boa": 30,
+    "declaracion_herederos_bop": 30,
+}
+
+
+def compute_inheritance_window_days(
+    published_at_str: str | None, edict_type: str | None
+) -> int | None:
+    """Days remaining in the legal claim window opened by an edict's publication.
+
+    Positive while the window is open, <= 0 once it has closed, and None when the
+    edict type opens no such window (obituaries, auctions, B2B, etc.).
+    """
+    window = INHERITANCE_WINDOW_DAYS.get(edict_type or "")
+    if not window or not published_at_str:
+        return None
+    try:
+        pub = datetime.fromisoformat(published_at_str)
+    except (ValueError, TypeError):
+        return None
+    if pub.tzinfo is None:
+        pub = pub.replace(tzinfo=UTC)
+    elapsed = (datetime.now(UTC) - pub).days
+    return window - elapsed
+
+
+def recompute_edict_windows(conn: sqlite3.Connection) -> int:
+    """Recompute edict_window_days for every lead from its linked edicts.
+
+    A lead can link to several edicts; we keep the most-open window (largest
+    days-remaining), i.e. the freshest legal clock. Time-relative, so it runs
+    each pipeline start alongside the death-date recompute. Returns count updated.
+    """
+    rows = conn.execute(
+        """
+        SELECT le.lead_id AS lead_id, e.edict_type AS edict_type, e.published_at AS published_at
+        FROM lead_edicts le JOIN edicts e ON e.id = le.edict_id
+        WHERE e.published_at IS NOT NULL AND e.published_at != ''
+        """
+    ).fetchall()
+
+    best: dict[int, int] = {}
+    for r in rows:
+        w = compute_inheritance_window_days(r["published_at"], r["edict_type"])
+        if w is None:
+            continue
+        if r["lead_id"] not in best or w > best[r["lead_id"]]:
+            best[r["lead_id"]] = w
+
+    for lead_id, w in best.items():
+        conn.execute("UPDATE leads SET edict_window_days = ? WHERE id = ?", (w, lead_id))
+    conn.commit()
+    if best:
+        open_now = sum(1 for w in best.values() if w > 0)
+        logger.info("Recomputed edict windows for %d leads (%d currently open)", len(best), open_now)
+    return len(best)
+
+
 def recompute_all_deadlines(conn: sqlite3.Connection) -> int:
     """Recompute days_since_death and urgency_phase for ALL leads.
 
@@ -242,6 +364,12 @@ def recompute_all_deadlines(conn: sqlite3.Connection) -> int:
     conn.commit()
     if updated:
         logger.info("Recomputed deadlines for %d leads", updated)
+    # Edict-window clock is publication-driven (different lead set), so refresh
+    # it in the same pass — guarded so a failure never breaks deadline recompute.
+    try:
+        recompute_edict_windows(conn)
+    except sqlite3.Error as e:
+        logger.error("Edict-window recompute failed (non-critical): %s", e)
     return updated
 
 
@@ -341,6 +469,8 @@ _LEADS_MIGRATIONS = [
     ("contact_confidence", "ALTER TABLE leads ADD COLUMN contact_confidence TEXT DEFAULT ''"),
     ("contact_source", "ALTER TABLE leads ADD COLUMN contact_source TEXT DEFAULT ''"),
     ("contact_enriched_at", "ALTER TABLE leads ADD COLUMN contact_enriched_at TEXT DEFAULT ''"),
+    # Edict-window clock (publication-driven legal claim window; see below)
+    ("edict_window_days", "ALTER TABLE leads ADD COLUMN edict_window_days INTEGER"),
 ]
 
 
@@ -629,7 +759,7 @@ def _merge_into_existing(
             dod,
             json.dumps(new_heirs),
             heir_name,
-            getattr(record, "localidad", None) or "",
+            province_for_localidad(getattr(record, "localidad", None) or ""),
             json.dumps(sources),
             json.dumps(source_urls),
             lead_id,
@@ -692,7 +822,7 @@ def _create_new_lead(
             deadline,
             json.dumps(record.heir_names),
             heir_name,
-            getattr(record, "localidad", None) or "",
+            province_for_localidad(getattr(record, "localidad", None) or ""),
         ),
     )
     return cursor.lastrowid
@@ -705,6 +835,8 @@ def get_todays_leads(conn: sqlite3.Connection) -> list[dict]:
         WHERE date(first_seen_at) = date('now')
         ORDER BY
             CASE tier WHEN 'A' THEN 0 WHEN 'B' THEN 1 WHEN 'C' THEN 2 WHEN 'X' THEN 3 END,
+            CASE WHEN edict_window_days > 0 THEN 0 ELSE 1 END,
+            CASE WHEN edict_window_days > 0 THEN edict_window_days ELSE 999999 END ASC,
             days_since_death DESC NULLS LAST,
             m2 DESC NULLS LAST"""
     ).fetchall()
@@ -717,6 +849,8 @@ def get_all_leads(conn: sqlite3.Connection) -> list[dict]:
         """SELECT * FROM leads
         ORDER BY
             CASE tier WHEN 'A' THEN 0 WHEN 'B' THEN 1 WHEN 'C' THEN 2 WHEN 'X' THEN 3 END,
+            CASE WHEN edict_window_days > 0 THEN 0 ELSE 1 END,
+            CASE WHEN edict_window_days > 0 THEN edict_window_days ELSE 999999 END ASC,
             days_since_death DESC NULLS LAST,
             first_seen_at DESC,
             m2 DESC NULLS LAST"""

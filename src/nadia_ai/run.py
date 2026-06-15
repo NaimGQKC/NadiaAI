@@ -6,6 +6,7 @@ New steps: LLM heir extraction (Ollama), Plusvalía Clock recomputation.
 """
 
 import logging
+import sqlite3
 import sys
 import time
 from datetime import UTC, datetime, timedelta
@@ -86,6 +87,7 @@ def run_pipeline(days: int = 90) -> dict:
         "boe": ("nadia_ai.scrapers.boe", "scrape_boe", {"days": 10}), # Increased days for deeper scan
         "borme": ("nadia_ai.scrapers.borme", "scrape_borme", {}),
         "esquelas": ("nadia_ai.scrapers.esquelas", "scrape_esquelas", {"since": cutoff_date}),
+        "heraldo": ("nadia_ai.scrapers.heraldo", "scrape_heraldo", {"since": cutoff_date}),
         "defunciones": ("nadia_ai.scrapers.defunciones", "scrape_defunciones", {"since": cutoff_date}),
         "rememori": ("nadia_ai.scrapers.rememori", "scrape_rememori", {"since": cutoff_date}),
         "iesquelas": ("nadia_ai.scrapers.iesquelas", "scrape_iesquelas", {"since": cutoff_date}),
@@ -180,9 +182,55 @@ def run_pipeline(days: int = 90) -> dict:
         logger.error("Address→RC resolution failed (non-critical): %s", e)
         summary["errors"].append(f"rc_resolve: {e}")
 
+    # Step 7b2b: Office-contact backfill — fill the handling office (notaría for
+    # BOE-N, court for BOE-TEJU/V.B), its phone/email, the procedure number and any
+    # named parties straight from the structured edict text. Deterministic (regex,
+    # no LLM), idempotent, and free. THIS is the real contact path for inheritance
+    # leads; citizen-heir web search (Step 7b3) is ~0% in Spain.
+    try:
+        from nadia_ai.utils.edict_parse import backfill_edict_contacts
+
+        office_stats = backfill_edict_contacts(conn)
+        summary["office_contacts"] = office_stats
+        logger.info("Office-contact backfill: %s", office_stats)
+    except Exception as e:
+        logger.error("Office-contact backfill failed (non-critical): %s", e)
+        summary["errors"].append(f"office_backfill: {e}")
+
+    # Step 7b2d: Heraldo heir backfill — fill named family (spouse/children) parsed
+    # deterministically from the "Sus apenados" block of Heraldo de Aragón esquelas.
+    # This is the highest-value LOCAL signal (a death notice that names the heirs).
+    # merge already persists these at scrape time; this is the idempotent safety net
+    # for any Heraldo lead created without them (e.g. via a cross-source merge).
+    try:
+        from nadia_ai.scrapers.heraldo import backfill_heraldo_heirs
+
+        heraldo_heirs = backfill_heraldo_heirs(conn)
+        summary["heraldo_heirs"] = heraldo_heirs
+        logger.info("Heraldo heir backfill: %s", heraldo_heirs)
+    except Exception as e:
+        logger.error("Heraldo heir backfill failed (non-critical): %s", e)
+        summary["errors"].append(f"heraldo_heirs: {e}")
+
+    # Step 7b2c: Notaría phone resolution — fill the public phone of the notaría
+    # handling each BOE-N declaración (name+city known from the edict, no phone in
+    # the text). Unlike heir search this CONVERTS (~100%): notarías are public, so
+    # this makes the warmest cohort callable. Citation+format guarded; only touches
+    # leads missing a phone, so it's ~12 calls/day in steady state.
+    try:
+        from nadia_ai.enrich_contact import resolve_office_phones
+
+        office_phones = resolve_office_phones(conn)
+        summary["office_phones"] = office_phones
+        logger.info("Notaría phone resolution: %d leads got a phone", office_phones)
+    except Exception as e:
+        logger.error("Office-phone resolution failed (non-critical): %s", e)
+        summary["errors"].append(f"office_phones: {e}")
+
     # Step 7b3: Contact discovery — search-native LLM (Perplexity Sonar) turns an
-    # heir/causante name + city into a contact path. Cost-capped per run; skips
-    # silently if no search key is set. Scoped to outreach-allowed, named leads.
+    # heir/causante name + city into a personal contact path. OFF by default
+    # (CONTACT_ENRICH_MAX_PER_RUN=0): measured ~0% for citizen heirs in Spain, so it
+    # only burns budget. Left wired for a real skip-trace provider or a manual pass.
     try:
         from nadia_ai.enrich_contact import run_contact_enrichment
 
@@ -239,6 +287,20 @@ def run_pipeline(days: int = 90) -> dict:
         logger.error("Delivery failed: %s", e)
         summary["errors"].append(f"delivery: {e}")
 
+    # Step 8b: Refresh the agent-facing actionable call-list (exports/*.xlsx).
+    # The dashboard is the primary delivery; this is the offline worklist the agent
+    # opens — ranked by open legal-deadline + action class. Never break the run.
+    if isinstance(conn, sqlite3.Connection):
+        try:
+            from tools.export_call_list import build
+
+            xlsx = build()
+            summary["call_list"] = xlsx
+            logger.info("Actionable call-list written to %s", xlsx)
+        except Exception as e:
+            logger.error("Call-list export failed (non-critical): %s", e)
+            summary["errors"].append(f"call_list: {e}")
+
     elapsed = time.monotonic() - start
     summary["elapsed_seconds"] = round(elapsed, 2)
     logger.info(
@@ -270,6 +332,19 @@ def run_pipeline(days: int = 90) -> dict:
             logger.warning("Scrapers with ZERO records this run: %s", ", ".join(zero_scrapers))
     except Exception as e:
         logger.error("Failed to write run summary: %s", e)
+
+    # Append a cumulative-metrics snapshot + refresh docs/METRICS.md so engine
+    # health is tracked over time (never let this break the pipeline). Guard on a
+    # real sqlite connection so a mocked conn under test can't pollute the file.
+    if isinstance(conn, sqlite3.Connection):
+        try:
+            from tools.metrics_snapshot import append_snapshot, render_doc, snapshot
+
+            append_snapshot(snapshot(conn), label="daily run")
+            render_doc()
+            logger.info("Metrics snapshot appended (docs/METRICS.md)")
+        except Exception as e:
+            logger.error("Metrics snapshot failed (non-critical): %s", e)
 
     conn.close()
     return summary

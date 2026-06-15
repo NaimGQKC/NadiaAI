@@ -1,19 +1,126 @@
 ﻿name,city,lead_id,tier,urgency
-Don Iván Raúl Cabrera Cerpa,Gran Canaria,4978,A,urgent_distress
-Don José Juan Gil García,Elche/Elx,4886,A,urgent_distress
-Don José Pascual,Elche/Elx,4886,A,urgent_distress
-Doña Verónica Gil García,Elche/Elx,4886,A,urgent_distress
-Luis Parra García,Pulpí,4908,A,high_motivation
-Doña María Campón Moya,Madrid,4936,A,high_motivation
-Don José Antonio Campón Moya,Madrid,4936,A,high_motivation
+Paula González Sarabia,Zaragoza,4941,A,urgent_distress
+Delia Rolán Toro,Verín,4985,A,urgent_distress
+Josefa Julia Rolán Toro,Verín,4985,A,urgent_distress
+Constantino Rolán Toro,Verín,4985,A,urgent_distress
+Isaura Toro Pazos,Verín,4985,A,urgent_distress
+Ana Lorenzo Amiñoso,Madrid,4894,A,urgent_distress
+María Milagros Lorenzo Amiñoso,Madrid,4894,A,urgent_distress
+Fernando de la Cruz Lorenzo,Madrid,4894,A,urgent_distress
+Aurora Sánchez Lorenzo,Madrid,4894,A,urgent_distress
+Amelia de Pablo Ortega,Madrid,4894,A,urgent_distress
+Beatriz de Pablo Ortega,Madrid,4894,A,urgent_distress
+Antonia Sánchez Pérez,Collado Villalba,4893,A,urgent_distress
+Jacinta Martín Villarón,Ciudad Rodrigo,4921,A,urgent_distress
+José Roel Martínez,Betanzos,4874,A,urgent_distress
+Mercedes Roel Martínez,Betanzos,4874,A,urgent_distress
+María del Rosario Roel Pazos,Betanzos,4874,A,urgent_distress
+Manuel Jacinto Vaamonde Roel,Betanzos,4874,A,urgent_distress
+José Luis Pérez Lestayo,Betanzos,4874,A,urgent_distress
+María Pilar García Lestayo,Betanzos,4874,A,urgent_distress
+Emilio Antonio García Lestayo,Betanzos,4874,A,urgent_distress
+Alejandro Nogueira Lestayo,Betanzos,4874,A,urgent_distress
+Antonio Pérez Lestayo,Betanzos,4874,A,urgent_distress
+María Luisa Pérez Lestayo,Betanzos,4874,A,urgent_distress
+José Antonio Mantiñan Lestayo,Betanzos,4874,A,urgent_distress
+María de las Nieves Mantiñán Lestayo,Betanzos,4874,A,urgent_distress
+José Antonio Lestayo Montero,Betanzos,4874,A,urgent_distress
+Yolanda Lestayo Montero,Betanzos,4874,A,urgent_distress
+Eva María Lestayo Montero,Betanzos,4874,A,urgent_distress
+Montserrat Lestayo Montero,Betanzos,4874,A,urgent_distress
+Maria Bella Gonzalez Gomez,València,4883,A,urgent_distress
+María de la Concepción Martín Martínez,Cebreros,4925,A,urgent_distress
+Javier Marín Martínez,Ceutí,4918,A,urgent_distress
+Francisco Ramón Marín Martínez,Ceutí,4918,A,urgent_distress
+Patricio José Marín Martínez,Ceutí,4918,A,urgent_distress
+Eduardo Marín Martínez,Ceutí,4918,A,urgent_distress
+José Ramos Gil,Zaragoza,4895,A,urgent_distress
+Florinda Rita Ramos Gil,Zaragoza,4895,A,urgent_distress
+Nuria Ramos Gil,Zaragoza,4895,A,urgent_distress
+Silvia Puente Gil,Zaragoza,4895,A,urgent_distress
+María Teresa Puente Gil,Zaragoza,4895,A,urgent_distress
+Carlos Puente Gil,Zaragoza,4895,A,urgent_distress
+Francisco Daniel López Gil,Zaragoza,4895,A,urgent_distress
+Fernando López Gil,Zaragoza,4895,A,urgent_distress
+María José Fernández Gil,Zaragoza,4895,A,urgent_distress
+Milagrosa Acosta Gutiérrez,Telde,4952,A,urgent_distress
+Pilar Brisson Acosta,Telde,4952,A,urgent_distress
+Rosario Brisson Acosta,Telde,4952,A,urgent_distress
+Juan Brisson Acosta,Telde,4952,A,urgent_distress
+Milagrosa Brisson Acosta,Telde,4952,A,urgent_distress
+María del Pino Brisson Acosta,Telde,4952,A,urgent_distress
+Inmaculada Brisson Acosta,Telde,4952,A,urgent_distress
+Juan Carlos Sánchez Candal,Cuntis,4939,A,urgent_distress
+José Luis Sánchez Candal,Cuntis,4939,A,urgent_distress
+Georgina Vicente Prieto,Palencia,4905,A,urgent_distress
+Inés Vicente Prieto,Palencia,4905,A,urgent_distress
+María del Carmen Vicente Prieto,Palencia,4905,A,urgent_distress
+Esperanza María Castaño Barbosa,Cumbres Mayores,4926,A,urgent_distress
+Tomás Castaño Barbosa,Cumbres Mayores,4926,A,urgent_distress
+Francisco José Castaño Barbosa,Cumbres Mayores,4926,A,urgent_distress
+María Eugenia Alguacil Aguilera,Montefrío,4877,A,high_motivation
+Mercedes Guzmán Laguna,Valdepeñas,4888,A,high_motivation
+Diego Parra García,Pulpí,4908,A,high_motivation
+Ian Arenado Pérez,Barcelona,4968,A,high_motivation
+José Antonio Campón Iglesias,Madrid,4936,A,high_motivation
+María Campón Moya,Madrid,4936,A,high_motivation
+José Antonio Campón Moya,Madrid,4936,A,high_motivation
+Mariana de Jesús Barrera Peñafiel,Pulpí,4966,A,high_motivation
+Gissela Marian Culqui Barrera,Pulpí,4966,A,high_motivation
+Tatiana Marice Culqui Barrera,Pulpí,4966,A,high_motivation
+Pablo González Soguero,La Carolina,4950,A,high_motivation
+Pablo González del Arco,La Carolina,4950,A,high_motivation
 Susana Rivero Granda,Gijón,4947,A,monitoring
-Lorena Maria Rivero Granda,Gijón,4947,A,monitoring
-Don Emilio José Robledano García,Elche/Elx,4887,A,monitoring
-Don José-Jesús Benítez Ramírez,Telde,4911,A,monitoring
-Doña María del Pino Benítez Ramírez,Telde,4911,A,monitoring
-Jose Angel Saornil García,Gijón,4946,A,monitoring
-Francisco Javier Saornil García,Gijón,4946,A,monitoring
-Gema Palacios Iturburuaga,Colmenar Viejo,4900,A,monitoring
+Lorena María Rivero Granda,Gijón,4947,A,monitoring
+AMANPREET KAUR,València,4924,A,monitoring
+ANMOLPREET SINGH,València,4924,A,monitoring
+SEHJPREET KAUR,València,4924,A,monitoring
+Emilio José Robledano García,Elche/Elx,4887,A,monitoring
+José Pascual Gil García,Elche/Elx,4887,A,monitoring
+Verónica Gil García,Elche/Elx,4887,A,monitoring
+José-Jesús Benítez Ramírez,Telde,4911,A,monitoring
+María del Pino Benítez Ramírez,Telde,4911,A,monitoring
+María Josefa Pilar Arjona Quesada,Logroño,4929,A,monitoring
+Rosa María Iluminada Arjona Quesada,Logroño,4929,A,monitoring
+LAURA CASTELAO AMIGO,Gijón,4909,A,monitoring
+ANTONIA LOPEZ CAMBERO,Vélez-Málaga,4954,A,monitoring
+ANDRES JOSE LOPEZ CAMBERO,Vélez-Málaga,4954,A,monitoring
+GABRIEL LOPEZ SEGURA,Vélez-Málaga,4954,A,monitoring
+Amparo Campos Porcar,Vinaroz/Vinarós,4949,A,monitoring
+Juana Campos Porcar,Vinaroz/Vinarós,4949,A,monitoring
+Vicente Campos Porcar,Vinaroz/Vinarós,4949,A,monitoring
+María-Pureza Campos Porcar,Vinaroz/Vinarós,4949,A,monitoring
+Francisco Gil López,Ceutí,4917,A,monitoring
+Juan José Gil López,Ceutí,4917,A,monitoring
+Antonio Gil López,Ceutí,4917,A,monitoring
+María Dolores Gil López,Ceutí,4917,A,monitoring
+Salud Perez Márquez,Bormujos,4923,A,monitoring
+José Antonio Gil Perez,Bormujos,4923,A,monitoring
+Angela Gil Perez,Bormujos,4923,A,monitoring
+Sara Ayet Cuchí,Zaragoza,4961,A,monitoring
+MARIA ISABEL MARTINEZ MARTIN,València,4959,A,monitoring
+MARIA JOSEFA MARTINEZ MARTIN,València,4959,A,monitoring
+ROSA MARIA MARTINEZ MARTIN,València,4959,A,monitoring
+Miguel-Angel Llamazares Alvarez,León,4881,A,monitoring
+Maria del Carmen Llamazares Alvarez,León,4881,A,monitoring
+Cesar Llamazares Martinez,León,4881,A,monitoring
+Alvaro Hernandez Fernandez,Ardoz,4902,A,monitoring
+Cipriano Hernandez Fernandez,Ardoz,4902,A,monitoring
+Juan Antonio Hernández Fernández,Ardoz,4902,A,monitoring
+Rosalia Hernandez Fernandez,Ardoz,4902,A,monitoring
+Maria Dolores Hernandez Fernandez,Ardoz,4902,A,monitoring
+María Sánchez Llamas,Cieza,4916,A,monitoring
+Bartolomé Sánchez Llamas,Cieza,4916,A,monitoring
+Carmen Sánchez Llamas,Cieza,4916,A,monitoring
+Serafina Lagares Labrador,Bollullos Par Del Condado,4878,A,monitoring
+Domingo Rodriguez Perez,Verín,4903,A,monitoring
+Pura Rodriguez Perez,Verín,4903,A,monitoring
+Maria Luisa Rodriguez Perez,Verín,4903,A,monitoring
+Francisco Rodriguez Perez,Verín,4903,A,monitoring
+INES MARIA GOMEZ PAZOS,Verín,4920,A,monitoring
+EMILIA GOMEZ PAZOS,Verín,4920,A,monitoring
+JOSEFA GOMEZ PAZOS,Verín,4920,A,monitoring
+LUCAS MARTINEZ GOMEZ,Verín,4920,A,monitoring
 Traspaso o Alquiler AUSTRAL,Teruel,3281,A,
 Área de Servicio del Somontano.,Huesca,3293,A,
 TRASPASO LICEO GOYA,Zaragoza,3303,A,
@@ -22,113 +129,394 @@ CARNICERIA LA DESPENSA -Calamocha,Teruel,3309,A,
 Oportunidad sector bordado especializados,Zaragoza,3324,A,
 Clinica Veterinaria Utrizoo,Teruel,3325,A,
 Traspaso Bar Restaurante Ganchada,Teruel,3327,A,
-Doña María Eugenia Alguacil Aguilera,Montefrío,4877,A,
-don Luis Alfonso Llaca García-Alfonso,Gran Canaria,4879,A,
-doña Elena Llaca Díaz,Gran Canaria,4879,A,
-don Carlos Llaca Díaz,Gran Canaria,4879,A,
-don Daniel Llaca Díaz,Gran Canaria,4879,A,
-doña Ana Llaca Díaz,Gran Canaria,4879,A,
-don Alfonso Llaca Díaz,Gran Canaria,4879,A,
-don Jaime Llaca Díaz,Gran Canaria,4879,A,
-Don Pergentino Valparis Postigo,Villaquilambre,4880,A,
-Doña Orencia Aller Ferreras,Villaquilambre,4880,A,
-Miguel-Angel Llamazares Alvarez,León,4881,A,
-María del Carmen Llamazares Alvarez,León,4881,A,
-Francisco Ricarte Monto,Torrente/Torrent,4884,A,
-don Ramón Marrero González,Gran Canaria,4889,A,
-doña Maria Montserrat,Tías - Puerto Del Carmen,4890,A,
-doña Katia,Tías - Puerto Del Carmen,4890,A,
-doña Noemi,Tías - Puerto Del Carmen,4890,A,
-doña Benedicta Ferrer Montelongo,Tías - Puerto Del Carmen,4890,A,
-Don Miguel Ángel Arija Betancort,Telde,4891,A,
-Doña Mónica Arija Betancor,Telde,4891,A,
-DOÑA BEATRIZ MANSO HERNÁNDEZ,Arrecife,4892,A,
-DOÑA ITAHISA MANSO HERNÁNDEZ,Arrecife,4892,A,
-DON NAUZET MANSO HIERRO,Arrecife,4892,A,
-Doña Antonia Sánchez Pérez,Collado Villalba,4893,A,
-DOÑA ANA LORENZO AMIÑOSO,Madrid,4894,A,
-DOÑA MARÍA MILAGROS LORENZO AMIÑOSO,Madrid,4894,A,
-DON FERNANDO DE LA CRUZ LORENZO,Madrid,4894,A,
-DOÑA AURORA SÁNCHEZ LORENZO,Madrid,4894,A,
-DOÑA AMELIA DE PABLO ORTEGA,Madrid,4894,A,
-DOÑA BEATRIZ DE PABLO ORTEGA,Madrid,4894,A,
-doña Silvia Puente Gil,Zaragoza,4895,A,
-doña María Teresa Puente Gil,Zaragoza,4895,A,
-don Carlos Puente Gil,Zaragoza,4895,A,
-don Francisco Daniel,Zaragoza,4895,A,
-don Fernando López Gil,Zaragoza,4895,A,
-doña María José Fernández Gil,Zaragoza,4895,A,
-doña Florinda Rita Ramos Gil,Zaragoza,4895,A,
-doña Nuria Ramos Gil,Zaragoza,4895,A,
-Pedro Santana Méndez,Telde,4898,A,
-Juan Ramón Santana Méndez,Telde,4898,A,
-Juan Félix Jiménez Núñez,Madrid,4899,A,
-Don Alvaro Hernandez Fernandez,Ardoz,4902,A,
-Don Cipriano Hernandez Fernandez,Ardoz,4902,A,
-Don Juan Antonio Hernández Fernández,Ardoz,4902,A,
-Doña Rosalia Hernandez Fernandez,Ardoz,4902,A,
-Doña Maria Dolores Hernandez Fernandez,Ardoz,4902,A,
-DON DOMINGO RODRIGUEZ PEREZ,Verín,4903,A,
-DOÑA PURA RODRIGUEZ PEREZ,Verín,4903,A,
-DOÑA MARIA LUISA RODRIGUEZ PEREZ,Verín,4903,A,
-DON FRANCISCO RODRIGUEZ PEREZ,Verín,4903,A,
+José Carlos Fernández-Villaverde y Silva,Zaragoza,4873,A,
+Álvaro Fernández-Villaverde y Silva,Zaragoza,4873,A,
+Casilda Fernández-Villaverde y Silva,Zaragoza,4873,A,
+Rafael Fernández-Villaverde y Silva,Zaragoza,4873,A,
+Isabel Aguirre Cuevas,Zaragoza,4873,A,
+Ana María Aguirre Cuevas,Zaragoza,4873,A,
+PERGENTINO VALPARIS POSTIGO,Villaquilambre,4880,A,
+ORENCIA ALLER FERRERAS,Villaquilambre,4880,A,
 DOÑA ROSALIA PEREZ NIEVES,Verín,4904,A,
-doña Georgina Vicente Prieto,Palencia,4905,A,
-doña Inés Vicente Prieto,Palencia,4905,A,
-doña María del Carmen Vicente Prieto,Palencia,4905,A,
-Laura Castelao Amigo,Gijón,4909,A,
-Doña Nuria López Blanco,León,4912,A,
-Don Fernando López Blanco,León,4912,A,
-María Sánchez Llamas,Cieza,4916,A,
-Bartolomé Sánchez Llamas,Cieza,4916,A,
-Carmen Sánchez Llamas,Cieza,4916,A,
-Don Francisco Gil López,Ceutí,4917,A,
-Don Juan José Gil López,Ceutí,4917,A,
-Don Antonio Gil López,Ceutí,4917,A,
-Doña María Dolores Gil López,Ceutí,4917,A,
-Javier Marin Martinenez,Ceutí,4918,A,
-Francisco Ramon Marin Martinez,Ceutí,4918,A,
-Patricio Jose Marin Martinez,Ceutí,4918,A,
-Eduardo Marin Martinez,Ceutí,4918,A,
-DOÑA DOLORES PÉREZ CIFUENTES,Alcantarilla,4919,A,
-DOÑA INES MARIA GOMEZ PAZOS,Verín,4920,A,
-DOÑA EMILIA GOMEZ PAZOS,Verín,4920,A,
-DOÑA JOSEFA GOMEZ PAZOS,Verín,4920,A,
-DON LUCAS MARTINEZ GOMEZ,Verín,4920,A,
-José Antonio Gil Pérez,Bormujos,4923,A,
-Angela Gil Pérez,Bormujos,4923,A,
-Doña Amanpreet Kaur,València,4924,A,
-Anmolpreet Singh,València,4924,A,
-Sehjpreet Kaur,València,4924,A,
-Doña Esperanza María,Cumbres Mayores,4926,A,
-Don Tomás,Cumbres Mayores,4926,A,
-Don Francisco José Castaño Barbosa,Cumbres Mayores,4926,A,
-Don Juan Antonio Sarmiento Delgado,Telde,4934,A,
-Don Santiago Orlando Sarmiento Delgado,Telde,4934,A,
+DON DOMINGO RODRIGUEZ PEREZ,Verín,4904,A,
+DOÑA PURA RODRIGUEZ PEREZ,Verín,4904,A,
+DOÑA MARIA LUISA RODRIGUEZ PEREZ,Verín,4904,A,
+DON FRANCISCO RODRIGUEZ PEREZ,Verín,4904,A,
+Dolores Pérez Cifuentes,Alcantarilla,4919,A,
+Esther Eguizábal Martínez-Portillo,Arnedo,4928,A,
+Consuelo Eguizábal Martínez-Portillo,Arnedo,4928,A,
+Mercedes Marta Miranda Medina,Tías - Puerto Del Carmen,4931,A,
+Maria Carmen Miranda Medina,Tías - Puerto Del Carmen,4931,A,
+Lidia Maria Miranda Medina,Tías - Puerto Del Carmen,4931,A,
+María Guedes Santana,Telde,4932,A,
+Manuel Lorenzo Martel Guedes,Telde,4932,A,
+María Auxiliadora Martel Guedes,Telde,4932,A,
+Alejandro Luis Martel Guedes,Telde,4932,A,
+José Antonio Martel Guedes,Telde,4932,A,
+Miguel Jose Telletxea Zubieta,Lesaca/Lesaka,4937,A,
+Hilaria Zubieta Irigoyen,Lesaca/Lesaka,4937,A,
+María Teresa Fernández González,Gijón,4948,A,
+Antonio Rubio Caballero,Yecla,4956,A,
+Adolfo Heredia Carmona,Tenerife,4957,A,
+Francisca Carmona Heredia,Tenerife,4957,A,
+Natalia Évora Marrero,Orotava (La),4958,A,
+Jesús Évora Marrero,Orotava (La),4958,A,
+FATIMA CRISTINA DOS SANTOS PEREIRA,Verín,4974,A,
+MARIA DA LUZ PEREIRA TEIXEIRA,Verín,4974,A,
+PAULINO FERNANDEZ SALGADO,Verín,4975,A,
+OSCAR FERNANDEZ SALGADO,Verín,4975,A,
+ANSELMO FERNANDEZ SALGADO,Verín,4975,A,
+JORGE LUIS FERNANDEZ SALGADO,Verín,4975,A,
+MARIA DOLORES FERNANDEZ SALGADO,Verín,4975,A,
+SHEILA FERNANDEZ LUIS,Verín,4975,A,
+IAGO AGRIPINO FERNANDEZ LUIS,Verín,4975,A,
+MARÍA-CARMEN GÓMEZ AGUDO,Fuensalida,4976,A,
+ANTONIO GÓMEZ AGUDO,Fuensalida,4976,A,
+CARMEN AGUDO LÓPEZ,Fuensalida,4976,A,
+David Luis Mendieta Pessy,Telde,4977,A,
+María Rosa Mendieta Pessy,Telde,4977,A,
+Francisco Javier Mendieta Pessy,Telde,4977,A,
+José María Mendieta Pessy,Telde,4977,A,
+Josiane Andree Pessy Petit,Telde,4977,A,
+Montserrat Solsona Mas,"Seu D'Urgell, La",4980,A,
+Nuria Vilarrubla Solsona,"Seu D'Urgell, La",4980,A,
+Vicenç Vilarrubla Solsona,"Seu D'Urgell, La",4980,A,
+María Montserrat Méndez Pérez,Sarria,4981,A,
+Paula González Méndez,Sarria,4981,A,
+Andrea González Méndez,Sarria,4981,A,
+Federico Bullido Martínez,Ardoz,4982,A,
+María Ángeles Bullido Martínez,Ardoz,4982,A,
+Carlos González Jiménez,Ardoz,4983,A,
+Luis González Jiménez,Ardoz,4983,A,
+Alicia González Jiménez,Ardoz,4983,A,
+Ángela González Jiménez,Ardoz,4983,A,
+Raúl González Jiménez,Ardoz,4983,A,
+Francisco Javier Jiménez Garzón,Ardoz,4983,A,
+Víctor González Alcolea,Ardoz,4983,A,
+Diego Velasco González,Valladolid,4987,A,
+Natalia Escribano Fernández,Gijón,5486,A,
+Patricia Escribano Fernández,Gijón,5486,A,
+María Margarita Matilde Calleja Sanchez,Gijón,5487,A,
+ALVARO LUIS MARINA LOBETO,Gijón,5488,A,
+JOSE RAMON MARINA LOBETO,Gijón,5488,A,
+Francisco Manuel Lozano Aguilera,Pinos-Puente,5490,A,
+María Teresa Lozano Aguilera,Pinos-Puente,5490,A,
+Emilio Damián Lozano Aguilera,Pinos-Puente,5490,A,
+Jacobo Christian Estupiñán Ríos,Telde,5491,A,
+Adelaida Estupiñán Ríos,Telde,5491,A,
+Carolina Estupiñán Ríos,Telde,5491,A,
+Víctor Fonseca Pérez,Ardoz,5492,A,
+Ignacio Fonseca Pérez,Ardoz,5492,A,
+Alba Fonseca Pérez,Ardoz,5492,A,
+Juan López Campoy,Archena,5493,A,
+Manuel López Campoy,Archena,5493,A,
+María del Carmen Pisos Fandiño,Cuntis,5495,A,
+ROSA MARIA HERRERA HERNANDEZ,La Laguna,5497,A,
+MANUELA FLORA HERRERA HERNANDEZ,La Laguna,5497,A,
+MANUEL RAMON HERRERA HERNANDEZ,La Laguna,5497,A,
+JOSE JAVIER HERRERA HERNANDEZ,La Laguna,5497,A,
+CARMEN GENARA HERRERA HERNANDEZ,La Laguna,5497,A,
+CARMEN ALICIA HERRERA HERNANDEZ,La Laguna,5497,A,
+María del Mar Pernil Mármol,Sevilla,5498,A,
+Manuel Jesús Pernil Mármol,Sevilla,5498,A,
+Rocío Pernil Mármol,Sevilla,5498,A,
+"Vicente Garcia
+Mora",Torrente/Torrent,5502,A,
+Maria Begoña Montes Ordoñez,Gijón,5505,A,
+Sheila Montes Montoya,Gijón,5505,A,
+Laureano Vico Castro,La Carolina,5509,A,
+Fernando Castro Vico,La Carolina,5509,A,
+José Castro Vico,La Carolina,5509,A,
+Francisco Vico Ruiz,La Carolina,5509,A,
+Alejandro Vico Ruiz,La Carolina,5509,A,
+Manuela Vico Gómez,La Carolina,5509,A,
+Adela Vico Gómez,La Carolina,5509,A,
+José Vico Gómez,La Carolina,5509,A,
+María del Pino Rodríguez Núñez,Telde,5510,A,
+Francisco Manuel Rodríguez Núñez,Telde,5510,A,
+Ricardo Echeverria Contreras,Pamplona/Iruña,5512,A,
+Nicolás Echeverria Contreras,Pamplona/Iruña,5512,A,
+Daniel Echeverria Contreras,Pamplona/Iruña,5512,A,
+Alejandro Echeverria Contreras,Pamplona/Iruña,5512,A,
+María Cristina Soriano Martínez,Alicante/Alacant,5517,A,
+Manuel Mirete Villena,Alicante/Alacant,5518,A,
+Pedro Manuel Mirete Ferrer,Alicante/Alacant,5518,A,
+Roberto Mirete Ferrer,Alicante/Alacant,5518,A,
+José Carlos Mirete Ferrer,Alicante/Alacant,5518,A,
+Antonio Domingo Fontanet,Palafrugell,5527,A,
+Marta Fontanet Requesens,Palafrugell,5527,A,
+Manuela Mejías Coronado,Logroño,5529,A,
+Juan Mejías Coronado,Logroño,5529,A,
+Juan Ramon Bordón Bordón,Telde,5532,A,
+Aitana Bordón Reyes,Telde,5532,A,
+Rubén Barrio de la Fuente,León,5533,A,
+Darío Barrio González,León,5533,A,
+Antonia Gutiérrez Cañadas,Ardoz,5535,A,
+Javier Álvarez Gutiérrez,Ardoz,5535,A,
+Juan Antonio Álvarez Gutiérrez,Ardoz,5535,A,
+Raúl Álvarez Gutiérrez,Ardoz,5535,A,
+Santiago Fernández Sánchez,Salvanés,5536,A,
+Victorio Fernández Sánchez,Salvanés,5536,A,
+Rosa Conde Rodríguez,Allariz,5537,A,
+María Ángeles Becerril Antón,Palencia,5538,A,
+Santiago Becerril Antón,Palencia,5538,A,
+Rosa María Becerril Antón,Palencia,5538,A,
+Jenny del Carmen Pedrares Campos,Güímar,5539,A,
+Daniel Pedrares Campos,Güímar,5539,A,
+Lorenzo Marquez Romero,Coria Del Rio,5541,A,
+Virgilio-Vicente Parrilla Mañes,Estepa,5542,A,
+José-Germán Parrilla Mañes,Estepa,5542,A,
+Vicente-Enrique-Nicolas Parrilla Mañes,Estepa,5542,A,
+Enrique-Herminio Parrilla Mañes,Estepa,5542,A,
+MARÍA DE LOS ÁNGELES MILLA ZAMBRANA,València,5544,A,
+MARÍA MILLA ZAMBRANA,València,5544,A,
+JOSEFA MILLA ZAMBRANA,València,5544,A,
+DOLORES MILLA ZAMBRANA,València,5544,A,
+MARÍA DEL MAR MILLA HERNÁNDEZ,València,5544,A,
+PEDRO MILLA HERNÁNDEZ,València,5544,A,
+Abelardo Tejada Arri,Bilbao,5546,A,
+José Ramón Tejada Arri,Bilbao,5546,A,
+Agustín Pedro Tejada Arri,Bilbao,5546,A,
+Manuel Sánchez Suárez,La Robla,5550,A,
+Herminia Sánchez Suárez,La Robla,5550,A,
+Adoración Sánchez Suárez,La Robla,5550,A,
+José Sánchez Suárez,La Robla,5550,A,
+María Jesús Sánchez Suárez,La Robla,5550,A,
+Elena Sánchez Suárez,La Robla,5550,A,
+Delfina Sánchez Suárez,La Robla,5550,A,
+Jesús Sánchez Suárez,La Robla,5550,A,
+Joaquín Ramos Ortiz,Ardoz,5551,A,
+Agustín Ramos Ortiz,Ardoz,5551,A,
+Asunción Martínez Torres,Madrid - Aluche,5552,A,
+Francisco Cánovas González,Murcia,5553,A,
+Ana María Cánovas González,Murcia,5553,A,
+Juana Cánovas González,Murcia,5553,A,
+RACHEL ALLEN,Villajoyosa/Vila Joiosa (La),5559,A,
+RAMÓN VIU COLOMÉS,Barcelona,5560,A,
+ROSARIO PRIO VIU,Barcelona,5560,A,
+JAVIER VIU GRAU,Barcelona,5560,A,
+CARLOS VIU GRAU,Barcelona,5560,A,
+LUIS VIU SÁNCHEZ,Barcelona,5560,A,
+MONTSERRAT VIU SÁNCHEZ,Barcelona,5560,A,
+ANTONIO VIU SOCORÓ,Barcelona,5560,A,
+NOELIA VIU SOCORÓ,Barcelona,5560,A,
+Juan-Elías Campo Mera,San Juan,5561,A,
+Sandra Campo Delgado,San Juan,5561,A,
+Francisco José Campo Delgado,San Juan,5561,A,
+Francisco Fernández Ruiz,La Carolina,5562,A,
+Juana García Hernández,La Carolina,5562,A,
+Josep Maria Bañeres Costafreda,Almenar,5564,A,
+Maria Mercé Huguet Costafreda,Almenar,5564,A,
+María Ramos Fidalgo,Allariz,5566,A,
+María del Rosario Blanco Morales,Arousa,5568,A,
+María Teresa Blanco Morales,Arousa,5568,A,
+Manuel Blanco Morales,Arousa,5568,A,
+BERNARDA MARTÍN PLASENCIA,Tenerife,5569,A,
+Belisario-Javier Mangas Velázquez,Tenerife,5570,A,
+María Ángeles Verónica Rodríguez Izquierdo,Güímar,5571,A,
+Carmen Nuria Betancor Rodríguez,Güímar,5571,A,
+Faustino Borja Betancor Rodríguez,Güímar,5571,A,
+Abraham Islas Restoy,Poblet,5572,A,
+Mayte Restoy Vizcaíno,Poblet,5572,A,
+Rodrigo Vizcaíno Restoy,Poblet,5572,A,
+Segundo López Patón,Piedrahita,5575,A,
+Mariano López Patón,Piedrahita,5575,A,
+Martín López Patón,Piedrahita,5575,A,
+Florentina López Patón,Piedrahita,5575,A,
+Miguel López Patón,Piedrahita,5575,A,
+Juan López Patón,Piedrahita,5575,A,
+María del Pilar López Patón,Piedrahita,5575,A,
+Adolfo Caballero Gragera,Los Barrros,5576,A,
+Carmen Jesús Déniz Acosta,Telde,5578,A,
+María del Carmen Acosta Fleitas,Telde,5578,A,
+Otilia Sosa Martin,Telde,5579,A,
+Juan Clemente Sosa Martin,Telde,5579,A,
+Reyes Sosa Martin,Telde,5579,A,
+María del Carmen Sosa Martin,Telde,5579,A,
+Teresita del Niño Jesús Artiles Pérez,Telde,5580,A,
+Inocencia del Pino González Artiles,Telde,5580,A,
+Ainara Pereira Martínez,Ardoz,5581,A,
+Verónica Valentín Medina,Ardoz,5582,A,
+Daniel Valentín Medina,Ardoz,5582,A,
+MARÍA DOLORES ARCA CAMPOS,Cuntis,5584,A,
+MARÍA ARCA CAMPOS,Cuntis,5584,A,
+ANA MARÍA ARCA NEIRA,Cuntis,5584,A,
+SILVIA ARCA NEIRA,Cuntis,5584,A,
+JAVIER ARCA NEIRA,Cuntis,5584,A,
+ALFREDO ARCA NEIRA,Cuntis,5584,A,
+MARGARITA ARCA NOGUEIRA,Cuntis,5584,A,
+MARIA LORETO ARCA NOGUEIRA,Cuntis,5584,A,
+Ángel Tomé Muñoz,Ciudad Rodrigo,5585,A,
+Victor Manuel Montañana Sánchez,València,5586,A,
+Manuela Montañana Sánchez,València,5586,A,
+María Carmen Sanchez Cerezo,València,5586,A,
+Clotilde Sanchez Cerezo,València,5586,A,
+Vicenta María Sanchez Cerezo,València,5586,A,
+Encarnación Romera Romera,Vícar,5587,A,
+Antonia Cecilia Romera Maldonado,Vícar,5587,A,
+Santiago Romera Maldonado,Vícar,5587,A,
+Ana Romera Maldonado,Vícar,5587,A,
+María Romera Maldonado,Vícar,5587,A,
+Don Francisco Serrano Rodrigo,Tomelloso,5589,A,
+Doña Encarnación Marta Córdoba,Tomelloso,5589,A,
+Don Ramón Marta Córdoba,Tomelloso,5589,A,
+Doña Felicidad Marta Córdoba,Tomelloso,5589,A,
+Don José-María Marta Córdoba,Tomelloso,5589,A,
+Don Jesús Marta Córdoba,Tomelloso,5589,A,
+Don Florencio Marta Córdoba,Tomelloso,5589,A,
+Don Vicente Marta Córdoba,Tomelloso,5589,A,
+José-Antonio Galindo Macías,Telde,5591,A,
+Carmelo-Nicolás Galindo Macías,Telde,5591,A,
+Mario-Jesús Galindo Macías,Telde,5591,A,
+Alexis Galindo Macías,Telde,5591,A,
+Monserrat de la Concepción Galindo Macías,Telde,5591,A,
+Gustavo Ramón Galindo Macías,Telde,5591,A,
+Jonatan Francisco Galindo Macías,Telde,5591,A,
+Raúl Sáez De Lafuente Manrique,Madrid - Vinateros,5593,A,
+Luisa Sáez De La Fuente Manrique,Madrid - Vinateros,5593,A,
+Purificación Arias Molina,Málaga,5595,A,
+Saturnino Cabezón Treceño,Valladolid,5600,A,
+FACUNDO PÉREZ ROSILLO,La Roda,5601,A,
+ALONSO PÉREZ ANDRÉS,La Roda,5601,A,
+MARIA AGUSTINA PÉREZ ANDRÉS,La Roda,5601,A,
+MARIA TERESA PÉREZ ANDRÉS,La Roda,5601,A,
+MARIA DE LA CRUZ PÉREZ ANDRÉS,La Roda,5601,A,
+ADOLFO MARTÍNEZ PÉREZ,La Roda,5601,A,
+Aránzazu Rodríguez Chipont,Alicante/Alacant,5603,A,
+Ana María Rodríguez Chipont,Alicante/Alacant,5603,A,
+Daniel Gutiérrez Báez,Gijón,5604,A,
+Paula Gutiérrez Báez,Gijón,5604,A,
+Ramón José Gómez Barrios,La Frontera,5606,A,
+Manuel Barrios Ruiz,La Frontera,5606,A,
+Juana León de la Torre,Valdepeñas,5607,A,
+Nicolasa Romero Crespo,Palencia,5611,A,
+Antonino Romero Crespo,Palencia,5611,A,
+Maximina Romero Crespo,Palencia,5611,A,
+Francisca-Florencia Romero Crespo,Palencia,5611,A,
+Pascual Romero Crespo,Palencia,5611,A,
+José Antonio Piñeiro Bermúdez,Arousa,5612,A,
+Francisco Piñeiro Bermúdez,Arousa,5612,A,
+Ricardo Piñeiro Bermúdez,Arousa,5612,A,
+Dora Del Pilar Minaya Galarreta,La Laguna,5613,A,
+Patricia Alisson Claudia Minaya Galarreta,La Laguna,5613,A,
+Patricia Fanny Minaya Galarreta,La Laguna,5613,A,
+Janett María Minaya Galarreta,La Laguna,5613,A,
+Maria Ángeles Nuñez Jimenez,Coria Del Rio,5615,A,
+FERNANDA SEPÚLVEDA SOCUÉLLAMOS,La Roda,5617,A,
+EPIFANIO SEPÚLVEDA SOCUÉLLAMOS,La Roda,5617,A,
+JOSÉ SEPÚLVEDA SOCUÉLLAMOS,La Roda,5617,A,
+EMILIANA SEPÚLVEDA SOCUÉLLAMOS,La Roda,5617,A,
+Enrique Gómez de la Dehesa,San Sebastián/Donostia,5619,A,
+María Cristina Gómez de la Dehesa,San Sebastián/Donostia,5619,A,
+Eusebio Pachan Izquierdo,"Seu D'Urgell, La",5621,A,
+María Isabel Pachan Izquierdo,"Seu D'Urgell, La",5621,A,
+María-Isabel Ramos Molina,Archena,5623,A,
+Jesús-Ángel Ramos Molina,Archena,5623,A,
+María-Luz Ramos Molina,Archena,5623,A,
+Moisés Ramos Molina,Archena,5623,A,
+José-Antonio Ramos Molina,Archena,5623,A,
+Fulgencio Garrido Navarro,Archena,5624,A,
+Josefa Sáez Polo,Archena,5624,A,
+JUAN HEREDIA CARMONA,Tenerife,5625,A,
+María José Galdeano de Haro,Cantillana,5626,A,
+Alberto Martínez Esteban,Alicante/Alacant,5631,A,
+Juan Pedro Haro Silvente,Pulpí,5632,A,
+EVA GUITART GRAU,Esparreguera,5633,A,
+JUAN GUITART GRAU,Esparreguera,5633,A,
+Eva Escobar Jiménez,Montefrío,5638,A,
+Anacleto Jesús Zapico Rodríguez,León,5639,A,
+María Begoña Zapico Rodríguez,León,5639,A,
+Oliva Benita Rodríguez Martínez,León,5639,A,
+Mercedes Campos Novo,Silleda,5641,A,
+Selene Monsálvez Fernández,València,5647,A,
+María Pilar Paya Martínez,La Roda,5650,A,
+María Remedios Paya Martínez,La Roda,5650,A,
+Rosanna Paya Martínez,La Roda,5650,A,
+Christian Manuel Paya Alonso,La Roda,5650,A,
+MARÍA DEL PILAR VALCARCEL ORTEGA,Potes,5651,A,
+MANUEL SILVERIO CRUZ VALCARCEL,Potes,5651,A,
+MARÍA DEL MAR CRUZ VALCARCEL,Potes,5651,A,
+JUAN CARLOS CRUZ VALCARCEL,Potes,5651,A,
+MARÍA REMEDIOS CRUZ VALCARCEL,Potes,5651,A,
+FERNANDO CRUZ VALCARCEL,Potes,5651,A,
+DIEGO ALFONSO CRUZ VALCARCEL,Potes,5651,A,
+ÓSCAR CRUZ VALCARCEL,Potes,5651,A,
+AGUSTÍN VALCARCEL VIÑAS,Potes,5651,A,
+MARÍA JOSEFA VALCARCEL VIÑAS,Potes,5651,A,
+MARÍA VICTORIA VALCARCEL VIÑAS,Potes,5651,A,
+VÍCTOR MANUEL VALCARCEL NORIEGA,Potes,5651,A,
+Juan Holanda Moreno,Pinos-Puente,5652,A,
+Rubén López Caño,León,5654,A,
+José Manuel López Caño,León,5654,A,
+Joaquín Vuelta Fernández,León,5654,A,
+María Luisa Castañón López,La Robla,5655,A,
+Gerardo Silvino Castañón López,La Robla,5655,A,
+Luis Javier Castañón López,La Robla,5655,A,
+María-Luisa Martínez del Angel,Ardoz,5658,A,
+Raquel de Roque Martínez,Ardoz,5658,A,
+Mónica de Roque Martínez,Ardoz,5658,A,
+Beatriz de Roque Martínez,Ardoz,5658,A,
+Jaime de Roque Martínez,Ardoz,5658,A,
 Catalina Recio Gomez,Tomares,2120,B,urgent_distress
 Alicia Rodriguez Bailo,Torres De Berrellen,3043,B,urgent_distress
-Paula González Sarabia,Zaragoza,4941,B,urgent_distress
+Ivan Raul Cabrera Cerpa,Gran Canaria,4978,B,urgent_distress
+Cristóbal Fernández Parra,Málaga,4955,B,urgent_distress
+Oscar Javier Serantes Martínez,Ferrol,4945,B,urgent_distress
+Jose Daniel Serantes Martínez,Ferrol,4945,B,urgent_distress
+Adelina Orsinda Martínez Fernandez,Ferrol,4945,B,urgent_distress
+Candelaria Carmen López Liarte,Daroca,5109,B,urgent_distress
+Joaquín Salo Cabos,Fraga,5119,B,urgent_distress
+Carmen Borrás Nogués,Carlet,4885,B,urgent_distress
+Antonio Espasa Casabona,Orotava (La),4986,B,urgent_distress
+María del Pilar Espasa Casabona,Orotava (La),4986,B,urgent_distress
+José Miguel Espasa Casabona,Orotava (La),4986,B,urgent_distress
+Maria Josefa Camarzana Dominguez,Baracaldo/Barakaldo,4969,B,urgent_distress
+Emilio Alejandro Anadón Diaus,Zaragoza,5108,B,urgent_distress
+Teresa Sansán Oliva,Almudévar,5110,B,urgent_distress
 William Clark,Vélez-Málaga,4915,B,urgent_distress
-Don José Roel Martínez,Betanzos,4874,B,urgent_distress
-Don José Antonio Lestayo Montero,Betanzos,4874,B,urgent_distress
-Doña María del Rosario Roel Pazos,Betanzos,4874,B,urgent_distress
-Doña María Luisa Pérez Lestayo,Betanzos,4874,B,urgent_distress
-Doña Mercedes Roel Martínez,Betanzos,4874,B,urgent_distress
-Don Alejandro Nogueira Lestayo,Betanzos,4874,B,urgent_distress
-Doña Eva María Lestayo Montero,Betanzos,4874,B,urgent_distress
-Don Antonio Pérez Lestayo,Betanzos,4874,B,urgent_distress
-Don José Antonio Mantiñan Lestayo,Betanzos,4874,B,urgent_distress
-Don Manuel Jacinto Vaamonde Roel,Betanzos,4874,B,urgent_distress
-Doña Yolanda Lestayo Montero,Betanzos,4874,B,urgent_distress
-Doña Montserrat Lestayo Montero,Betanzos,4874,B,urgent_distress
-Don Emilio Antonio García Lestayo,Betanzos,4874,B,urgent_distress
-Maria Bella Gonzalez Gomez,València,4883,B,urgent_distress
-Don José,Cumbres Mayores,4927,B,urgent_distress
-Doña Libertad,Cumbres Mayores,4927,B,urgent_distress
-Don Andrés,Cumbres Mayores,4927,B,urgent_distress
-Don Carmelo,Cumbres Mayores,4927,B,urgent_distress
-Don Antonio Delgado Delgado,Cumbres Mayores,4927,B,urgent_distress
+María del Mar Maroto García,Madrid - Chopera,4913,B,urgent_distress
+Susana Maroto García,Madrid - Chopera,4913,B,urgent_distress
+César Maroto García,Madrid - Chopera,4913,B,urgent_distress
+Raúl Maroto García,Madrid - Chopera,4913,B,urgent_distress
+Sofía Maroto García,Madrid - Chopera,4913,B,urgent_distress
+Juan Manuel Maroto Zubicoa,Madrid - Chopera,4913,B,urgent_distress
+José Delgado Delgado,Cumbres Mayores,4927,B,urgent_distress
+Carmelo Delgado Delgado,Cumbres Mayores,4927,B,urgent_distress
+Libertad Delgado Delgado,Cumbres Mayores,4927,B,urgent_distress
+Andrés Delgado Delgado,Cumbres Mayores,4927,B,urgent_distress
+Antonio Delgado Delgado,Cumbres Mayores,4927,B,urgent_distress
+Marta de Miguel Blanco,Madrid - Chopera,4935,B,urgent_distress
+Cristina de Miguel Blanco,Madrid - Chopera,4935,B,urgent_distress
+María Soledad Borao Bermúdez,València,4960,B,urgent_distress
+Rosa María Arencibia Pérez,Telde,4971,B,urgent_distress
+Cristo Manuel Arencibia Pérez,Telde,4971,B,urgent_distress
+María-Dolores Catalán Sanz,Madrid - Concepción,4901,B,urgent_distress
+José-Enrique Catalán Sanz,Madrid - Concepción,4901,B,urgent_distress
+Ramón-Cesáreo Catalán Sanz,Madrid - Concepción,4901,B,urgent_distress
+María-Luisa Catalán González,Madrid - Concepción,4901,B,urgent_distress
+María Isabel García Vidal,Elche/Elx,4886,B,urgent_distress
+Juan Félix Jiménez Núñez,Madrid,4899,B,high_motivation
+Carlos Díaz García,Coria Del Rio,4922,B,high_motivation
+María Elena Gamiz Díaz,Coria Del Rio,4922,B,high_motivation
+Ángel Francisco Gamiz Díaz,Coria Del Rio,4922,B,high_motivation
 Sierra Besteiro Jesus,Sevilla,2104,B,high_motivation
+Juana Navarrete Ruiz,Zaragoza,4963,B,high_motivation
+Antonio Peñuela Navarrete,Zaragoza,4963,B,high_motivation
+Juana Peñuela Navarrete,Zaragoza,4963,B,high_motivation
+Pilar Peñuela Navarrete,Zaragoza,4963,B,high_motivation
+Rosario Peñuela Navarrete,Zaragoza,4963,B,high_motivation
+Susana del Río Corral,León,4953,B,monitoring
+Baldomero del Río Sánchez,León,4953,B,monitoring
+Nuria López Blanco,León,4912,B,monitoring
+Fernando López Blanco,León,4912,B,monitoring
+Inocencio Saornil Muñoz,Gijón,4946,B,monitoring
+M D Martin Monzon,Telde,4972,B,monitoring
+F C Martin Monzon,Telde,4972,B,monitoring
+M M Martin Monzon,Telde,4972,B,monitoring
+J Martin Monzon,Telde,4972,B,monitoring
+Salvador Ricarte Monto,Torrente/Torrent,4884,B,monitoring
+Emilio Peso Martínez,Madrid - Chopera,4914,B,monitoring
+Verónica Rodrigues Fernández,León,4973,B,monitoring
 Celso Dominguez Recobert,Valencia,1843,B,monitoring
 Juan Luis Calasanz Rodriguez,Sevilla,1919,B,monitoring
 Daniya Muravieva,Sevilla,1921,B,monitoring
@@ -152,7 +540,6 @@ Reinaldo Mena Cora,Sevilla,1920,B,monitoring
 Pepita Segalà Saperas,Tarragona,1967,B,monitoring
 Secundino Rodríguez Macho,Tarragona,1968,B,monitoring
 Manel Ferrer Lucas,Tarragona,1969,B,monitoring
-Ana María Macho Nieto,Valencia,1834,B,monitoring
 Maria Aida Caneiro Pereira,Sevilla,1907,B,monitoring
 Dolores Perea Gonzalez,Sevilla,1911,B,monitoring
 Jose Martin Escalona,Sevilla,1912,B,monitoring
@@ -519,23 +906,56 @@ Antonio Incertis Garcia,Valencia,2062,B,monitoring
 Luis Requena Parrilla,Valencia,2063,B,monitoring
 Luis Torregrosa Ramirez,Valencia,2064,B,monitoring
 Pedro Silvestre Domingo,Valencia,2065,B,monitoring
+Jose Antonio Simo Crespo,Valencia,2082,B,monitoring
 Fernando Ubeda Lillo,Villena,2094,B,monitoring
 Francisca Perez Diaz,Villena,2095,B,monitoring
+Manuel Perdigones Palomo,Tomares,2100,B,monitoring
+Emilia Dominguez Galvan,Sevilla,2101,B,monitoring
 Maria Magdalena Naranjo Naranjo,Constantina,2102,B,monitoring
+Juan Pernia Pernia,Alcala De Guadaira,2103,B,monitoring
 Guerrero Valle Antonio,Sevilla,2105,B,monitoring
 Dominguez Galvan Emilia,Sevilla,2106,B,monitoring
 Garcia Sanchez Araceli,Sevilla,2107,B,monitoring
 Gonzalez Gonzalez Ricardo,Sevilla,2108,B,monitoring
+Manuel Romero Melero,Marchena,2110,B,monitoring
 Lopez Patino Jhon Carlos,Sevilla,2111,B,monitoring
 Manuel Pariente Minero,Tomares,2112,B,monitoring
 Maria Del Carmen Esteban Rios,Tomares,2113,B,monitoring
 Vela Rey Francisco,Sevilla,2114,B,monitoring
 Madera Menor Joaquin,Sevilla,2115,B,monitoring
+Carmen Rojilla Gomez,Tomares,2117,B,monitoring
+Ana Guerrero Garcia,Sevilla,2121,B,monitoring
+Enrique Correa Alvarez,Carmona,2132,B,monitoring
+Fuensanta Macias Moya,Antequera,2137,B,monitoring
+Francisco Jose Soler Espinosa,Malaga,2138,B,monitoring
 Carlos Rafael Gutierrez Obeso,Malaga,2154,B,monitoring
 Encarnacion Valverde Capacete,Malaga,2155,B,monitoring
 Ana Tambri Almagro,Malaga,2163,B,monitoring
 Consuelo Monso Moreno,Malaga,2167,B,monitoring
 Maria Teresa Gonzalez Araujo,Malaga,2168,B,monitoring
+Jose Rando Soto,Rincon De La Victoria,2176,B,monitoring
+Agustin Romera Padilla,Velez Malaga,2180,B,monitoring
+Maria Martin Gomez,Alcantarilla,2197,B,monitoring
+Jose Campoy Espin,Totana,2203,B,monitoring
+Esteban Valenzuela Maldonado,Totana,2215,B,monitoring
+Cadia Andreo Lopez,Totana,2218,B,monitoring
+Isidoro Martinez Canovas,Totana,2222,B,monitoring
+Fernando Postigo Gomez,El Puerto De Santa Maria,2227,B,monitoring
+Milagrosa Sicilia Romero,Jerez De La Frontera,2228,B,monitoring
+Maria Alba Perez,La Linea De La Concepcion,2230,B,monitoring
+Maria De Los Milagros Camacho Aucha,El Puerto De Santa Maria,2231,B,monitoring
+Juan Manuel Palma Arevalo,El Puerto De Santa Maria,2233,B,monitoring
+Diego Turrillo Prieto,Los Barrios,2235,B,monitoring
+Mercedes Ortega Rios,Jerez De La Frontera,2237,B,monitoring
+Manuel Fresno Bravo,Cadiz,2240,B,monitoring
+Sebastian Barrera Garcia,Arcos De La Frontera,2242,B,monitoring
+Fuensanta Puertas Rojo,La Linea De La Concepcion,2243,B,monitoring
+Ana Maria Mendoza Arellano,Jerez De La Frontera,2247,B,monitoring
+Jose Maria Salguero Mateos,Grazalema,2251,B,monitoring
+Rafael Bejarano Escala,Jerez De La Frontera,2252,B,monitoring
+Cristobal Perez Correa,El Puerto De Santa Maria,2254,B,monitoring
+Maria Antonia Lopez Mariscal,Paterna De Rivera,2255,B,monitoring
+Enrique Luis Sanchez De Miguel,Jerez De La Frontera,2256,B,monitoring
 Maria Luz Garcia Lopez,Coana,2263,B,monitoring
 Pedro Ceballos Carcoba,Villaviciosa,2264,B,monitoring
 Jose Maria Camblor Cueto,Langreo,2265,B,monitoring
@@ -767,7 +1187,6 @@ Maria Josefa Gomez Calderon,Irun,2491,B,monitoring
 Ma Carmen Goiburu Lasa,Ordizia,2492,B,monitoring
 Lilia Martin Garcia,Ordizia,2493,B,monitoring
 Rosina Elezgaray Eulieta,Mutriku,2494,B,monitoring
-Ma Encarnaacion Nieto Curto,Irun,2495,B,monitoring
 Javier Maria Txoperena Altamira,Donostia San Sebastian,2496,B,monitoring
 Patxi Blanco Gonzalo,Donostia San Sebastian,2497,B,monitoring
 Axun Zinkunegi Elustondo,Azpeitia,2498,B,monitoring
@@ -779,7 +1198,6 @@ Andres Camio Garcia,Irun,2503,B,monitoring
 Ana Mari Areso Arrieta,Hernani,2504,B,monitoring
 Luis Dominguez Gomez,Irun,2505,B,monitoring
 Mariano Salas Usieto,Irun,2506,B,monitoring
-Maria Encarnacion Nieto Curto,Irun,2507,B,monitoring
 Hortensia Lobato Garcia,Donostia San Sebastian,2508,B,monitoring
 Martin Luis Lasa Urteaga,Beasain,2509,B,monitoring
 Maria Xokorro Iparragirre Almandoz,Hernani,2510,B,monitoring
@@ -805,24 +1223,22 @@ Hilario Utrilla Romero,Las Ventas Con Pena Aguilera,2529,B,monitoring
 Yliana Viera Novo,Sesena,2530,B,monitoring
 Francisca Redondo Algaba,Santa Cruz De Retamar,2531,B,monitoring
 Josefa Gil Lorenzo,Valencia,2545,B,monitoring
+Antonio Guerrero Valle,Sevilla,2546,B,monitoring
 Angel Mata Tineo,Malaga,2141,B,monitoring
 Antonio Fernandez Martos,Malaga,2147,B,monitoring
 Maria Adelina Da Silva Fernandez,Las Lagunas De Mijas,2148,B,monitoring
 Juan Gijon Molina,Las Lagunas De Mijas,2149,B,monitoring
 Dolores Castilla Perez,Malaga,2156,B,monitoring
 Maria Dolores Mata Berrocal,Malaga,2157,B,monitoring
+María-Elena ALBARRAN GOMEZ,Madrid - Concepción,4984,B,monitoring
+María-Belén ALBARRAN GOMEZ,Madrid - Concepción,4984,B,monitoring
+Montserrat ALBARRAN GOMEZ,Madrid - Concepción,4984,B,monitoring
 Jose Alfredo Gonzalez Oistersek,Las-Palmas,5090,B,monitoring
 Josefa Reinoso Torres,Montilla,3213,B,monitoring
 Jose Maria Lopez De Gracia,Soria,5077,B,monitoring
 Ramon Vives Farré,Tarragona,5035,B,monitoring
 Mertxe Arbelaiz Baleztena,Navarra,5042,B,monitoring
 Julian Carlos Perez De La Puerta,Las-Palmas,5079,B,monitoring
-Maria Aznar Sevil,Zaragoza,4988,B,monitoring
-Gregorio Andres Yebes,Zaragoza,4990,B,monitoring
-Marta Ramon Lainez,Zaragoza,4991,B,monitoring
-Angeles Martinez Casamian,Zaragoza,4992,B,monitoring
-Antonia Beamonte Lopez,Zaragoza,4993,B,monitoring
-Josefina Carod Artal,Zaragoza,4995,B,monitoring
 Dolores Inglan Claver,Huesca,4997,B,monitoring
 Antonio Leiva Berbel,Huesca,4998,B,monitoring
 Francisca Suñer Suñer,Teruel,5001,B,monitoring
@@ -859,11 +1275,10 @@ Carmen Ferriz Gonzalez,Zaragoza,3048,B,monitoring
 Rafael Rejas Argudo,Zaragoza,3054,B,monitoring
 Consolacion Aguilar Gorria,Zaragoza,3055,B,monitoring
 Ignacio Juan Granado Bauluz,Zaragoza,3056,B,monitoring
+Asun Algar Solís,Tarragona,3192,B,monitoring
 Pepita Guasch Suñé,Tarragona,3196,B,monitoring
 Benito Adell Pinol,Tortosa,3199,B,monitoring
 Manuel Hidalgo Trapero,Montilla,3214,B,monitoring
-Josefa Redondo Martin,Zaragoza,4989,B,monitoring
-Laura Cruz Estella,Zaragoza,4994,B,monitoring
 Carmen Martinez Montero,Huesca,4996,B,monitoring
 Rosa Esteve Conesa,Valencia,5010,B,monitoring
 Carlos Vidal Crespo,Valencia,5011,B,monitoring
@@ -903,6 +1318,10 @@ Luisa Marina Fernandez,Reus,3197,B,monitoring
 Maria Luisa Espinosa Moreno,Tarragona,3198,B,monitoring
 Jose Joaquin Faura Lopez,Salou,3200,B,monitoring
 Eustaquio Garcia Lecuona,Irun,3244,B,monitoring
+Baudilia Blanco Garcia,Palencia,4415,B,monitoring
+Jesús Tejeda Cebrián,Palencia,4417,B,monitoring
+Angela Soto Sendino,Palencia,4418,B,monitoring
+Luz Marina Santana Estevez,Las-Palmas,4442,B,monitoring
 Sergio Perez De La Cruz Muñoz,Teruel,4999,B,monitoring
 Julian Falo Fandos,Teruel,5000,B,monitoring
 Dolores Climent Pérez,Valencia,5003,B,monitoring
@@ -940,9 +1359,23 @@ Julia Pilar Gonzalez Miguel,Zaragoza,3040,B,monitoring
 Maria Dolores Naval Navarro,Zaragoza,3041,B,monitoring
 Antonio Albero Sancho,Zaragoza,3042,B,monitoring
 Juan Ramon Silvestre Marca Molina,Zaragoza,3044,B,monitoring
+María Romero Sánchez,Tarragona,3189,B,monitoring
+Rosa Farre Roca,Tarragona,3190,B,monitoring
+Rosendo Gamez Ortega,Tarragona,3191,B,monitoring
 Javier Albisu Lecuona,Irun,3245,B,monitoring
 Fausto Larred Tejero,Hernani,3261,B,monitoring
+María Magdalena Alamayona Martínez,La-Rioja,4368,B,monitoring
+Maria Del Carmen Reguero Bueno,Guadalajara,4376,B,monitoring
+Julio Yague Martinez,Guadalajara,4377,B,monitoring
+Maria Carmen Faura Gomez,Guadalajara,4378,B,monitoring
+Angel Cantera Avila,Palencia,4411,B,monitoring
+Angela Frechoso Herrero,Palencia,4412,B,monitoring
+Jesus Maria Zapatero Torio,Palencia,4414,B,monitoring
+Felicitas Barca Ajenjo,Soria,4422,B,monitoring
+Vanesa Salguero  Hawkins,Las-Palmas,4438,B,monitoring
+Antonio Hernandez Guerra,Las-Palmas,4440,B,monitoring
 Maximino Lorenzo Franco Medina,Las-Palmas,4441,B,monitoring
+Fernando Palacios Iturburuaga,Colmenar Viejo,4900,B,monitoring
 Francisco Emilio Zuazu Martinez,Valencia,5002,B,monitoring
 Maria Fernanda Fernandez Lopez,Sevilla,5020,B,monitoring
 Manuel Gonzalez Gallego,Sevilla,5021,B,monitoring
@@ -960,6 +1393,7 @@ Inés Corro Montero,Valencia,2777,B,monitoring
 Martín Sanchez Gallardo,Valencia,2778,B,monitoring
 Maria Angeles Lobaton Laz,Cadiz,2949,B,monitoring
 Antonia Jimenez Delgado,Cadiz,2954,B,monitoring
+Antonio Sarralde Roca,Zaragoza,3033,B,monitoring
 Jose Luis Flores Mene,Zaragoza,3037,B,monitoring
 Roi Vazquez Faro,Vigo,3100,B,monitoring
 Francelina Perez Rodriguez,Ponteareas,3101,B,monitoring
@@ -976,7 +1410,10 @@ Jose Antonio Sanchez Sosa,Sevilla,3455,B,monitoring
 Jose Manuel Hidalgo Torres,Sevilla,3456,B,monitoring
 Lucas Daparte Jaume,Sevilla,3457,B,monitoring
 Otilia Maria Luz Sierra Ardines,Cantabria,3471,B,monitoring
+Olvido Paniagua Llanos,Cantabria,3472,B,monitoring
 Kepa Gabancho Sierra,Cantabria,3473,B,monitoring
+Antonio Fernandez Dueñas,Burgos,3492,B,monitoring
+María De Los Ángeles López Rodríguez,La-Rioja,3513,B,monitoring
 Jose Luis Gil Solano,Guadalajara,3542,B,monitoring
 Gregorio De Las Heras Gonzalez,Zamora,3548,B,monitoring
 Julian Angel Garcia Barbon,Zamora,3549,B,monitoring
@@ -1016,10 +1453,15 @@ Anunciacion Lozano Gallego,Zamora,3547,B,monitoring
 Miguel Ferrer Martinez,Madrid,2567,B,monitoring
 Francisco Zarzuela Cabello,Madrid,2569,B,monitoring
 Santiago Dominguez Ontoria,Madrid,2570,B,monitoring
+Maria Del Carmen Palacios Tercero,Valencia,2624,B,monitoring
+Claudio Antonio Marti Sanchez,Valencia,2625,B,monitoring
 Manuela Galván Vila,Valencia,2627,B,monitoring
+Evaristo Pardos Lagunas,Zaragoza,2635,B,monitoring
+Encarnacion Morillo Guardeño,Zaragoza,2637,B,monitoring
 Pilar Rubio Navarro,Zaragoza,2638,B,monitoring
 Rocio Roldan Ruiz,Sevilla,2658,B,monitoring
 Manuel Gomez Herrera,Sevilla,2659,B,monitoring
+Jesus Maria Barriga Villar,Cadiz,2664,B,monitoring
 Maria Dolores Diaz Garcia,Oviedo,3008,B,monitoring
 Felipe Fernandez Menendez,Oviedo,3009,B,monitoring
 Jose Manuel Lorenzo Fernandez,Oviedo,3012,B,monitoring
@@ -1055,6 +1497,7 @@ Josep Maria Oliva Boher,Barcelona,2577,B,monitoring
 Pedro Martínez Enciso,Barcelona,2580,B,monitoring
 Carmina Mompó Briones,Barcelona,2586,B,monitoring
 Angelina Garcia Zafrilla,Barcelona,2588,B,monitoring
+Francisco Ramírez Villena,Valencia,2623,B,monitoring
 Jean-Claude Adam Armanini,Valencia,2626,B,monitoring
 Antonio Orga Torcal,Zaragoza,2629,B,monitoring
 Miguel Sanz Bagües,Zaragoza,2639,B,monitoring
@@ -1069,6 +1512,7 @@ Enrique De Alba Mauri,Sevilla,2654,B,monitoring
 Matilde De La Oliva Sanchez,Sevilla,2655,B,monitoring
 Mariano Perez Garcia,Sevilla,2656,B,monitoring
 Angel Segura Baez,Sevilla,2657,B,monitoring
+Maria Dolores Olozabal Bruzon,Cadiz,2663,B,monitoring
 America Elvira Garcia Suarez,Aviles,3010,B,monitoring
 Maria Jesus Melijosa Carriles,Llanes,3011,B,monitoring
 Estefania Fernandez Perez,Langreo,3013,B,monitoring
@@ -1079,8 +1523,8 @@ Julia Gonzalez Longres,Baiona,3074,B,monitoring
 Maria Teresa Garcia Perez,Vigo,3075,B,monitoring
 Manuel Bouzada Maneiro,Vilanova De Arousa,3077,B,monitoring
 Isidro Brunet Farrera,Tarragona,3467,B,monitoring
+Juan Mari Errotaberea Sanchotena,Navarra,3468,B,monitoring
 Luis Miguel Gago Gonzalez,Zamora,3543,B,monitoring
-Agatoclio Baron Batanero,Zaragoza,1716,B,monitoring
 Nuria Zamarriego Garcia,Madrid,2554,B,monitoring
 Estefania Garcia Fernandez,Madrid,2555,B,monitoring
 Isidro Luque Lorenzo,Madrid,2556,B,monitoring
@@ -1100,11 +1544,13 @@ Carme Ferrer Pitarch,Barcelona,2582,B,monitoring
 Serafín Espinosa Terres,Barcelona,2583,B,monitoring
 Victoria Santos Merino,Barcelona,2584,B,monitoring
 Pepa Caballero Doblas,Barcelona,2587,B,monitoring
+Dolores Martin Salas,Sevilla,2640,B,monitoring
 Ana Mercedes Carrasco Martel,Sevilla,2641,B,monitoring
 Jose Joaquin Gandul Navarro,Sevilla,2642,B,monitoring
 Gema Mercedes Garcia Martinez,Sevilla,2643,B,monitoring
 Natividad Gil Garrido,Sevilla,2645,B,monitoring
 Fernando Sanchez Cardeñosa,Sevilla,2646,B,monitoring
+Francisco Melendez Prada,Sevilla,2647,B,monitoring
 Maria Petra Gomez Sanchez,Mostoles,2665,B,monitoring
 Santiago Garcia De Vinuesa Gardoqui,Madrid,2666,B,monitoring
 Lucrecia Caridad Viana Armenteros,Madrid,2667,B,monitoring
@@ -1319,7 +1765,25 @@ Jose Manuel De Tomas Intriago,Llanes,3003,B,monitoring
 Amparo Fernandez Fernandez,Oviedo,3004,B,monitoring
 Manuel Casielles Costales,Gijon,3005,B,monitoring
 Maria De Los Dolores Diaz Garcia,Oviedo,3006,B,monitoring
+Emma Gonzalez Gonzalez,Mieres,3007,B,monitoring
+Luis Alberto Villarrocha Marco,Zaragoza,3036,B,monitoring
+Abundio Esteras Esteras,Zaragoza,3053,B,monitoring
+Paulino Castro Fernandez,Vigo,3076,B,monitoring
+Rosa Alvarez Caride,Vigo,3078,B,monitoring
+Maria Luisa Blanco Prado,Vigo,3079,B,monitoring
+Angelina Gonzalez Rodriguez,O Porrino,3080,B,monitoring
+Maria Del Carmen Otero Marino,Lalin,3089,B,monitoring
+Jose Manuel Berreco Rodino,Sanxenxo,3093,B,monitoring
 Juan Lusquinos Lusquinos,Arcade Soutomaior,3098,B,monitoring
+Maria Evangelina Beltran Casado,Vigo,3104,B,monitoring
+Aurelia Martinez Mesas,Baza,3135,B,monitoring
+Angeles Fernandez Vilchez,Granada,3137,B,monitoring
+David Fernandez Azor,Zujar,3141,B,monitoring
+Laura Salguero Fajardo,Granada,3142,B,monitoring
+Tomasa Medina Campos,Granada,3148,B,monitoring
+Purificacion Cerrillo Garrido,Donostia San Sebastian,3237,B,monitoring
+Maria Trinidad Galarraga Telleria,Zarautz,3243,B,monitoring
+Antonia Corrochano Agudo,Illescas,3271,B,monitoring
 Azucena Sorrosal Rodes,Zaragoza,3347,B,monitoring
 Maria Del Canto Rosete Sanchez,Madrid,3375,B,monitoring
 Casimiro Vioque Pastor,Madrid,3379,B,monitoring
@@ -1328,18 +1792,28 @@ Joaquim Miquel Rigau,Barcelona,3411,B,monitoring
 Núria Ramirez De La Iglesia,Barcelona,3419,B,monitoring
 Daniel Artero Nin,Barcelona,3420,B,monitoring
 Maria Del Pilar Esteban Calatrava,Barcelona,3421,B,monitoring
+Maria Dolores Somosierra Perez,Sevilla,3441,B,monitoring
 Maria Soledad Ruiz De Arechavaleta Ullivarri,Alava,3517,B,monitoring
 Eutilio Robles Diez,Zamora,3544,B,monitoring
+Carlos Sangüesa Bousquet,Zaragoza,1716,B,monitoring
 Jose Vera Tamayo,Zaragoza,3349,B,monitoring
+Ramon Garcia Valdes Cifuentes,Madrid,3357,B,monitoring
+Maria Victoria Fernandez Martin,Madrid,3361,B,monitoring
+Maria De Los Dolores Angelina Moñino,Madrid,3363,B,monitoring
+Demetrio Romero Tardío,Madrid,3365,B,monitoring
+Manuel Sanchez Gallardo,Madrid,3367,B,monitoring
 Alberto Lora Villa,Madrid,3368,B,monitoring
 Maria Teresa Agramon Bello,Madrid,3369,B,monitoring
+Isidro Parrilla Huerta,Madrid,3371,B,monitoring
 Manuel Antonio Chia De Acuña,Madrid,3372,B,monitoring
 Juana Fraguas Lopez,Madrid,3374,B,monitoring
 Maria Carmen Carmena Hernandez,Madrid,3376,B,monitoring
 Basilisa Garzon Yañez,Madrid,3377,B,monitoring
 Jose Sanchez Lopez,Madrid,3380,B,monitoring
+Carme Caimary Calatayud,Barcelona,3390,B,monitoring
 Jordi Ruiz Ezpeleta,Barcelona,3395,B,monitoring
 Blay Bort Traver,Barcelona,3397,B,monitoring
+Enric Hohenhorst Roca,Barcelona,3405,B,monitoring
 Manolo Perez Penin,Barcelona,3407,B,monitoring
 Jaume Valls Prats,Barcelona,3410,B,monitoring
 Ángel Leal Jurado,Barcelona,3412,B,monitoring
@@ -1349,87 +1823,33 @@ Rita Peiró Milanés,Barcelona,3415,B,monitoring
 Manolita Coranti Aguiló,Barcelona,3416,B,monitoring
 Montserrat Gil Martínez,Barcelona,3417,B,monitoring
 Manuel Garcia Aguilera,Barcelona,3418,B,monitoring
+Carmen Tortolero Roldan,Sevilla,3443,B,monitoring
+Rafael Cordero Jimenez,Sevilla,3444,B,monitoring
 Juan Manuel Trueba Arenal,Burgos,3488,B,monitoring
-Rosa Delia Sanchez Hernandez,Las-Palmas,3581,B,monitoring
-Elena Medina Arribas,Madrid,3366,B,monitoring
+Maria Luisa Merino Esteban,Madrid,3360,B,monitoring
+Antonia Serrano Parra,Madrid,3362,B,monitoring
 Luis Antonio Francescutti Saccone,Madrid,3370,B,monitoring
 Raquel Silva Lecointe,Madrid,3373,B,monitoring
 Maria Jesus Jusdado Gomez,Madrid,3378,B,monitoring
+Vicenta Blanco Lozano,Barcelona,3391,B,monitoring
+Conchita López Zamorano,Barcelona,3393,B,monitoring
+Genís Coll Piferrer,Barcelona,3394,B,monitoring
+Miguel Prim Gorrochategui,Barcelona,3396,B,monitoring
 José Gómez Arjona,Barcelona,3398,B,monitoring
+Mari Carmen Gil Díaz,Barcelona,3399,B,monitoring
+Raimundo Velilla Casas,Barcelona,3400,B,monitoring
+Casimiro Manzanares Olmos,Barcelona,3401,B,monitoring
 Esperanza Andrés Palacios,Barcelona,3402,B,monitoring
 Lluís Mir Prats,Barcelona,3403,B,monitoring
-Ramon Palou Civit,Barcelona,3404,B,monitoring
+Ramon Palou Civit,Tarragona,3404,B,monitoring
+Francisca Mora Martinez,Barcelona,3406,B,monitoring
 Josefina Jiménez Angorrilla,Barcelona,3408,B,monitoring
-Carlos Garcia Garcia,La-Rioja,3494,B,monitoring
-Jose Antonio Simo Crespo,Valencia,2082,B,monitoring
-Manuel Perdigones Palomo,Tomares,2100,B,monitoring
-Emilia Dominguez Galvan,Sevilla,2101,B,monitoring
-Juan Pernia Pernia,Alcala De Guadaira,2103,B,monitoring
-Manuel Romero Melero,Marchena,2110,B,monitoring
-Carmen Rojilla Gomez,Tomares,2117,B,monitoring
-Ana Guerrero Garcia,Sevilla,2121,B,monitoring
-Enrique Correa Alvarez,Carmona,2132,B,monitoring
-Fuensanta Macias Moya,Antequera,2137,B,monitoring
-Francisco Jose Soler Espinosa,Malaga,2138,B,monitoring
-Jonathan Isaias Ramirez Leon,San Pedro Alcantara,2150,B,monitoring
-Jose Rando Soto,Rincon De La Victoria,2176,B,monitoring
-Agustin Romera Padilla,Velez Malaga,2180,B,monitoring
-Maria Martin Gomez,Alcantarilla,2197,B,monitoring
-Jose Campoy Espin,Totana,2203,B,monitoring
-Esteban Valenzuela Maldonado,Totana,2215,B,monitoring
-Cadia Andreo Lopez,Totana,2218,B,monitoring
-Isidoro Martinez Canovas,Totana,2222,B,monitoring
-Fernando Postigo Gomez,El Puerto De Santa Maria,2227,B,monitoring
-Milagrosa Sicilia Romero,Jerez De La Frontera,2228,B,monitoring
-Maria Alba Perez,La Linea De La Concepcion,2230,B,monitoring
-Maria De Los Milagros Camacho Aucha,El Puerto De Santa Maria,2231,B,monitoring
-Juan Manuel Palma Arevalo,El Puerto De Santa Maria,2233,B,monitoring
-Diego Turrillo Prieto,Los Barrios,2235,B,monitoring
-Mercedes Ortega Rios,Jerez De La Frontera,2237,B,monitoring
-Manuel Fresno Bravo,Cadiz,2240,B,monitoring
-Sebastian Barrera Garcia,Arcos De La Frontera,2242,B,monitoring
-Fuensanta Puertas Rojo,La Linea De La Concepcion,2243,B,monitoring
-Ana Maria Mendoza Arellano,Jerez De La Frontera,2247,B,monitoring
-Jose Maria Salguero Mateos,Grazalema,2251,B,monitoring
-Rafael Bejarano Escala,Jerez De La Frontera,2252,B,monitoring
-Cristobal Perez Correa,El Puerto De Santa Maria,2254,B,monitoring
-Maria Antonia Lopez Mariscal,Paterna De Rivera,2255,B,monitoring
-Enrique Luis Sanchez De Miguel,Jerez De La Frontera,2256,B,monitoring
-Antonio Guerrero Valle,Sevilla,2546,B,monitoring
-Fernando Poveda Talavera,Cullera,2617,B,monitoring
-Jose Perez Braceli,Montserrat,2618,B,monitoring
-Josefa Barrachina Alemany,Valencia,2619,B,monitoring
-Jose Luis Pozo Gordillo,Aldaia,2620,B,monitoring
-Sergio Ortiz Hernandez,Port De Sagunt,2621,B,monitoring
-Dolores Orts Cerda,Valencia,2622,B,monitoring
-Francisco Ramirez Villena,Valencia,2623,B,monitoring
-Maria Del Carmen Palacios Tercero,Betera,2624,B,monitoring
-Claudio Antonio Marti Sanchez,Xirivella,2625,B,monitoring
-Santiago Gonzalvo Franco,Caspe,2628,B,monitoring
-Maria De Los Angeles Lopez Llorente,Zaragoza,2630,B,monitoring
-Francisco Ortega Bueno,Alagon,2631,B,monitoring
-Matias Mateo Gracia,Zaragoza,2632,B,monitoring
-Maruja Fuertes Tomas,Zaragoza,2633,B,monitoring
-Maria Sierra Berges,Zaragoza,2634,B,monitoring
-Evaristo Pardos Lagunas,Zaragoza,2635,B,monitoring
-Angeles Abos Garcia,Gelsa,2636,B,monitoring
-Encarnacion Morillo Guardeno,Zaragoza,2637,B,monitoring
-Dolores Martin Salas,Alcala De Guadaira,2640,B,monitoring
-Francisco Melendez Prada,Alcala De Guadaira,2647,B,monitoring
-Mercedes Cordones Garcia,San Fernando,2660,B,monitoring
-Jeronima Ramos Perez,Jerez De La Frontera,2661,B,monitoring
-Josefa Campos Pavon,San Fernando,2662,B,monitoring
-Maria Dolores Olozabal Bruzon,Cadiz,2663,B,monitoring
-Jesus Maria Barriga Villar,San Fernando,2664,B,monitoring
-Angel Ferreras Zapico,Valencia,2744,B,monitoring
-Juan Gimeno Marquez,Valencia,2745,B,monitoring
-Francisco Rosello Giner,Valencia,2746,B,monitoring
-Encarnacion Garcia Gonzalvo,Valencia,2747,B,monitoring
-Ramon Domenech Domenech,Valencia,2748,B,monitoring
-John Knight,Valencia,2749,B,monitoring
-Purificacion Martinez Garcia,Mislata,2750,B,monitoring
-Miguel Angel Abalegre,Valencia,2751,B,monitoring
-Jesus Gomez Rebollo,Valencia,2752,B,monitoring
+Isidoro Rodriguez Sanchez,Madrid,5136,B,monitoring
+Jose Isus Vidalo,Barcelona,5146,B,monitoring
+Armando Iborra Gastaldo,Barcelona,5160,B,monitoring
+Joan Escofet Pujadó,Barcelona,5162,B,monitoring
+Antonia Rosales Fernandez,Barcelona,5165,B,monitoring
+Bartomeu Dalmau Borrull,Tarragona,5189,B,monitoring
 Maria Julia Monterde Garcia,Valencia,2753,B,monitoring
 Lucia Romero Vidal,Valencia,2754,B,monitoring
 Melchora Teresa Quilez Romero,Valencia,2755,B,monitoring
@@ -1437,17 +1857,10 @@ Dolores Font Perez,Valencia,2756,B,monitoring
 Salvadora Vila Vila,Catarroja,2757,B,monitoring
 Francisco Caro Barrios,Quart De Poblet,2758,B,monitoring
 Jose Manuel Lopez Sebastian,Burjassot,2759,B,monitoring
-Maruja Rios Olcina,Villena,2785,B,monitoring
-Carmen Marin Vilaplana,Villena,2786,B,monitoring
-Pedro Ibanez Milan,Villena,2787,B,monitoring
 Enrique Perez Diaz,Dos Hermanas,2789,B,monitoring
 Francisco Delgado Torres,Ecija,2790,B,monitoring
 Maria Fernanda Borja Lopez,Ecija,2791,B,monitoring
 Cristina Herrera Millan,Alcala De Guadaira,2792,B,monitoring
-Martin Joseph Mccafferty,Las Lagunas De Mijas,2823,B,monitoring
-Silvia Ponce Sanchez,Malaga,2824,B,monitoring
-Maria Gonzalez Jimenez,Antequera,2825,B,monitoring
-Victoria Ruiz Ramirez,Estepona,2826,B,monitoring
 Manuel Saborido Leon,Estepona,2827,B,monitoring
 Lucia Francisca Ospina Ortiz,Estepona,2828,B,monitoring
 Antonia Gutierrez Postigo,Malaga,2829,B,monitoring
@@ -1460,55 +1873,13 @@ Jesus Antonio Ropero Gomez,Malaga,2835,B,monitoring
 Jose Pajares Medina,Las Lagunas De Mijas,2836,B,monitoring
 Manuel Lara Velez,Antequera,2837,B,monitoring
 Francisco Posadas Bautista,Malaga,2838,B,monitoring
-Vicente Del Vas Lopez,Totana,2873,B,monitoring
-Jose Garnes Munoz,Murcia,2874,B,monitoring
-Josefa Ingles Garcia,Cartagena,2875,B,monitoring
-Maria Del Carmen Lopez Ruiz,Cartagena,2876,B,monitoring
-Mariana Garcia Belmonte,Cartagena,2877,B,monitoring
-Maria Consuelo Llopis Calabuig,Cartagena,2878,B,monitoring
-Pepita Pagan Tudela,Totana,2879,B,monitoring
-Carmen Trias Rueda,Cartagena,2880,B,monitoring
-Rafael Paredes Espada,Cartagena,2881,B,monitoring
-Candida Conesa Valero,Cartagena,2882,B,monitoring
-Mateo Rodriguez Andreo,Totana,2883,B,monitoring
-Juana Gonzalez Ardil,Cartagena,2884,B,monitoring
-Maria Del Carmen Yusty Rios,Cartagena,2885,B,monitoring
-Concepcion Morales Lopez,Murcia,2886,B,monitoring
-Maria Fuensanta Lacal Nicolas,Murcia,2887,B,monitoring
-Antonia Alarcon Gil,Murcia,2888,B,monitoring
-Antonio Molina Alegria,Murcia,2889,B,monitoring
-Juan Manuel Perez Rodriguez,Murcia,2890,B,monitoring
-Antonio Martinez Guerrero,Cartagena,2892,B,monitoring
-Andres Martinez Garcia,Cartagena,2893,B,monitoring
-Pedro Belando Corbalan,Murcia,2894,B,monitoring
-Ruperto Segura Estudillo,Los Dolores,2895,B,monitoring
-Maria Elisa Gonzalez Ricoy,Cartagena,2896,B,monitoring
-Ana Cervantes Hernandez,Cartagena,2897,B,monitoring
-Ana Mante Moreno,Cartagena,2898,B,monitoring
-Juan Antonio Molinero Granado,Cartagena,2899,B,monitoring
-Angustias Aurora Ruiz Navarro,Mazarron,2900,B,monitoring
-Pedro Segura Nieto,Cartagena,2901,B,monitoring
-Leandro Gurruchaga Manzanares,Cartagena,2902,B,monitoring
-Salvador Cegarra Martinez,Cartagena,2903,B,monitoring
-Elvira Masutier Diaz,Cartagena,2904,B,monitoring
 Jesus Del Rio Garcia,Murcia,2905,B,monitoring
 Jesus Ddel Rio Garcia,Murcia,2906,B,monitoring
-Jose Azorin Martinez,Cartagena,2907,B,monitoring
 Jose Aznar Garcia,Cartagena,2908,B,monitoring
 Magdalena Plane Garcia,Cartagena,2909,B,monitoring
 Rafaela Jorquera Ortiz,Cartagena,2910,B,monitoring
 Jose Miranda Soto,Cartagena,2918,B,monitoring
 Julia Lopez Cano,Cartagena,2919,B,monitoring
-Jose Luis Sanchez De Lamadrid Sandoval,El Puerto De Santa Maria,2921,B,monitoring
-Carmen Mateos Baez,Jerez De La Frontera,2922,B,monitoring
-Maria Teresa Sobaler Guerrero,Jerez De La Frontera,2923,B,monitoring
-Ana Maria Lacave Ruiz Tagles,Cadiz,2924,B,monitoring
-Jesus Salvador Ortega Ortega,Prado Del Rey,2925,B,monitoring
-Candida Oyola Garduno,Jerez De La Frontera,2926,B,monitoring
-Rafael Couso Arena,Cadiz,2927,B,monitoring
-Manuela Lobato Acosta,San Fernando,2928,B,monitoring
-Antonio Bueno Hernandez,Jerez De La Frontera,2929,B,monitoring
-Jose Maria Ibanez De La Rosa,Jerez De La Frontera,2930,B,monitoring
 Juan Martin Jimenez,Jerez De La Frontera,2931,B,monitoring
 Antonio Garcia Ramirez,San Fernando,2932,B,monitoring
 Catalina Aragon Flores,Chiclana De La Frontera,2933,B,monitoring
@@ -1522,32 +1893,13 @@ Jose Antonio Gonzalez Fernandez,Grado,2966,B,monitoring
 Jose Ignacio Garcia De Las Heras,Oviedo,2967,B,monitoring
 Enrique Gonzalez Gonzalez,Gijon,2968,B,monitoring
 Maria Estrella Moreira Perez,Gijon,2969,B,monitoring
-Emma Gonzalez Gonzalez,Mieres,3007,B,monitoring
-Paquita Andres Andres,Zaragoza,3016,B,monitoring
-Francisca Andres Andres,Zaragoza,3017,B,monitoring
-Luis Javier Nadal Matamoros,Zaragoza,3018,B,monitoring
-Maria Esmeralda Rodriguez Loma Osorio,Zaragoza,3019,B,monitoring
-Monserrat Albalad Termes,Zaragoza,3020,B,monitoring
-Maria Gloria Borja Duval,Zaragoza,3021,B,monitoring
-Pilar Costan Ecer,Zaragoza,3022,B,monitoring
-Maria Del Carmen Royo Laborda,Zaragoza,3023,B,monitoring
-Emiliano Garcia Claveria,Zaragoza,3024,B,monitoring
-Miguel Angel Hernandez Benito,Zaragoza,3025,B,monitoring
-Josefa Antonia Cabanillas Alejo,Zaragoza,3026,B,monitoring
-Josefa Fuertes Tomas,Zaragoza,3027,B,monitoring
-Jose Suarez Lucia,Zaragoza,3028,B,monitoring
 Mercedes Alejandra Aparicio Laporta,Zaragoza,3029,B,monitoring
 Andres Mateos Sanchez,Zaragoza,3030,B,monitoring
 Carmen Rober Barrena,Zaragoza,3031,B,monitoring
 Eliseo Amatriain Castellano,Zaragoza,3032,B,monitoring
-Antonio Sarralde Roca,Zaragoza,3033,B,monitoring
 Bernardino Valls Granena,Zaragoza,3034,B,monitoring
-Luis Alberto Villarrocha Marco,Zaragoza,3036,B,monitoring
-Abundio Esteras Esteras,Zaragoza,3053,B,monitoring
-Luisa Pineiro Iglesias,Cangas,3057,B,monitoring
 Maria Elena Alonso Comesana,Vigo,3058,B,monitoring
 Lucita Lopez Gonzalez,Silleda,3059,B,monitoring
-Maria Amelia Carballa Anton,Poio,3062,B,monitoring
 Constantina Chazo Rial,Vilanova De Arousa,3063,B,monitoring
 Luis Antonio Navarro Pedregosa,Cambados,3064,B,monitoring
 Modesto Cores Cores,Cambados,3065,B,monitoring
@@ -1555,114 +1907,15 @@ Maria Isaura Conde Reguera,Pontevedra,3066,B,monitoring
 Jaime Souto Palmeiro,Ponte Caldelas,3067,B,monitoring
 Ramon Barreiro Martinan,Vilanova De Arousa,3068,B,monitoring
 Aurea Rodriguez Cabaleiro,Vigo,3069,B,monitoring
-Paulino Castro Fernandez,Vigo,3076,B,monitoring
-Rosa Alvarez Caride,Vigo,3078,B,monitoring
-Maria Luisa Blanco Prado,Vigo,3079,B,monitoring
-Angelina Gonzalez Rodriguez,O Porrino,3080,B,monitoring
-Maria Del Carmen Otero Marino,Lalin,3089,B,monitoring
-Jose Manuel Berreco Rodino,Sanxenxo,3093,B,monitoring
-Maria Evangelina Beltran Casado,Vigo,3104,B,monitoring
-Manuel Herrero Alonso,Baza,3105,B,monitoring
-Jesus Mariano Ajenjo Munoz,Granada,3106,B,monitoring
-Ana Alcala Perez,Padul,3107,B,monitoring
-Maria Del Pilar Melero De Castro,Granada,3108,B,monitoring
-Carmen Morales Arroyo,Granada,3109,B,monitoring
-Maria Del Pilar Melero Castro,Granada,3110,B,monitoring
-Maria Luisa Rodriguez Gutierrez,Granada,3111,B,monitoring
-Gonzalo Hurtado Fernandez,Granada,3112,B,monitoring
-Alicia Ruiz Hurtado,Granada,3113,B,monitoring
-Angustias Casado Sanchez,Granada,3114,B,monitoring
-Diego Rodriguez Perez,Granada,3115,B,monitoring
-Josefa Nieto Porras,Santa Fe,3116,B,monitoring
-Antonio Avila Ortiz,Granada,3117,B,monitoring
-Lola Manzano Gea,Granada,3118,B,monitoring
-Jorge Esteban Linde,Granada,3119,B,monitoring
-Trinidad Lopez Guerrero,Maracena,3120,B,monitoring
-Manuel Olmo Aguirre,Granada,3121,B,monitoring
-Ambrosio Valera Soler,Granada,3122,B,monitoring
-Mercedes Sanchez Tellez,Granada,3123,B,monitoring
-Francisca Arcos Molina,Granada,3124,B,monitoring
-Miguel Diaz Aguado,Granada,3125,B,monitoring
-Remedios Gonzalez Garcia,Granada,3126,B,monitoring
 Manuel Martinez Medina,Granada,3127,B,monitoring
 Juan Antonio Garrido Valverde,Granada,3128,B,monitoring
 Fernando Casado Cubero,Granada,3129,B,monitoring
 Maria Encarnacion Rodrigo Merino,Granada,3130,B,monitoring
 Manuel Morente Rodriguez,Granada,3131,B,monitoring
-Aurelia Martinez Mesas,Baza,3135,B,monitoring
-Angeles Fernandez Vilchez,Granada,3137,B,monitoring
-David Fernandez Azor,Zujar,3141,B,monitoring
-Laura Salguero Fajardo,Granada,3142,B,monitoring
-Tomasa Medina Campos,Granada,3148,B,monitoring
 Maria Pilar Heredia Heredia,Granada,3149,B,monitoring
 Francisco Martin Martin,Granada,3150,B,monitoring
-Antonia Mateo Carceller,El Morell,3151,B,monitoring
-Juan Manuel Sanchez Curto,Tarragona,3152,B,monitoring
-Valle Moreno Gonzalez,Valls,3153,B,monitoring
-Ramon Maria Serra Marcelo,Salou,3154,B,monitoring
-Mateo Garcia Salazar,Reus,3155,B,monitoring
-Isabel Eleuteria Sepulveda Romero,Tarragona,3156,B,monitoring
-Isabel Ramirez Lopez,Montblanc,3157,B,monitoring
-Maria Rosa Jimenez Carrasco,Reus,3158,B,monitoring
-Maria Baro Sole,Torredembarra,3159,B,monitoring
-Catalina Lopez Romero,Reus,3160,B,monitoring
-Lorenzo Fernandez Garcia,Tarragona,3161,B,monitoring
-Josep Aymerich Mata,Santa Coloma De Queralt,3162,B,monitoring
-Puri Nalda Benes,Reus,3163,B,monitoring
-Rafael Fernandez Pavon,Valls,3164,B,monitoring
-Josep Escofet Arrufat,Tarragona,3165,B,monitoring
-Pilar Odena Odena,Montblanc,3166,B,monitoring
-Jose Escofet Arrufat,Tarragona,3167,B,monitoring
-Maurici Preciado Maydeu,Tarragona,3168,B,monitoring
-Enric Orti Pelleja,Reus,3169,B,monitoring
-Alba Estrade Cancio,Tortosa,3170,B,monitoring
-Anthony Lancaster,Tortosa,3171,B,monitoring
-Francesc Salom Tejado,Reus,3172,B,monitoring
-Xavier Girones Pages,Cambrils,3173,B,monitoring
-Benedicta Tejado Reinaldo,Reus,3174,B,monitoring
-Esperanza Raimunda Ursula Miquel Sole,Tarragona,3175,B,monitoring
-Rosa Masoni Vidal,Valls,3176,B,monitoring
-Marina Carne Sugranyes,Tarragona,3177,B,monitoring
-Maria Carmen Sanchez Sabalete,Tarragona,3178,B,monitoring
-Francisco Collado Gutierrez,Montblanc,3179,B,monitoring
-Antonio Garcia Ferrer,Reus,3180,B,monitoring
-Federico Mallol Muller,Tarragona,3181,B,monitoring
-Maria Margalef Laboria,Tarragona,3182,B,monitoring
-Lorenzo Ruiz Catena,Tarragona,3183,B,monitoring
-Jordi Poblet Antonio,Valls,3184,B,monitoring
-Matilde Martinez Castano,Tarragona,3185,B,monitoring
-Ramon Oro Cols,Tarragona,3186,B,monitoring
-Pau Bros Serra,L Espluga De Francoli,3187,B,monitoring
 Eulalia Pastor Ordonez,Tarragona,3188,B,monitoring
-Maria Romero Sanchez,Tarragona,3189,B,monitoring
-Rosa Farre Roca,Montblanc,3190,B,monitoring
-Rosendo Gamez Ortega,Torredembarra,3191,B,monitoring
-Asun Algar Solis,Cambrils,3192,B,monitoring
-Rafael Portero Portero,Montilla,3201,B,monitoring
-Nieves Sanchez Jimenez,Montilla,3202,B,monitoring
-Rosario Munoz Molina,Priego De Cordoba,3203,B,monitoring
-Ana Adoracion Escribano Moreno,Cordoba,3204,B,monitoring
-Angel Jimenez Hinojosa,Montilla,3205,B,monitoring
-Dolores Hidalgo Lopez,Montilla,3206,B,monitoring
-Manuel Montilla Castilla,Puente Genil,3207,B,monitoring
-Emilia Vaquero Bernias,Cordoba,3208,B,monitoring
-Florentino Reyes Garcia,Cordoba,3209,B,monitoring
-Juan Alhama Veredas,Aguilar De La Frontera,3210,B,monitoring
 Rafael Aragon Rosa,Aguilar De La Frontera,3211,B,monitoring
-Feliciana Martin Sanchez,Irun,3215,B,monitoring
-Hilario Colorado Cardenas,Donostia San Sebastian,3216,B,monitoring
-Begona Mendizabal Larranaga,Eibar,3217,B,monitoring
-Maria Begona Mendizabal Larranaga,Eibar,3218,B,monitoring
-Tomas Urra Echavarri,Irun,3219,B,monitoring
-Luis Ma Pena Astigarraga,Azpeitia,3220,B,monitoring
-Pablo Garcia Benito,Irun,3221,B,monitoring
-Marisa Mugica Martinez,Donostia San Sebastian,3222,B,monitoring
-Maria Elena Beasain Zubillaga,Irun,3223,B,monitoring
-Luis Ma Alcain Arribillaga,Irun,3224,B,monitoring
-Matheo C Jimenez Moreno,Donostia San Sebastian,3225,B,monitoring
-Agurtzane Martiarena Arregui,Arrasate Mondragon,3226,B,monitoring
-Felipe Bengoa Etxebarria,Aretxabaleta,3227,B,monitoring
-Fernando Larranaga Padilla,Arrasate Mondragon,3228,B,monitoring
 Arantxa Michelena Erquicia,Donostia San Sebastian,3229,B,monitoring
 Teodora Sevilla Cuerda,Donostia San Sebastian,3230,B,monitoring
 Luis Maria Alcain Arribillaga,Irun,3231,B,monitoring
@@ -1671,216 +1924,8 @@ Maribel Cuesta Sistiaga,Errenteria,3233,B,monitoring
 Pedro Maria Aguirre Aguirre,Hernani,3234,B,monitoring
 Jose Izagirre Urain,Azkoitia,3235,B,monitoring
 Jabier Mendizabal Gomez,Azkoitia,3236,B,monitoring
-Purificacion Cerrillo Garrido,Donostia San Sebastian,3237,B,monitoring
-Maria Trinidad Galarraga Telleria,Zarautz,3243,B,monitoring
-Fernando Antonio Fernandez Hernandez,Illescas,3265,B,monitoring
-Teresa Garcia Portero,Illescas,3266,B,monitoring
-Fernando Barroso Moreno,Toledo,3267,B,monitoring
-Roman Ballesteros Bonilla,Illescas,3268,B,monitoring
-Angel Cobos Mayoral,Sesena,3269,B,monitoring
-Antonio Ocana Sesena,Illescas,3270,B,monitoring
-Antonia Corrochano Agudo,Illescas,3271,B,monitoring
-Antonio Asensio Rubio,Zaragoza,3338,B,monitoring
-Luis Jimenez Asin,Ejea De Los Caballeros,3339,B,monitoring
-Maria Socorro Martinez Del Moral,Zaragoza,3340,B,monitoring
-Gladys Lilia Palacios Quintana,Zaragoza,3341,B,monitoring
-Sergio Sanz Sebastian,Zaragoza,3342,B,monitoring
-Manuela Rabanaque Sanchez,Zaragoza,3343,B,monitoring
-Sagrario Reina Gimenez Amador,Zaragoza,3344,B,monitoring
-Alberto Perez Fajardo,Zaragoza,3345,B,monitoring
-Samuel Martinez Martinez,Zaragoza,3346,B,monitoring
-Martin Pablo Orera,Zaragoza,3348,B,monitoring
-Maria Gloria Cisneros Barbero,Zaragoza,3350,B,monitoring
-Fermin Bardaji Barles,Huesca,3353,B,monitoring
-Sebastian Puimedon Campo,Huesca,3354,B,monitoring
-Jose Domingo Soriano,Alcaniz,3355,B,monitoring
-Adoracion Ibanez Valdevell,Alcaniz,3356,B,monitoring
-Ramon Garcia Valdes Cifuentes,Majadahonda,3357,B,monitoring
-Eduardo Blanco Moreno,Getafe,3358,B,monitoring
-Juliana Olmeda Barbas,Alcorcon,3359,B,monitoring
-Maria Luisa Merino Esteban,Getafe,3360,B,monitoring
-Maria Victoria Fernandez Martin,Alcorcon,3361,B,monitoring
-Antonia Serrano Parra,Coslada,3362,B,monitoring
-Maria De Los Dolores Angelina Monino,Madrid,3363,B,monitoring
-Demetrio Romero Tardio,Getafe,3365,B,monitoring
-Manuel Sanchez Gallardo,Getafe,3367,B,monitoring
-Isidro Parrilla Huerta,Coslada,3371,B,monitoring
-Carme Caimary Calatayud,Barcelona,3390,B,monitoring
-Vicenta Blanco Lozano,Barcelona,3391,B,monitoring
 Joan Escofet Pujador,Barcelona,3392,B,monitoring
-Conchita Lopez Zamorano,Barcelona,3393,B,monitoring
-Genis Coll Piferrer,Barcelona,3394,B,monitoring
-Miguel Prim Gorrochategui,Barcelona,3396,B,monitoring
-Mari Carmen Gil Diaz,Barcelona,3399,B,monitoring
-Raimundo Velilla Casas,Barcelona,3400,B,monitoring
-Casimiro Manzanares Olmos,Barcelona,3401,B,monitoring
-Enric Hohenhorst Roca,Sallent,3405,B,monitoring
-Francisca Mora Martinez,Barcelona,3406,B,monitoring
-Maria Rosario Antolin Vela,Valencia,3422,B,monitoring
-Miguel Ortiz Ariza,Torrent,3423,B,monitoring
-Petra Morales Sanchez,Paiporta,3424,B,monitoring
-Maria Isabel Orti Belda,Torrent,3425,B,monitoring
-Rafael Llobregat Seligra,Alboraia,3426,B,monitoring
-Pedro Garcia Martinez,Godella,3427,B,monitoring
-Concepcion Espi Garcia,Valencia,3428,B,monitoring
-Jose Baviera Fernandez,Paiporta,3429,B,monitoring
-Iluminada Serrano Canovas,Valencia,3430,B,monitoring
-Joaquina Santos Rodriguez,Viso Del Alcor,3432,B,monitoring
-Fermin Fernandez Trejo Tena,Sevilla,3433,B,monitoring
-Rosario Puerto Gallego,Sevilla,3434,B,monitoring
-Jorge Carbajal Bernuy,Sevilla,3435,B,monitoring
-Maria Carmen Casas Casas,Sevilla,3436,B,monitoring
-Carmen Ruiz Gonzalez,Sevilla,3437,B,monitoring
-Isabel Dominguez Carnerero,Osuna,3438,B,monitoring
-Juan Jose Fernandez Gamboa,Arahal,3439,B,monitoring
-Rosario Ojeda Gonzalez,Alcala De Guadaira,3440,B,monitoring
-Maria Dolores Somosierra Perez,Sevilla,3441,B,monitoring
-Milagros Copado Ramos,Moron De La Frontera,3442,B,monitoring
-Carmen Tortolero Roldan,Arahal,3443,B,monitoring
-Rafael Cordero Jimenez,Moron De La Frontera,3444,B,monitoring
-Isabel Garcia Fernandez,San Fernando,3458,B,monitoring
-Dolores Garcia Guerrero,Jerez De La Frontera,3459,B,monitoring
-Maria Del Pilar Granados Iglesias,Jerez De La Frontera,3460,B,monitoring
-Jose Maria Martinez Aragon,San Fernando,3461,B,monitoring
-Maria Luisa Rondon Marin,Chiclana De La Frontera,3462,B,monitoring
-Dolores Llamas Rodriguez,San Fernando,3463,B,monitoring
-Mari Pau Garcia De La Barrera,Reus,3464,B,monitoring
-Miquel Matalassos,Cambrils,3465,B,monitoring
-Juan Mari Errotaberea Sanchotena,Elizondo,3468,B,monitoring
-Amelia Salomon Ruiz,Torrelavega,3469,B,monitoring
-Jose Gerardo Fernandez Obeso,Torrelavega,3470,B,monitoring
-Olvido Paniagua Llanos,Torrelavega,3472,B,monitoring
-Aiping Zhang,Valladolid,3474,B,monitoring
-Julia Gonzalez Lopez,Medina El Campo,3475,B,monitoring
-Antonio Rodriguez Castro,Valladolid,3476,B,monitoring
-Maria Dolores Espartero Rojo,Valladolid,3477,B,monitoring
-Maria Asuncion De Rozas Martin,Valladolid,3478,B,monitoring
-Jose Antonio Abia Fernandez,Valladolid,3479,B,monitoring
-Maria Del Carmen Ojero Sanz,Tudela De Duero,3480,B,monitoring
-Maria Carmen Ortiz Montero,Medina El Campo,3481,B,monitoring
-Manuel Pena Del Agua,Valladolid,3482,B,monitoring
-Maria Del Milagro Velasco Martin,Valladolid,3485,B,monitoring
-Juan Jose Abad Lopez,Valladolid,3486,B,monitoring
-Alberto Angulo Alonso,Miranda De Ebro,3489,B,monitoring
-Teofila Costumero Martin,Miranda De Ebro,3490,B,monitoring
-Maria Carmen Barrio Requena,Miranda De Ebro,3491,B,monitoring
-Antonio Fernandez Duenas,Miranda De Ebro,3492,B,monitoring
-Victoriano Martinez Martinez,Logrono,3493,B,monitoring
-Julia Leon Sanchez,Logrono,3495,B,monitoring
-Vicente Conde Fernandez,Logrono,3496,B,monitoring
-Angel Pascual Encina,Logrono,3497,B,monitoring
-Carmen Alejandra Angulo Campos,Logrono,3498,B,monitoring
-Maria Luz Carballo Zorzano,Logrono,3499,B,monitoring
-Maria Teresa Garcia Torres,Logrono,3500,B,monitoring
-Jose Maria Alvarez Armas,Logrono,3502,B,monitoring
-Susana Landazabal Echazarreta,Logrono,3503,B,monitoring
-Ana Maria Mato Pedrosa,Haro,3504,B,monitoring
-Maria Del Pilar Manzanos Blanco,Logrono,3506,B,monitoring
-Salud Morgado Antunez,Logrono,3508,B,monitoring
-Manuel Olivas Laconcha,Logrono,3509,B,monitoring
-Esperanza Pascual Bastida,Logrono,3510,B,monitoring
-Santiago Martinez Ochoa,Logrono,3511,B,monitoring
-Eugenio Martin Rodriguez,Logrono,3512,B,monitoring
-Maria De Los Angeles Lopez Rodriguez,Logrono,3513,B,monitoring
-Teresa Fernandez Silva,Otazu,3514,B,monitoring
-Margarita Corres Castelo,Otazu,3515,B,monitoring
-Felix Alberto Garcia Rodriguez,Otazu,3516,B,monitoring
-Margarita Valderrama,Otazu,3518,B,monitoring
-Julia Alonso Saenz,Laguardia,3519,B,monitoring
-Fernando Diaz Beltran De Heredia,Otazu,3520,B,monitoring
-Mykola Klymyshyn,Otazu,3521,B,monitoring
-Jose Angel Garcia Yaniz,Otazu,3522,B,monitoring
-Severina Monja Gonzalo,Otazu,3523,B,monitoring
-Catalina Corral Burgos,Otazu,3524,B,monitoring
-Agueda Martin Mediavilla,Otazu,3525,B,monitoring
-Evarista Nieto Nieto,Otazu,3526,B,monitoring
-Francisco Jose Perez Martin,Otazu,3527,B,monitoring
-Pedro Gil Llorente,Azuqueca De Henares,3528,B,monitoring
-Javier Garcia Lopez,Guadalajara,3529,B,monitoring
-Eugenio Flores Moreno,Guadalajara,3530,B,monitoring
-Felix Garcia Martin,Guadalajara,3531,B,monitoring
-Rosa Andres De La Fuente,Guadalajara,3532,B,monitoring
-Jose Luis Jimenez Gutierrez,Guadalajara,3533,B,monitoring
-Eusebia Hurtado Navas,Yunquera De Henares,3534,B,monitoring
-Mari Carmen Pedrero Magro,Guadalajara,3535,B,monitoring
-Aurora Fernandez Blanco,Guadalajara,3536,B,monitoring
-Jesus Pedro Guil Martinez,Guadalajara,3537,B,monitoring
-Victoria Ramiro Merino,Guadalajara,3538,B,monitoring
-Casimiro Tomas Ferrer,Guadalajara,3539,B,monitoring
-Consolacion Valero Alvarez,Guadalajara,3540,B,monitoring
-Maria Luz Garcia Gutierrez,Palencia,3550,B,monitoring
-Maria Carmen Ortega Rodriguez,Palencia,3551,B,monitoring
-Dionisia Dominguez Sevilla,Palencia,3552,B,monitoring
-Maria Del Carmen Cepeda Martinez,Palencia,3553,B,monitoring
-Julian Rebollar Velado,Palencia,3554,B,monitoring
-Lourdes Rosario Ramirez Arana,Palencia,3555,B,monitoring
-Maria Pilar Gonzalez Rueda,Palencia,3556,B,monitoring
-Jose Rodriguez Gil,Palencia,3557,B,monitoring
-Roberto Javier Ortiz Polanco,Palencia,3558,B,monitoring
-Juan Rebolledo Gonzalez,Palencia,3559,B,monitoring
-Maria Del Carmen Gutierrez Fernandez,Palencia,3560,B,monitoring
-Higinio Fernandez Ruiz,Palencia,3561,B,monitoring
-Eutimio Arenas Gonzalez,Palencia,3562,B,monitoring
-Laura Lobejon San Martin,Palencia,3563,B,monitoring
-Jose Carlos Cortes Aduriz,Palencia,3564,B,monitoring
-Concepcion Yustos Cantera,Palencia,3565,B,monitoring
-Ana Santos Blanco,Palencia,3566,B,monitoring
-Abundio Villamediana Seco,Palencia,3567,B,monitoring
-Luis Maria Gil Martin,Palencia,3568,B,monitoring
-Maria Concepcion Tejedo San Miguel,Palencia,3569,B,monitoring
-Marisa Mozos Macho,Palencia,3570,B,monitoring
-Maria Ascension Perez Edeso,Venta De Banos,3571,B,monitoring
-Rafael Revilla Herrero,Palencia,3572,B,monitoring
-Felicitas Garcia Perez,Palencia,3573,B,monitoring
-Juana Mayor Angulo,Soria,3574,B,monitoring
-Aurora Vesperinas Maure,Berlanga De Duero,3575,B,monitoring
-Adoracion Vega Estepa,Soria,3576,B,monitoring
-Geronimo Marin Bedoya,Soria,3578,B,monitoring
-Alejandro Olalla De Miguel,San Leonardo De Yague,3579,B,monitoring
-Angela Falcon Felipe,Moya,3580,B,monitoring
-Rafael Gonzalez Hernandez,Arrecife,3582,B,monitoring
-Pablo Suarez Almeida,Las Palmas De Gran Canaria,3583,B,monitoring
-Nelida Santana Martin,Las Palmas De Gran Canaria,3584,B,monitoring
-Maria Milagros Armas Guerra,Las Palmas De Gran Canaria,3585,B,monitoring
-Agustina Padron Leon,Las Palmas De Gran Canaria,3587,B,monitoring
-Casto Manuel Caraballo Betancort,Teguise,3588,B,monitoring
-Silvia De Paez Romero,Arrecife,3589,B,monitoring
-Juan Manuel Basterra Oraa,Arrecife,3590,B,monitoring
-David Bonilla Curbelo,Arrecife,3591,B,monitoring
-Manuel Alvarez Benasco,Arrecife,3592,B,monitoring
-Catalina Gomez Valle,Zaragoza,3593,B,monitoring
-Maria Conolacion Arguinano Moreno,Zaragoza,3594,B,monitoring
-Amparo Sanchez Lozano,Zaragoza,3595,B,monitoring
-Maria Merdedes Breto Garcia,Zaragoza,3596,B,monitoring
-Josefa Pimes Garcia,Zaragoza,3597,B,monitoring
-Josefa Pines Garcia,Zaragoza,3598,B,monitoring
-Martin Pablo Corera,Zaragoza,3599,B,monitoring
-Mario Llop Embid,Zaragoza,3600,B,monitoring
-Felicidad Artajona Gonzalez,Remolinos,3601,B,monitoring
-Salvador Gotor Sanchez,Zaragoza,3602,B,monitoring
-Primitiva Gutierrez Barba,Barbastro,3603,B,monitoring
-Adoracion Latorre Marro,Graus,3604,B,monitoring
-Teresa Cami Sama,Fraga,3605,B,monitoring
-Maria Josefa Celma Arantegui,Huesca,3606,B,monitoring
-Fernando Martin Martinez,Huesca,3607,B,monitoring
-Ana Maria Arnal Sampietro,Barbastro,3608,B,monitoring
-Jose Lloro Castan,Huesca,3609,B,monitoring
-Rosa Gistau Noguero,Ainsa,3610,B,monitoring
-Jose Ramon Miranda Castillo,Huesca,3611,B,monitoring
-Pilar Vinuales Lasierra,Huesca,3612,B,monitoring
-Manuel Franco Nasarre,Sabinanigo,3613,B,monitoring
-Francisco Barraca Paniello,Barbastro,3614,B,monitoring
-Maria Carmen Gracia Sorina,Barbastro,3615,B,monitoring
-Josefina Delgado Ortiz,Tardienta,3616,B,monitoring
-Amado Berdejo Torn,Barbastro,3617,B,monitoring
-Jose Maria Martinez Ara,Barbastro,3618,B,monitoring
 Maria Pilar Murillo Puyalto,Barbastro,3619,B,monitoring
-Felipe Jimenez Sanchez,Navalcarnero,3620,B,monitoring
-Consuelo Chacon Ortega,Leganes,3621,B,monitoring
-Soledad Maestre Garcia,Madrid,3622,B,monitoring
-Olga Vazquez Siu,Madrid,3623,B,monitoring
-Tomasa Guerrero De Dios,Alcala De Henares,3624,B,monitoring
-Carmen Moreno Alguacil,Aranjuez,3625,B,monitoring
 Maria Cascales Serna,Madrid,3626,B,monitoring
 Francisco Gines Guillen Caba,Madrid,3627,B,monitoring
 Isabel Carrasco Pascual,Madrid,3628,B,monitoring
@@ -1952,6 +1997,512 @@ Felipe Quitian Gonzalez,Sabadell,3694,B,monitoring
 Lluis Mir Prat,Barcelona,3695,B,monitoring
 Josep Falomi Clopes,Vic,3696,B,monitoring
 Maximo Perez Medina,Sant Boi De Llobregat,3697,B,monitoring
+Jose Luis Gonzalez Duran,Dos Hermanas,3732,B,monitoring
+Manuela Moreno Rey,Alcala De Guadaira,3733,B,monitoring
+Diaz Garcia Manuel,Sevilla,3734,B,monitoring
+Dominguez Amoros Dolores,Sevilla,3735,B,monitoring
+Gil Garrido Natividad,Sevilla,3736,B,monitoring
+Franco Sanudo Concepcion,Sevilla,3737,B,monitoring
+Maria Olmo Duarte,Moron De La Frontera,3738,B,monitoring
+Somosierra Perez Maria Dolores,Sevilla,3739,B,monitoring
+Rondan Figueroa Luz Betty,Sevilla,3740,B,monitoring
+Fernandez Cruz Emilio,Sevilla,3741,B,monitoring
+Rosario Vela Lora,Mairena Del Aljarafe,3743,B,monitoring
+Jesus Ortega Martinez,Sevilla,3744,B,monitoring
+Benjamin Merayo Alonso,Gijon,3836,B,monitoring
+Maria Sara Fernandez Suarez,Mieres,3837,B,monitoring
+Manuel Angel Otamendi Busto,Cudillero,3838,B,monitoring
+Justa Rodriguez Acevedo,Coana,3839,B,monitoring
+Carlos Valdes Gonzalez,Gijon,3840,B,monitoring
+Olvido Gonzalez Bernardo,Pola De Siero,3841,B,monitoring
+Jesus Martinez Fernandez,Oviedo,3842,B,monitoring
+Francisco Damaso Fernandez Galguera,Llanes,3843,B,monitoring
+Conchita Gonzalez Prendes,Gijon,3844,B,monitoring
+Maria Concepcion Eulalia Gonzalez Prendes,Gijon,3845,B,monitoring
+Begona Cordera Blanco,Gijon,3846,B,monitoring
+Maria Del Carmen Fernandez Fernandez,Oviedo,3847,B,monitoring
+Maria Bedrinana Alonso,Villaviciosa,3848,B,monitoring
+Georgina Caldevilla Cuyar,Llanes,3849,B,monitoring
+Dolores Del Rio Rodriguez,Oviedo,3850,B,monitoring
+Alfredo Valdes Mendez,Cudillero,3851,B,monitoring
+Jose Angel Alonso Fernandez,Gijon,3852,B,monitoring
+Josefa Diaz Mendez,Oviedo,3853,B,monitoring
+Emilio Dominguez Menendez,Gijon,3854,B,monitoring
+Matilde Diaz Bobadilla,Castuera,3957,B,monitoring
+Jose Martinez Valero,Pamplona,3981,B,monitoring
+Pablo Montano Ezponda,Pamplona,3982,B,monitoring
+Alfontso Etxarri Azpirotz,Pamplona,3983,B,monitoring
+Ma Teresa Aristu Aristu,Antsoain,3984,B,monitoring
+Salvador Augusto Da Silva,Bera,3985,B,monitoring
+Mari Carmen Goni Arizcuren,Burlada,3986,B,monitoring
+Felix Pio Alegria Armendariz,Pamplona,3987,B,monitoring
+Luisa Lafuente Castells,Pamplona,3988,B,monitoring
+Maria Pilar Morales De Miguel,Pamplona,3989,B,monitoring
+Ma Luisa Marugan Sanz,Antsoain,3990,B,monitoring
+Luisa Maria Lafuente Castells,Pamplona,3991,B,monitoring
+Axun Irazoki Artieda,Bera,3992,B,monitoring
+Juan Jacinto Vazquez Zapateria,Castejon,3993,B,monitoring
+Maria Rosario Antia Lopez,Pamplona,3994,B,monitoring
+Tomas Munoz Carravilla,Alsasua,3995,B,monitoring
+Ma Carmen Arana Berastegui,Etxarri Aranatz,3996,B,monitoring
+Ma Pilar Huesa Gil,Pamplona,3997,B,monitoring
+Maria Jesus Gonzalez Martin,Pamplona,3998,B,monitoring
+Martin Garrues Echarri,Estella,3999,B,monitoring
+Ivan Garbizu Extremado,Pamplona,4000,B,monitoring
+Maximo Pacho Taranilla,Pamplona,4001,B,monitoring
+Miguel Maria Otermin Urra,Alsasua,4002,B,monitoring
+Angel Mari Moreno Merino,Burlada,4003,B,monitoring
+Angel Romero Sanchez,La Vall D Uixo,4036,B,monitoring
+Carlos Mas Roig,Castellon,4037,B,monitoring
+Antonio Jose Valls Sales,Burriana,4038,B,monitoring
+Vicente Safont Belles,Burriana,4039,B,monitoring
+Carlos Morejon Calvo,Castellon,4040,B,monitoring
+Amparo Ruiz Barcena,Santander,4052,B,monitoring
+Maria Carmen Jara Mirones,Santander,4066,B,monitoring
+Jose Luis Rivero Galvan,Santander,4067,B,monitoring
+Jose Bustillo Liano,Maliano,4068,B,monitoring
+Carlos Arce Otero,Santander,4069,B,monitoring
+Alejandro Bengochea Fernandez,Carrejo,4070,B,monitoring
+Manuel Barreda Noriega,Comillas,4071,B,monitoring
+Balbina Alvaro Udias,Torrelavega,4072,B,monitoring
+Jose Luis Romero Mateo,Torrelavega,4073,B,monitoring
+Maria Concepcion Martin Gonzalez,Heras,4074,B,monitoring
+Olvido Diez Diez,Heras,4075,B,monitoring
+Victor De Celis Alonso,Santander,4076,B,monitoring
+Matilde Riancho Lopez,Torrelavega,4077,B,monitoring
+Maria Jose Gutierrez Beivide,Santander,4078,B,monitoring
+Josefa Ladislao Cruz,Heras,4079,B,monitoring
+Nemesio Arroyo Rodrigo,Santander,4080,B,monitoring
+Juan Sota Alonso,Heras,4081,B,monitoring
+Maximo Sanchez Cobo,Torrelavega,4082,B,monitoring
+Sor Maria Rosa Alvarez Sala,Santander,4083,B,monitoring
+Maria Alamo Puente,Santander,4084,B,monitoring
+Jose Maria Torrejon Pulido,Santander,4085,B,monitoring
+Encarnacion Rodriguez Santiago,Santander,4086,B,monitoring
+Aureliano Ruiz Ruiz,Villegar De Toranzo,4087,B,monitoring
+Angel Aragon Munoz,Valladolid,4097,B,monitoring
+Luisa Bellon Martinez,Valdepenas,4102,B,monitoring
+Rosa Aibar Martinez,Isla Cristina,4114,B,monitoring
+Rosa Maria Aibar Martinez,Isla Cristina,4115,B,monitoring
+Antonia Nambar Rodriguez,Huelva,4116,B,monitoring
+Angeles Lozano Poli,Huelva,4117,B,monitoring
+Pilar Llamazares Rodriguez,Puente Villarente,4122,B,monitoring
+Francisco Yebra Gago,Ponferrada,4160,B,monitoring
+Ma Antonia Compadre Gonzalez,Leon,4161,B,monitoring
+Sofia Murciego Pastor,Leon,4162,B,monitoring
+Jesus Fernandez Martinez,Leon,4163,B,monitoring
+Viriato Augusto Mateus,Ponferrada,4164,B,monitoring
+Santiago Fernandez Ramon,Ponferrada,4165,B,monitoring
+Trinidad Fernandez Iglesias,Leon,4166,B,monitoring
+Beni Ange Uriel N Gandi,Navalmoral De La Mata,4202,B,monitoring
+Emilio Francisco Perez Solis,San Pedro Del Alcantara,4206,B,monitoring
+Fidel Moreno Amado,Moraleja,4208,B,monitoring
+Rogelio Ramos Sanchez,Plasencia,4209,B,monitoring
+Lely Rodriguez Olivares,Hellin,4215,B,monitoring
+Maria Cadinanos Urruchi,Miranda De Ebro,4246,B,monitoring
+Alfonso Martinez Monge,Miranda De Ebro,4247,B,monitoring
+Dorinda Gonzalez Caballero,Burgos,4248,B,monitoring
+Maria Carmen Martin Benito,Salamanca,4285,B,monitoring
+Gloria Martin Sanchez,Salamanca,4289,B,monitoring
+Cipriana Picado Cardoso,Salamanca,4290,B,monitoring
+Teofila Matilde Barcala Martin,Salamanca,4291,B,monitoring
+Trinidad Hernandez Martin,Salamanca,4292,B,monitoring
+D Jose Garcia Sanchez,Salamanca,4293,B,monitoring
+Jose Manuel Perez Martin,Salamanca,4294,B,monitoring
+Estrella Gonzalez Gomez,Lugo,4333,B,monitoring
+Hortensio Diaz Becerra Chaos,Meira,4334,B,monitoring
+Maria Jose Garcia Gonzalez Viveiro,Viveiro,4335,B,monitoring
+Ricardo Ledo Gomez,Chantada,4336,B,monitoring
+Pilar Lopez Garcia,A Fonsagrada,4337,B,monitoring
+Marisol Rodriguez Santin,Roman De Cervantes,4338,B,monitoring
+Carolina Carretero Prestamo,Sarria,4339,B,monitoring
+Angeles Casado Rionegro,Lugo,4340,B,monitoring
+Amparo Orosa Ratoeira,O Valadouro,4341,B,monitoring
+Amanda Lopez Lopez,Lancara,4342,B,monitoring
+Arturo Lerena Prado,Najera,4364,B,monitoring
+Juan Jose Valle Perez Vazquez,Ezcaray,4365,B,monitoring
+Ma Antonia Fonseca Bazo,Logrono,4366,B,monitoring
+Roberto Perez Villoslada,Logrono,4367,B,monitoring
+Teodora Albarran Martin,Navas De San Antonio,4389,B,monitoring
+Consuelo De Mercado Merino,Escalona Del Prado,4390,B,monitoring
+Saul Calahorra Cabrero,El Tiemblo,4403,B,monitoring
+Dili Blanco Garcia,Palencia,4413,B,monitoring
+Mercedes Garcia Becoechea,Palencia,4416,B,monitoring
+Jose Andres Romero Del Pozo,Soria,4423,B,monitoring
+Antonio Luis Hernandez Guerra,Las Palmas De Gran Canaria,4436,B,monitoring
+Nieves Vega Godoy,Galdar,4437,B,monitoring
+Maria Luisa Viñas Esqué,Barcelona,5138,B,monitoring
+Julio Fernández Pérez,Barcelona,5144,B,monitoring
+Mila Buxo-Dulce Montesinos,Barcelona,5152,B,monitoring
+Isidora Burruezo Antolino,Barcelona,5154,B,monitoring
+Justo Mendez-Aguirre Arbones,Barcelona,5155,B,monitoring
+Pilar Correas Abadias,Barcelona,5157,B,monitoring
+Encarnacion Lema Vázquez,Barcelona,5158,B,monitoring
+Margarita Escolà Gavaldà,Barcelona,5159,B,monitoring
+Mercè FROILAN BADIA,Barcelona,5163,B,monitoring
+Miquel GALLEGUET CLUSELLA,Barcelona,5166,B,monitoring
+Teresa López Sánchez,Valencia,5167,B,monitoring
+Vicente Cortell Segui,Valencia,5168,B,monitoring
+Jose Antonio Bustabab Ortiz,Sevilla,5175,B,monitoring
+Antonia Maria Del Carmen Guerrero Toledo,Sevilla,5176,B,monitoring
+Maria Szigriszt Laca,Cantabria,5191,B,monitoring
+Pedro Joaquín Lambriave Santamaría,La-Rioja,5194,B,monitoring
+Victor Marante Rodriguez,La-Rioja,5195,B,monitoring
+Pablo Esteban Garcia,Zamora,5196,B,monitoring
+Jose Antonio Bustabad Ortiz,Sevilla,5484,B,monitoring
+Jonathan Isaias Ramirez Leon,San Pedro Alcantara,2150,B,monitoring
+Fernando Poveda Talavera,Cullera,2617,B,monitoring
+Jose Perez Braceli,Montserrat,2618,B,monitoring
+Josefa Barrachina Alemany,Valencia,2619,B,monitoring
+Jose Luis Pozo Gordillo,Aldaia,2620,B,monitoring
+Sergio Ortiz Hernandez,Port De Sagunt,2621,B,monitoring
+Dolores Orts Cerda,Valencia,2622,B,monitoring
+Santiago Gonzalvo Franco,Caspe,2628,B,monitoring
+Maria De Los Angeles Lopez Llorente,Zaragoza,2630,B,monitoring
+Francisco Ortega Bueno,Alagon,2631,B,monitoring
+Matias Mateo Gracia,Zaragoza,2632,B,monitoring
+Maruja Fuertes Tomas,Zaragoza,2633,B,monitoring
+Maria Sierra Berges,Zaragoza,2634,B,monitoring
+Angeles Abos Garcia,Gelsa,2636,B,monitoring
+Mercedes Cordones Garcia,San Fernando,2660,B,monitoring
+Jeronima Ramos Perez,Jerez De La Frontera,2661,B,monitoring
+Josefa Campos Pavon,San Fernando,2662,B,monitoring
+Angel Ferreras Zapico,Valencia,2744,B,monitoring
+Juan Gimeno Marquez,Valencia,2745,B,monitoring
+Francisco Rosello Giner,Valencia,2746,B,monitoring
+Encarnacion Garcia Gonzalvo,Valencia,2747,B,monitoring
+Ramon Domenech Domenech,Valencia,2748,B,monitoring
+John Knight,Valencia,2749,B,monitoring
+Purificacion Martinez Garcia,Mislata,2750,B,monitoring
+Miguel Angel Abalegre,Valencia,2751,B,monitoring
+Jesus Gomez Rebollo,Valencia,2752,B,monitoring
+Maruja Rios Olcina,Villena,2785,B,monitoring
+Carmen Marin Vilaplana,Villena,2786,B,monitoring
+Pedro Ibanez Milan,Villena,2787,B,monitoring
+Martin Joseph Mccafferty,Las Lagunas De Mijas,2823,B,monitoring
+Silvia Ponce Sanchez,Malaga,2824,B,monitoring
+Maria Gonzalez Jimenez,Antequera,2825,B,monitoring
+Victoria Ruiz Ramirez,Estepona,2826,B,monitoring
+Vicente Del Vas Lopez,Totana,2873,B,monitoring
+Jose Garnes Munoz,Murcia,2874,B,monitoring
+Josefa Ingles Garcia,Cartagena,2875,B,monitoring
+Maria Del Carmen Lopez Ruiz,Cartagena,2876,B,monitoring
+Mariana Garcia Belmonte,Cartagena,2877,B,monitoring
+Maria Consuelo Llopis Calabuig,Cartagena,2878,B,monitoring
+Pepita Pagan Tudela,Totana,2879,B,monitoring
+Carmen Trias Rueda,Cartagena,2880,B,monitoring
+Rafael Paredes Espada,Cartagena,2881,B,monitoring
+Candida Conesa Valero,Cartagena,2882,B,monitoring
+Mateo Rodriguez Andreo,Totana,2883,B,monitoring
+Juana Gonzalez Ardil,Cartagena,2884,B,monitoring
+Maria Del Carmen Yusty Rios,Cartagena,2885,B,monitoring
+Concepcion Morales Lopez,Murcia,2886,B,monitoring
+Maria Fuensanta Lacal Nicolas,Murcia,2887,B,monitoring
+Antonia Alarcon Gil,Murcia,2888,B,monitoring
+Antonio Molina Alegria,Murcia,2889,B,monitoring
+Juan Manuel Perez Rodriguez,Murcia,2890,B,monitoring
+Antonio Martinez Guerrero,Cartagena,2892,B,monitoring
+Andres Martinez Garcia,Cartagena,2893,B,monitoring
+Pedro Belando Corbalan,Murcia,2894,B,monitoring
+Ruperto Segura Estudillo,Los Dolores,2895,B,monitoring
+Maria Elisa Gonzalez Ricoy,Cartagena,2896,B,monitoring
+Ana Cervantes Hernandez,Cartagena,2897,B,monitoring
+Ana Mante Moreno,Cartagena,2898,B,monitoring
+Juan Antonio Molinero Granado,Cartagena,2899,B,monitoring
+Angustias Aurora Ruiz Navarro,Mazarron,2900,B,monitoring
+Leandro Gurruchaga Manzanares,Cartagena,2902,B,monitoring
+Salvador Cegarra Martinez,Cartagena,2903,B,monitoring
+Elvira Masutier Diaz,Cartagena,2904,B,monitoring
+Jose Azorin Martinez,Cartagena,2907,B,monitoring
+Jose Luis Sanchez De Lamadrid Sandoval,El Puerto De Santa Maria,2921,B,monitoring
+Carmen Mateos Baez,Jerez De La Frontera,2922,B,monitoring
+Maria Teresa Sobaler Guerrero,Jerez De La Frontera,2923,B,monitoring
+Ana Maria Lacave Ruiz Tagles,Cadiz,2924,B,monitoring
+Jesus Salvador Ortega Ortega,Prado Del Rey,2925,B,monitoring
+Candida Oyola Garduno,Jerez De La Frontera,2926,B,monitoring
+Rafael Couso Arena,Cadiz,2927,B,monitoring
+Manuela Lobato Acosta,San Fernando,2928,B,monitoring
+Antonio Bueno Hernandez,Jerez De La Frontera,2929,B,monitoring
+Jose Maria Ibanez De La Rosa,Jerez De La Frontera,2930,B,monitoring
+Paquita Andres Andres,Zaragoza,3016,B,monitoring
+Francisca Andres Andres,Zaragoza,3017,B,monitoring
+Luis Javier Nadal Matamoros,Zaragoza,3018,B,monitoring
+Maria Esmeralda Rodriguez Loma Osorio,Zaragoza,3019,B,monitoring
+Monserrat Albalad Termes,Zaragoza,3020,B,monitoring
+Maria Gloria Borja Duval,Zaragoza,3021,B,monitoring
+Pilar Costan Ecer,Zaragoza,3022,B,monitoring
+Maria Del Carmen Royo Laborda,Zaragoza,3023,B,monitoring
+Emiliano Garcia Claveria,Zaragoza,3024,B,monitoring
+Miguel Angel Hernandez Benito,Zaragoza,3025,B,monitoring
+Josefa Antonia Cabanillas Alejo,Zaragoza,3026,B,monitoring
+Josefa Fuertes Tomas,Zaragoza,3027,B,monitoring
+Jose Suarez Lucia,Zaragoza,3028,B,monitoring
+Luisa Pineiro Iglesias,Cangas,3057,B,monitoring
+Maria Amelia Carballa Anton,Poio,3062,B,monitoring
+Manuel Herrero Alonso,Baza,3105,B,monitoring
+Jesus Mariano Ajenjo Munoz,Granada,3106,B,monitoring
+Ana Alcala Perez,Padul,3107,B,monitoring
+Maria Del Pilar Melero De Castro,Granada,3108,B,monitoring
+Carmen Morales Arroyo,Granada,3109,B,monitoring
+Maria Del Pilar Melero Castro,Granada,3110,B,monitoring
+Maria Luisa Rodriguez Gutierrez,Granada,3111,B,monitoring
+Gonzalo Hurtado Fernandez,Granada,3112,B,monitoring
+Alicia Ruiz Hurtado,Granada,3113,B,monitoring
+Angustias Casado Sanchez,Granada,3114,B,monitoring
+Diego Rodriguez Perez,Granada,3115,B,monitoring
+Antonio Avila Ortiz,Granada,3117,B,monitoring
+Lola Manzano Gea,Granada,3118,B,monitoring
+Jorge Esteban Linde,Granada,3119,B,monitoring
+Trinidad Lopez Guerrero,Maracena,3120,B,monitoring
+Manuel Olmo Aguirre,Granada,3121,B,monitoring
+Ambrosio Valera Soler,Granada,3122,B,monitoring
+Mercedes Sanchez Tellez,Granada,3123,B,monitoring
+Francisca Arcos Molina,Granada,3124,B,monitoring
+Miguel Diaz Aguado,Granada,3125,B,monitoring
+Remedios Gonzalez Garcia,Granada,3126,B,monitoring
+Antonia Mateo Carceller,El Morell,3151,B,monitoring
+Juan Manuel Sanchez Curto,Tarragona,3152,B,monitoring
+Valle Moreno Gonzalez,Valls,3153,B,monitoring
+Ramon Maria Serra Marcelo,Salou,3154,B,monitoring
+Mateo Garcia Salazar,Reus,3155,B,monitoring
+Isabel Eleuteria Sepulveda Romero,Tarragona,3156,B,monitoring
+Isabel Ramirez Lopez,Montblanc,3157,B,monitoring
+Maria Rosa Jimenez Carrasco,Reus,3158,B,monitoring
+Maria Baro Sole,Torredembarra,3159,B,monitoring
+Catalina Lopez Romero,Reus,3160,B,monitoring
+Lorenzo Fernandez Garcia,Tarragona,3161,B,monitoring
+Josep Aymerich Mata,Santa Coloma De Queralt,3162,B,monitoring
+Puri Nalda Benes,Reus,3163,B,monitoring
+Rafael Fernandez Pavon,Valls,3164,B,monitoring
+Josep Escofet Arrufat,Tarragona,3165,B,monitoring
+Pilar Odena Odena,Montblanc,3166,B,monitoring
+Jose Escofet Arrufat,Tarragona,3167,B,monitoring
+Maurici Preciado Maydeu,Tarragona,3168,B,monitoring
+Enric Orti Pelleja,Reus,3169,B,monitoring
+Alba Estrade Cancio,Tortosa,3170,B,monitoring
+Anthony Lancaster,Tortosa,3171,B,monitoring
+Francesc Salom Tejado,Reus,3172,B,monitoring
+Xavier Girones Pages,Cambrils,3173,B,monitoring
+Benedicta Tejado Reinaldo,Reus,3174,B,monitoring
+Esperanza Raimunda Ursula Miquel Sole,Tarragona,3175,B,monitoring
+Rosa Masoni Vidal,Valls,3176,B,monitoring
+Marina Carne Sugranyes,Tarragona,3177,B,monitoring
+Maria Carmen Sanchez Sabalete,Tarragona,3178,B,monitoring
+Francisco Collado Gutierrez,Montblanc,3179,B,monitoring
+Antonio Garcia Ferrer,Reus,3180,B,monitoring
+Federico Mallol Muller,Tarragona,3181,B,monitoring
+Maria Margalef Laboria,Tarragona,3182,B,monitoring
+Lorenzo Ruiz Catena,Tarragona,3183,B,monitoring
+Jordi Poblet Antonio,Valls,3184,B,monitoring
+Matilde Martinez Castano,Tarragona,3185,B,monitoring
+Ramon Oro Cols,Tarragona,3186,B,monitoring
+Pau Bros Serra,L Espluga De Francoli,3187,B,monitoring
+Rafael Portero Portero,Montilla,3201,B,monitoring
+Nieves Sanchez Jimenez,Montilla,3202,B,monitoring
+Rosario Munoz Molina,Priego De Cordoba,3203,B,monitoring
+Ana Adoracion Escribano Moreno,Cordoba,3204,B,monitoring
+Angel Jimenez Hinojosa,Montilla,3205,B,monitoring
+Dolores Hidalgo Lopez,Montilla,3206,B,monitoring
+Manuel Montilla Castilla,Puente Genil,3207,B,monitoring
+Emilia Vaquero Bernias,Cordoba,3208,B,monitoring
+Florentino Reyes Garcia,Cordoba,3209,B,monitoring
+Juan Alhama Veredas,Aguilar De La Frontera,3210,B,monitoring
+Feliciana Martin Sanchez,Irun,3215,B,monitoring
+Hilario Colorado Cardenas,Donostia San Sebastian,3216,B,monitoring
+Begona Mendizabal Larranaga,Eibar,3217,B,monitoring
+Maria Begona Mendizabal Larranaga,Eibar,3218,B,monitoring
+Tomas Urra Echavarri,Irun,3219,B,monitoring
+Luis Ma Pena Astigarraga,Azpeitia,3220,B,monitoring
+Pablo Garcia Benito,Irun,3221,B,monitoring
+Marisa Mugica Martinez,Donostia San Sebastian,3222,B,monitoring
+Maria Elena Beasain Zubillaga,Irun,3223,B,monitoring
+Luis Ma Alcain Arribillaga,Irun,3224,B,monitoring
+Matheo C Jimenez Moreno,Donostia San Sebastian,3225,B,monitoring
+Agurtzane Martiarena Arregui,Arrasate Mondragon,3226,B,monitoring
+Felipe Bengoa Etxebarria,Aretxabaleta,3227,B,monitoring
+Fernando Larranaga Padilla,Arrasate Mondragon,3228,B,monitoring
+Fernando Antonio Fernandez Hernandez,Illescas,3265,B,monitoring
+Teresa Garcia Portero,Illescas,3266,B,monitoring
+Fernando Barroso Moreno,Toledo,3267,B,monitoring
+Roman Ballesteros Bonilla,Illescas,3268,B,monitoring
+Angel Cobos Mayoral,Sesena,3269,B,monitoring
+Antonio Ocana Sesena,Illescas,3270,B,monitoring
+Antonio Asensio Rubio,Zaragoza,3338,B,monitoring
+Luis Jimenez Asin,Ejea De Los Caballeros,3339,B,monitoring
+Maria Socorro Martinez Del Moral,Zaragoza,3340,B,monitoring
+Gladys Lilia Palacios Quintana,Zaragoza,3341,B,monitoring
+Sergio Sanz Sebastian,Zaragoza,3342,B,monitoring
+Manuela Rabanaque Sanchez,Zaragoza,3343,B,monitoring
+Sagrario Reina Gimenez Amador,Zaragoza,3344,B,monitoring
+Alberto Perez Fajardo,Zaragoza,3345,B,monitoring
+Samuel Martinez Martinez,Zaragoza,3346,B,monitoring
+Martin Pablo Orera,Zaragoza,3348,B,monitoring
+Maria Gloria Cisneros Barbero,Zaragoza,3350,B,monitoring
+Fermin Bardaji Barles,Huesca,3353,B,monitoring
+Sebastian Puimedon Campo,Huesca,3354,B,monitoring
+Jose Domingo Soriano,Alcaniz,3355,B,monitoring
+Adoracion Ibanez Valdevell,Alcaniz,3356,B,monitoring
+Eduardo Blanco Moreno,Getafe,3358,B,monitoring
+Juliana Olmeda Barbas,Alcorcon,3359,B,monitoring
+Elena Medina Arribas,Madrid,3366,B,monitoring
+Maria Rosario Antolin Vela,Valencia,3422,B,monitoring
+Miguel Ortiz Ariza,Torrent,3423,B,monitoring
+Petra Morales Sanchez,Paiporta,3424,B,monitoring
+Maria Isabel Orti Belda,Torrent,3425,B,monitoring
+Rafael Llobregat Seligra,Alboraia,3426,B,monitoring
+Pedro Garcia Martinez,Godella,3427,B,monitoring
+Concepcion Espi Garcia,Valencia,3428,B,monitoring
+Jose Baviera Fernandez,Paiporta,3429,B,monitoring
+Iluminada Serrano Canovas,Valencia,3430,B,monitoring
+Joaquina Santos Rodriguez,Viso Del Alcor,3432,B,monitoring
+Fermin Fernandez Trejo Tena,Sevilla,3433,B,monitoring
+Rosario Puerto Gallego,Sevilla,3434,B,monitoring
+Jorge Carbajal Bernuy,Sevilla,3435,B,monitoring
+Maria Carmen Casas Casas,Sevilla,3436,B,monitoring
+Carmen Ruiz Gonzalez,Sevilla,3437,B,monitoring
+Isabel Dominguez Carnerero,Osuna,3438,B,monitoring
+Juan Jose Fernandez Gamboa,Arahal,3439,B,monitoring
+Rosario Ojeda Gonzalez,Alcala De Guadaira,3440,B,monitoring
+Milagros Copado Ramos,Moron De La Frontera,3442,B,monitoring
+Isabel Garcia Fernandez,San Fernando,3458,B,monitoring
+Dolores Garcia Guerrero,Jerez De La Frontera,3459,B,monitoring
+Maria Del Pilar Granados Iglesias,Jerez De La Frontera,3460,B,monitoring
+Jose Maria Martinez Aragon,San Fernando,3461,B,monitoring
+Maria Luisa Rondon Marin,Chiclana De La Frontera,3462,B,monitoring
+Dolores Llamas Rodriguez,San Fernando,3463,B,monitoring
+Mari Pau Garcia De La Barrera,Reus,3464,B,monitoring
+Miquel Matalassos,Cambrils,3465,B,monitoring
+Amelia Salomon Ruiz,Torrelavega,3469,B,monitoring
+Jose Gerardo Fernandez Obeso,Torrelavega,3470,B,monitoring
+Aiping Zhang,Valladolid,3474,B,monitoring
+Julia Gonzalez Lopez,Medina El Campo,3475,B,monitoring
+Antonio Rodriguez Castro,Valladolid,3476,B,monitoring
+Maria Dolores Espartero Rojo,Valladolid,3477,B,monitoring
+Maria Asuncion De Rozas Martin,Valladolid,3478,B,monitoring
+Jose Antonio Abia Fernandez,Valladolid,3479,B,monitoring
+Maria Del Carmen Ojero Sanz,Tudela De Duero,3480,B,monitoring
+Maria Carmen Ortiz Montero,Medina El Campo,3481,B,monitoring
+Manuel Pena Del Agua,Valladolid,3482,B,monitoring
+Maria Del Milagro Velasco Martin,Valladolid,3485,B,monitoring
+Juan Jose Abad Lopez,Valladolid,3486,B,monitoring
+Alberto Angulo Alonso,Miranda De Ebro,3489,B,monitoring
+Teofila Costumero Martin,Miranda De Ebro,3490,B,monitoring
+Maria Carmen Barrio Requena,Miranda De Ebro,3491,B,monitoring
+Victoriano Martinez Martinez,Logrono,3493,B,monitoring
+Carlos Garcia Garcia,Haro,3494,B,monitoring
+Julia Leon Sanchez,Logrono,3495,B,monitoring
+Vicente Conde Fernandez,Logrono,3496,B,monitoring
+Angel Pascual Encina,Logrono,3497,B,monitoring
+Carmen Alejandra Angulo Campos,Logrono,3498,B,monitoring
+Maria Luz Carballo Zorzano,Logrono,3499,B,monitoring
+Maria Teresa Garcia Torres,Logrono,3500,B,monitoring
+Jose Maria Alvarez Armas,Logrono,3502,B,monitoring
+Susana Landazabal Echazarreta,Logrono,3503,B,monitoring
+Ana Maria Mato Pedrosa,Haro,3504,B,monitoring
+Maria Del Pilar Manzanos Blanco,Logrono,3506,B,monitoring
+Salud Morgado Antunez,Logrono,3508,B,monitoring
+Manuel Olivas Laconcha,Logrono,3509,B,monitoring
+Esperanza Pascual Bastida,Logrono,3510,B,monitoring
+Santiago Martinez Ochoa,Logrono,3511,B,monitoring
+Eugenio Martin Rodriguez,Logrono,3512,B,monitoring
+Teresa Fernandez Silva,Otazu,3514,B,monitoring
+Margarita Corres Castelo,Otazu,3515,B,monitoring
+Felix Alberto Garcia Rodriguez,Otazu,3516,B,monitoring
+Margarita Valderrama,Otazu,3518,B,monitoring
+Julia Alonso Saenz,Laguardia,3519,B,monitoring
+Fernando Diaz Beltran De Heredia,Otazu,3520,B,monitoring
+Mykola Klymyshyn,Otazu,3521,B,monitoring
+Jose Angel Garcia Yaniz,Otazu,3522,B,monitoring
+Severina Monja Gonzalo,Otazu,3523,B,monitoring
+Catalina Corral Burgos,Otazu,3524,B,monitoring
+Agueda Martin Mediavilla,Otazu,3525,B,monitoring
+Francisco Jose Perez Martin,Otazu,3527,B,monitoring
+Pedro Gil Llorente,Azuqueca De Henares,3528,B,monitoring
+Javier Garcia Lopez,Guadalajara,3529,B,monitoring
+Eugenio Flores Moreno,Guadalajara,3530,B,monitoring
+Felix Garcia Martin,Guadalajara,3531,B,monitoring
+Rosa Andres De La Fuente,Guadalajara,3532,B,monitoring
+Jose Luis Jimenez Gutierrez,Guadalajara,3533,B,monitoring
+Eusebia Hurtado Navas,Yunquera De Henares,3534,B,monitoring
+Mari Carmen Pedrero Magro,Guadalajara,3535,B,monitoring
+Aurora Fernandez Blanco,Guadalajara,3536,B,monitoring
+Jesus Pedro Guil Martinez,Guadalajara,3537,B,monitoring
+Victoria Ramiro Merino,Guadalajara,3538,B,monitoring
+Casimiro Tomas Ferrer,Guadalajara,3539,B,monitoring
+Consolacion Valero Alvarez,Guadalajara,3540,B,monitoring
+Maria Luz Garcia Gutierrez,Palencia,3550,B,monitoring
+Maria Carmen Ortega Rodriguez,Palencia,3551,B,monitoring
+Dionisia Dominguez Sevilla,Palencia,3552,B,monitoring
+Maria Del Carmen Cepeda Martinez,Palencia,3553,B,monitoring
+Julian Rebollar Velado,Palencia,3554,B,monitoring
+Lourdes Rosario Ramirez Arana,Palencia,3555,B,monitoring
+Maria Pilar Gonzalez Rueda,Palencia,3556,B,monitoring
+Jose Rodriguez Gil,Palencia,3557,B,monitoring
+Roberto Javier Ortiz Polanco,Palencia,3558,B,monitoring
+Juan Rebolledo Gonzalez,Palencia,3559,B,monitoring
+Maria Del Carmen Gutierrez Fernandez,Palencia,3560,B,monitoring
+Higinio Fernandez Ruiz,Palencia,3561,B,monitoring
+Eutimio Arenas Gonzalez,Palencia,3562,B,monitoring
+Laura Lobejon San Martin,Palencia,3563,B,monitoring
+Jose Carlos Cortes Aduriz,Palencia,3564,B,monitoring
+Concepcion Yustos Cantera,Palencia,3565,B,monitoring
+Ana Santos Blanco,Palencia,3566,B,monitoring
+Abundio Villamediana Seco,Palencia,3567,B,monitoring
+Luis Maria Gil Martin,Palencia,3568,B,monitoring
+Maria Concepcion Tejedo San Miguel,Palencia,3569,B,monitoring
+Marisa Mozos Macho,Palencia,3570,B,monitoring
+Maria Ascension Perez Edeso,Venta De Banos,3571,B,monitoring
+Rafael Revilla Herrero,Palencia,3572,B,monitoring
+Felicitas Garcia Perez,Palencia,3573,B,monitoring
+Juana Mayor Angulo,Soria,3574,B,monitoring
+Aurora Vesperinas Maure,Berlanga De Duero,3575,B,monitoring
+Adoracion Vega Estepa,Soria,3576,B,monitoring
+Geronimo Marin Bedoya,Soria,3578,B,monitoring
+Alejandro Olalla De Miguel,San Leonardo De Yague,3579,B,monitoring
+Angela Falcon Felipe,Moya,3580,B,monitoring
+Rosa Delia Sanchez Hernandez,Las Palmas De Gran Canaria,3581,B,monitoring
+Rafael Gonzalez Hernandez,Arrecife,3582,B,monitoring
+Pablo Suarez Almeida,Las Palmas De Gran Canaria,3583,B,monitoring
+Nelida Santana Martin,Las Palmas De Gran Canaria,3584,B,monitoring
+Maria Milagros Armas Guerra,Las Palmas De Gran Canaria,3585,B,monitoring
+Agustina Padron Leon,Las Palmas De Gran Canaria,3587,B,monitoring
+Casto Manuel Caraballo Betancort,Teguise,3588,B,monitoring
+Silvia De Paez Romero,Arrecife,3589,B,monitoring
+Juan Manuel Basterra Oraa,Arrecife,3590,B,monitoring
+David Bonilla Curbelo,Arrecife,3591,B,monitoring
+Manuel Alvarez Benasco,Arrecife,3592,B,monitoring
+Catalina Gomez Valle,Zaragoza,3593,B,monitoring
+Maria Conolacion Arguinano Moreno,Zaragoza,3594,B,monitoring
+Amparo Sanchez Lozano,Zaragoza,3595,B,monitoring
+Maria Merdedes Breto Garcia,Zaragoza,3596,B,monitoring
+Josefa Pimes Garcia,Zaragoza,3597,B,monitoring
+Josefa Pines Garcia,Zaragoza,3598,B,monitoring
+Martin Pablo Corera,Zaragoza,3599,B,monitoring
+Mario Llop Embid,Zaragoza,3600,B,monitoring
+Felicidad Artajona Gonzalez,Remolinos,3601,B,monitoring
+Salvador Gotor Sanchez,Zaragoza,3602,B,monitoring
+Primitiva Gutierrez Barba,Barbastro,3603,B,monitoring
+Adoracion Latorre Marro,Graus,3604,B,monitoring
+Teresa Cami Sama,Fraga,3605,B,monitoring
+Maria Josefa Celma Arantegui,Huesca,3606,B,monitoring
+Fernando Martin Martinez,Huesca,3607,B,monitoring
+Ana Maria Arnal Sampietro,Barbastro,3608,B,monitoring
+Jose Lloro Castan,Huesca,3609,B,monitoring
+Rosa Gistau Noguero,Ainsa,3610,B,monitoring
+Jose Ramon Miranda Castillo,Huesca,3611,B,monitoring
+Pilar Vinuales Lasierra,Huesca,3612,B,monitoring
+Manuel Franco Nasarre,Sabinanigo,3613,B,monitoring
+Francisco Barraca Paniello,Barbastro,3614,B,monitoring
+Maria Carmen Gracia Sorina,Barbastro,3615,B,monitoring
+Josefina Delgado Ortiz,Tardienta,3616,B,monitoring
+Amado Berdejo Torn,Barbastro,3617,B,monitoring
+Jose Maria Martinez Ara,Barbastro,3618,B,monitoring
+Felipe Jimenez Sanchez,Navalcarnero,3620,B,monitoring
+Consuelo Chacon Ortega,Leganes,3621,B,monitoring
+Soledad Maestre Garcia,Madrid,3622,B,monitoring
+Olga Vazquez Siu,Madrid,3623,B,monitoring
+Tomasa Guerrero De Dios,Alcala De Henares,3624,B,monitoring
+Carmen Moreno Alguacil,Aranjuez,3625,B,monitoring
 Jose Juan Gonzalez Gonzalez,Valencia,3698,B,monitoring
 Guillermo Pardo Tirado,Valencia,3699,B,monitoring
 Maria Jose Villanueva Martinez,Godella,3700,B,monitoring
@@ -1986,18 +2537,6 @@ Francisca Cotan Lopez,Sevilla,3728,B,monitoring
 Juan Romero Aparicio,Carmona,3729,B,monitoring
 Ramirez Hidalgo Esperanza,Sevilla,3730,B,monitoring
 Garcia Romero Elena,Sevilla,3731,B,monitoring
-Jose Luis Gonzalez Duran,Dos Hermanas,3732,B,monitoring
-Manuela Moreno Rey,Alcala De Guadaira,3733,B,monitoring
-Diaz Garcia Manuel,Sevilla,3734,B,monitoring
-Dominguez Amoros Dolores,Sevilla,3735,B,monitoring
-Gil Garrido Natividad,Sevilla,3736,B,monitoring
-Franco Sanudo Concepcion,Sevilla,3737,B,monitoring
-Maria Olmo Duarte,Moron De La Frontera,3738,B,monitoring
-Somosierra Perez Maria Dolores,Sevilla,3739,B,monitoring
-Rondan Figueroa Luz Betty,Sevilla,3740,B,monitoring
-Fernandez Cruz Emilio,Sevilla,3741,B,monitoring
-Rosario Vela Lora,Mairena Del Aljarafe,3743,B,monitoring
-Jesus Ortega Martinez,Sevilla,3744,B,monitoring
 Carmen Martinez Juan,Villena,3745,B,monitoring
 Vicente Martinez Cerdan,Villena,3746,B,monitoring
 Fina Cerdan Gil,Villena,3747,B,monitoring
@@ -2089,25 +2628,6 @@ Juan Carlos Estrada Blanco,Grado,3832,B,monitoring
 Esteban Martinez Fernandez,Grado,3833,B,monitoring
 Josefa Alonso Fernandez,Oviedo,3834,B,monitoring
 Enrique Cueli Toyos,Gijon,3835,B,monitoring
-Benjamin Merayo Alonso,Gijon,3836,B,monitoring
-Maria Sara Fernandez Suarez,Mieres,3837,B,monitoring
-Manuel Angel Otamendi Busto,Cudillero,3838,B,monitoring
-Justa Rodriguez Acevedo,Coana,3839,B,monitoring
-Carlos Valdes Gonzalez,Gijon,3840,B,monitoring
-Olvido Gonzalez Bernardo,Pola De Siero,3841,B,monitoring
-Jesus Martinez Fernandez,Oviedo,3842,B,monitoring
-Francisco Damaso Fernandez Galguera,Llanes,3843,B,monitoring
-Conchita Gonzalez Prendes,Gijon,3844,B,monitoring
-Maria Concepcion Eulalia Gonzalez Prendes,Gijon,3845,B,monitoring
-Begona Cordera Blanco,Gijon,3846,B,monitoring
-Maria Del Carmen Fernandez Fernandez,Oviedo,3847,B,monitoring
-Maria Bedrinana Alonso,Villaviciosa,3848,B,monitoring
-Georgina Caldevilla Cuyar,Llanes,3849,B,monitoring
-Dolores Del Rio Rodriguez,Oviedo,3850,B,monitoring
-Alfredo Valdes Mendez,Cudillero,3851,B,monitoring
-Jose Angel Alonso Fernandez,Gijon,3852,B,monitoring
-Josefa Diaz Mendez,Oviedo,3853,B,monitoring
-Emilio Dominguez Menendez,Gijon,3854,B,monitoring
 Isabel Martinez Castineiras,Pontevedra,3855,B,monitoring
 Emilio Barreiro Romero,Vilanova De Arousa,3856,B,monitoring
 Fernando Iglesias Paz,Bueu,3857,B,monitoring
@@ -2210,7 +2730,6 @@ Juan Antonio Parralejo Gallardo,Navalvillar De Pela,3953,B,monitoring
 Santiago Avalo Garcia,Merida,3954,B,monitoring
 Santiago Avalos Garcia,Merida,3955,B,monitoring
 Iluminada Sanchez Gonzalez,Casas De Don Pedro,3956,B,monitoring
-Matilde Diaz Bobadilla,Castuera,3957,B,monitoring
 Jose Antonio Pinillos Araiz,Estella,3958,B,monitoring
 Manuel Mancebo Martin,Burlada,3959,B,monitoring
 Vilma Louise Keefe Barber,Burlada,3960,B,monitoring
@@ -2234,29 +2753,6 @@ Jose Francisco Javier Zelaieta Aramendi,Bera,3977,B,monitoring
 Alfontso Bikendi Etxarri Azpirotz,Pamplona,3978,B,monitoring
 Ma Sagrario Maisterra Aguerre,Sanguesa,3979,B,monitoring
 Ma Lourdes Adot Sanz,Burlada,3980,B,monitoring
-Jose Martinez Valero,Pamplona,3981,B,monitoring
-Pablo Montano Ezponda,Pamplona,3982,B,monitoring
-Alfontso Etxarri Azpirotz,Pamplona,3983,B,monitoring
-Ma Teresa Aristu Aristu,Antsoain,3984,B,monitoring
-Salvador Augusto Da Silva,Bera,3985,B,monitoring
-Mari Carmen Goni Arizcuren,Burlada,3986,B,monitoring
-Felix Pio Alegria Armendariz,Pamplona,3987,B,monitoring
-Luisa Lafuente Castells,Pamplona,3988,B,monitoring
-Maria Pilar Morales De Miguel,Pamplona,3989,B,monitoring
-Ma Luisa Marugan Sanz,Antsoain,3990,B,monitoring
-Luisa Maria Lafuente Castells,Pamplona,3991,B,monitoring
-Axun Irazoki Artieda,Bera,3992,B,monitoring
-Juan Jacinto Vazquez Zapateria,Castejon,3993,B,monitoring
-Maria Rosario Antia Lopez,Pamplona,3994,B,monitoring
-Tomas Munoz Carravilla,Alsasua,3995,B,monitoring
-Ma Carmen Arana Berastegui,Etxarri Aranatz,3996,B,monitoring
-Ma Pilar Huesa Gil,Pamplona,3997,B,monitoring
-Maria Jesus Gonzalez Martin,Pamplona,3998,B,monitoring
-Martin Garrues Echarri,Estella,3999,B,monitoring
-Ivan Garbizu Extremado,Pamplona,4000,B,monitoring
-Maximo Pacho Taranilla,Pamplona,4001,B,monitoring
-Miguel Maria Otermin Urra,Alsasua,4002,B,monitoring
-Angel Mari Moreno Merino,Burlada,4003,B,monitoring
 Francisco Godoy Godoy,Linares,4004,B,monitoring
 Pedro Gijon Malpica,Jaen,4005,B,monitoring
 Dolores Gomez Pacheco,Aldehermosa,4006,B,monitoring
@@ -2289,11 +2785,6 @@ Rosa Mormaneu Morte,Castellon,4032,B,monitoring
 Jose Villalta Carregui,La Vall D Uixo,4033,B,monitoring
 Jose Bonifas Sanchez,La Vall D Uixo,4034,B,monitoring
 Amparo Carrasquer Blesa,Burriana,4035,B,monitoring
-Angel Romero Sanchez,La Vall D Uixo,4036,B,monitoring
-Carlos Mas Roig,Castellon,4037,B,monitoring
-Antonio Jose Valls Sales,Burriana,4038,B,monitoring
-Vicente Safont Belles,Burriana,4039,B,monitoring
-Carlos Morejon Calvo,Castellon,4040,B,monitoring
 Agustina Herrera Olaiz,Torrelavega,4041,B,monitoring
 Avelino Navamuel Quevedo,Villegar De Toranzo,4042,B,monitoring
 Jose Maria Fernandez Contioso,Heras,4043,B,monitoring
@@ -2305,7 +2796,6 @@ Gerardo Bazo Echevarria,Torrelavega,4048,B,monitoring
 Jose Maria Martinez Abascal,Laredo,4049,B,monitoring
 Virginia Llamosas Sanudo,Laredo,4050,B,monitoring
 Julio Miguel Rodriguez Cantarero,Torrelavega,4051,B,monitoring
-Amparo Ruiz Barcena,Santander,4052,B,monitoring
 Gregorio Gomez Lamadrid,Torrelavega,4053,B,monitoring
 Beatriz Coz Velo,Santander,4054,B,monitoring
 Enrique Fernandez Fernandez,Santander,4055,B,monitoring
@@ -2319,28 +2809,6 @@ Francisco Maza Ponce,Heras,4062,B,monitoring
 Emilio Escudero Ortiz,Lamadrid,4063,B,monitoring
 Pilar Carrera Saiz,Santander,4064,B,monitoring
 Josefina Alvarez Fernandez,Castro Urdiales,4065,B,monitoring
-Maria Carmen Jara Mirones,Santander,4066,B,monitoring
-Jose Luis Rivero Galvan,Santander,4067,B,monitoring
-Jose Bustillo Liano,Maliano,4068,B,monitoring
-Carlos Arce Otero,Santander,4069,B,monitoring
-Alejandro Bengochea Fernandez,Carrejo,4070,B,monitoring
-Manuel Barreda Noriega,Comillas,4071,B,monitoring
-Balbina Alvaro Udias,Torrelavega,4072,B,monitoring
-Jose Luis Romero Mateo,Torrelavega,4073,B,monitoring
-Maria Concepcion Martin Gonzalez,Heras,4074,B,monitoring
-Olvido Diez Diez,Heras,4075,B,monitoring
-Victor De Celis Alonso,Santander,4076,B,monitoring
-Matilde Riancho Lopez,Torrelavega,4077,B,monitoring
-Maria Jose Gutierrez Beivide,Santander,4078,B,monitoring
-Josefa Ladislao Cruz,Heras,4079,B,monitoring
-Nemesio Arroyo Rodrigo,Santander,4080,B,monitoring
-Juan Sota Alonso,Heras,4081,B,monitoring
-Maximo Sanchez Cobo,Torrelavega,4082,B,monitoring
-Sor Maria Rosa Alvarez Sala,Santander,4083,B,monitoring
-Maria Alamo Puente,Santander,4084,B,monitoring
-Jose Maria Torrejon Pulido,Santander,4085,B,monitoring
-Encarnacion Rodriguez Santiago,Santander,4086,B,monitoring
-Aureliano Ruiz Ruiz,Villegar De Toranzo,4087,B,monitoring
 Martina Calvo Sanz,Valladolid,4088,B,monitoring
 Santiago Misa Babarro,Valladolid,4089,B,monitoring
 Felipe Ordonez Gonzalez,Valladolid,4090,B,monitoring
@@ -2350,10 +2818,8 @@ Soledad Bombin Bombin,Valladolid,4093,B,monitoring
 Francisco Javier Mena Sastre,Medina El Campo,4094,B,monitoring
 Albina Borja Borja,Valladolid,4095,B,monitoring
 Jose Maria Rodriguez Arias,Valladolid,4096,B,monitoring
-Angel Aragon Munoz,Valladolid,4097,B,monitoring
 Rosa Rubio Lopez,Valdepenas,4098,B,monitoring
 Ambrosia Abad Arias,Valdepenas,4099,B,monitoring
-Luisa Bellon Martinez,Valdepenas,4102,B,monitoring
 Pedro Vergel Contreras,Isla Cristina,4103,B,monitoring
 Roberto Luis Morell Martinez,Lepe,4104,B,monitoring
 Antonio Ramirez Chaves,Trigueros,4105,B,monitoring
@@ -2365,15 +2831,10 @@ Manuel Villegas Romero,Lepe,4110,B,monitoring
 Aurelio Manuel Lopez Albarran,Ayamonte,4111,B,monitoring
 Barbara Moron Gomez,Santa Barbara De Casa,4112,B,monitoring
 Ana Maria Castilla Martin,Almonte,4113,B,monitoring
-Rosa Aibar Martinez,Isla Cristina,4114,B,monitoring
-Rosa Maria Aibar Martinez,Isla Cristina,4115,B,monitoring
-Antonia Nambar Rodriguez,Huelva,4116,B,monitoring
-Angeles Lozano Poli,Huelva,4117,B,monitoring
 Enrique Fernandez Gutierrez,Ponferrada,4118,B,monitoring
 Susana Martinez Alegre,Tabuyo Del Monte,4119,B,monitoring
 Emilio Barrio Callejo,Ponferrada,4120,B,monitoring
 Maria Luisa Fernandez Garcia,La Magdalena,4121,B,monitoring
-Pilar Llamazares Rodriguez,Puente Villarente,4122,B,monitoring
 Ramon Riol Prado,Puente Villarente,4123,B,monitoring
 Esther Tunon Diaz,Leon,4124,B,monitoring
 Jorge Antonio Rubio Fernandez,Ponferrada,4125,B,monitoring
@@ -2411,13 +2872,6 @@ Ismael Gerardo Rodriguez Odriguez,Leon,4156,B,monitoring
 Ismael Gerardo Rodriguez Rodriguez,Leon,4157,B,monitoring
 Isaura Asenjo Alba,Ponferrada,4158,B,monitoring
 Ana Maria Moreno Villa,Leon,4159,B,monitoring
-Francisco Yebra Gago,Ponferrada,4160,B,monitoring
-Ma Antonia Compadre Gonzalez,Leon,4161,B,monitoring
-Sofia Murciego Pastor,Leon,4162,B,monitoring
-Jesus Fernandez Martinez,Leon,4163,B,monitoring
-Viriato Augusto Mateus,Ponferrada,4164,B,monitoring
-Santiago Fernandez Ramon,Ponferrada,4165,B,monitoring
-Trinidad Fernandez Iglesias,Leon,4166,B,monitoring
 Jesus Rodriguez Gonzalez,Villasbuenas De Gata,4167,B,monitoring
 Leonor Serrano Gomez,Navalmoral De La Mata,4168,B,monitoring
 Gloria Terron Claudio,Plasencia,4169,B,monitoring
@@ -2453,20 +2907,15 @@ Genaro Carpallo Pache,Coria,4198,B,monitoring
 Martin Vaquero Campos,Trujillo,4199,B,monitoring
 Pedro Carrillon Gozalez,Plasencia,4200,B,monitoring
 Manuel Cabello Solis,Trujillo,4201,B,monitoring
-Beni Ange Uriel N Gandi,Navalmoral De La Mata,4202,B,monitoring
 Josefa De Paula Guarido,San Pedro Del Alcantara,4203,B,monitoring
 Concepcion Lista Rey,Plasencia,4204,B,monitoring
 Jose Maria Reviriego Delgado,San Pedro Del Alcantara,4205,B,monitoring
-Emilio Francisco Perez Solis,San Pedro Del Alcantara,4206,B,monitoring
 Oliver Godoy Prado,San Pedro Del Alcantara,4207,B,monitoring
-Fidel Moreno Amado,Moraleja,4208,B,monitoring
-Rogelio Ramos Sanchez,Plasencia,4209,B,monitoring
 Consuelo Serrano Campos,Ossa De Montiel,4210,B,monitoring
 Juan Hermosa Sahuco,Hellin,4211,B,monitoring
 Fernando Vela Medina,Hellin,4212,B,monitoring
 Emilio Rios Rodriguez,Hellin,4213,B,monitoring
 Antonio Del Pueblo Tomas,Hellin,4214,B,monitoring
-Lely Rodriguez Olivares,Hellin,4215,B,monitoring
 Jose Luis Portugal Barriuso,Burgos,4216,B,monitoring
 Maria Caridad Alegre Diez,Miranda De Ebro,4217,B,monitoring
 Maria Teresa De La Fuente Miguel,Burgos,4218,B,monitoring
@@ -2497,9 +2946,6 @@ Herminia Sancho Segura,Miranda De Ebro,4242,B,monitoring
 Rafael Fernandez Hernandez,Burgos,4243,B,monitoring
 Angela Garcia Allua,Miranda De Ebro,4244,B,monitoring
 Marcelina Nunez Franco,Miranda De Ebro,4245,B,monitoring
-Maria Cadinanos Urruchi,Miranda De Ebro,4246,B,monitoring
-Alfonso Martinez Monge,Miranda De Ebro,4247,B,monitoring
-Dorinda Gonzalez Caballero,Burgos,4248,B,monitoring
 Maria Luisa Santos Gomez,Salamanca,4249,B,monitoring
 Magdalena Sanchez Rodriguez,Salamanca,4250,B,monitoring
 Manuel Enrique Gordo Lorenzo,Salamanca,4251,B,monitoring
@@ -2536,16 +2982,9 @@ Rosario Fernandez Diaz,Salamanca,4281,B,monitoring
 Angel Rozas Perez,Salamanca,4282,B,monitoring
 Martina Gomez Vinuela,Salamanca,4283,B,monitoring
 Veneranda Juan Martin,Salamanca,4284,B,monitoring
-Maria Carmen Martin Benito,Salamanca,4285,B,monitoring
 Melchora Hernandez Hernandez,Salamanca,4286,B,monitoring
 Bangja Lim,Salamanca,4287,B,monitoring
 Manuela Gomez Castro,Salamanca,4288,B,monitoring
-Gloria Martin Sanchez,Salamanca,4289,B,monitoring
-Cipriana Picado Cardoso,Salamanca,4290,B,monitoring
-Teofila Matilde Barcala Martin,Salamanca,4291,B,monitoring
-Trinidad Hernandez Martin,Salamanca,4292,B,monitoring
-D Jose Garcia Sanchez,Salamanca,4293,B,monitoring
-Jose Manuel Perez Martin,Salamanca,4294,B,monitoring
 Horacio Rodriguez Camino Meira,Meira,4295,B,monitoring
 Arturo Romero Lopez,Vilalba,4296,B,monitoring
 Pedro Balseiro Val,O Valadouro,4297,B,monitoring
@@ -2584,16 +3023,6 @@ Maria Irene Corral Lopez,Guitiriz,4329,B,monitoring
 Maria Carmen Rapa Vazquez,Burela,4330,B,monitoring
 Francisco Balseiro Pedreira,Burela,4331,B,monitoring
 Manuel Barreira Abuin,Lugo,4332,B,monitoring
-Estrella Gonzalez Gomez,Lugo,4333,B,monitoring
-Hortensio Diaz Becerra Chaos,Meira,4334,B,monitoring
-Maria Jose Garcia Gonzalez Viveiro,Viveiro,4335,B,monitoring
-Ricardo Ledo Gomez,Chantada,4336,B,monitoring
-Pilar Lopez Garcia,A Fonsagrada,4337,B,monitoring
-Marisol Rodriguez Santin,Roman De Cervantes,4338,B,monitoring
-Carolina Carretero Prestamo,Sarria,4339,B,monitoring
-Angeles Casado Rionegro,Lugo,4340,B,monitoring
-Amparo Orosa Ratoeira,O Valadouro,4341,B,monitoring
-Amanda Lopez Lopez,Lancara,4342,B,monitoring
 Bernardo Sitges Alberti,Logrono,4344,B,monitoring
 Concha Yecora Adan,Logrono,4345,B,monitoring
 Angeles Riazzo Garcia,Logrono,4346,B,monitoring
@@ -2614,11 +3043,6 @@ Manuel Olivas La Concha,Logrono,4360,B,monitoring
 Santos Saenz Gonzalez,Aldeanueva De Ebro,4361,B,monitoring
 Angel Garcia Garcia,Logrono,4362,B,monitoring
 Maria Pilar Pecina Fernandez,Logrono,4363,B,monitoring
-Arturo Lerena Prado,Najera,4364,B,monitoring
-Juan Jose Valle Perez Vazquez,Ezcaray,4365,B,monitoring
-Ma Antonia Fonseca Bazo,Logrono,4366,B,monitoring
-Roberto Perez Villoslada,Logrono,4367,B,monitoring
-Maria Magdalena Alamayona Martinez,Calahorra,4368,B,monitoring
 Jose Antonio Arana Lopez,Vitoria Gasteiz,4369,B,monitoring
 Santiago Urzay Bermejo,Vitoria Gasteiz,4370,B,monitoring
 Jose Arechavala Fernandez,Vitoria Gasteiz,4371,B,monitoring
@@ -2626,9 +3050,6 @@ Ismael Gonzalez Martinez,Vitoria Gasteiz,4372,B,monitoring
 Francisco Javier Dulanto Martinez,Vitoria Gasteiz,4373,B,monitoring
 Avelino Huelmo Calderon,Vitoria Gasteiz,4374,B,monitoring
 Antonia Berenguer Niso,Otazu,4375,B,monitoring
-Maria Del Carmen Reguero Bueno,Guadalajara,4376,B,monitoring
-Julio Yague Martinez,Guadalajara,4377,B,monitoring
-Maria Carmen Faura Gomez,Guadalajara,4378,B,monitoring
 Perpetua Domingo Garcimartin,Navas De San Antonio,4379,B,monitoring
 Jose Luis Casado De Benito,Nava De La Asuncion,4380,B,monitoring
 Vicente Velasco Manas,Navas De San Antonio,4381,B,monitoring
@@ -2639,8 +3060,6 @@ Modesta Lozano Sanz,Navas De San Antonio,4385,B,monitoring
 Victoriana Quintana Bermejo,Navas De San Antonio,4386,B,monitoring
 Julia Jeronimo Velasco,Navas De San Antonio,4387,B,monitoring
 Elena Puebla Urien,Navas De San Antonio,4388,B,monitoring
-Teodora Albarran Martin,Navas De San Antonio,4389,B,monitoring
-Consuelo De Mercado Merino,Escalona Del Prado,4390,B,monitoring
 Filomena Martin Fulgencio,Zamora,4391,B,monitoring
 Maria Trinidad Llamas Carretero,Zamora,4392,B,monitoring
 Fidenciano Hidalgo Penin,Zamora,4393,B,monitoring
@@ -2653,7 +3072,6 @@ Olegario Sanchez Gomez,Avila,4399,B,monitoring
 Esther Alonso Gutierrez,Avila,4400,B,monitoring
 Francisco Arnaiz Frias,El Tiemblo,4401,B,monitoring
 Anastasia Martin De Castro,El Tiemblo,4402,B,monitoring
-Saul Calahorra Cabrero,El Tiemblo,4403,B,monitoring
 Carmen Prieto Rodriguez,Palencia,4404,B,monitoring
 Joaquin Melero Caminero,Paredes De Navas,4405,B,monitoring
 Maria Carmen Gutierrez Fernandez,Palencia,4406,B,monitoring
@@ -2661,19 +3079,9 @@ Mariano Gonzalez Lopez,Villamuriel De Cerrato,4407,B,monitoring
 Jesus Manuel Escapa Calvo,Villada,4408,B,monitoring
 Angel Revilla Sanchez,Carrion De Los Condes,4409,B,monitoring
 Maria Luisa Mozos Macho,Palencia,4410,B,monitoring
-Angel Cantera Avila,Palencia,4411,B,monitoring
-Angela Frechoso Herrero,Palencia,4412,B,monitoring
-Dili Blanco Garcia,Palencia,4413,B,monitoring
-Jesus Maria Zapatero Torio,Palencia,4414,B,monitoring
-Baudilia Blanco Garcia,Palencia,4415,B,monitoring
-Mercedes Garcia Becoechea,Palencia,4416,B,monitoring
-Jesus Tejeda Cebrian,Palencia,4417,B,monitoring
-Angela Soto Sendino,Palencia,4418,B,monitoring
 Santiago De Miguel Hernandez,Soria,4419,B,monitoring
 Felix Andres Gonzalez,Soria,4420,B,monitoring
 Julio Rubio Hernandez,Soria,4421,B,monitoring
-Felicitas Barca Ajenjo,El Burgo De Osma,4422,B,monitoring
-Jose Andres Romero Del Pozo,Soria,4423,B,monitoring
 Pedro Acosta Carballo,San Fernando De Mas Palomas,4424,B,monitoring
 Lucia Ruiz Santana,Arucas,4425,B,monitoring
 Eusebio Sergio Santana Perez,Las Palmas De Gran Canaria,4426,B,monitoring
@@ -2686,15 +3094,343 @@ Domingo Agustin Armas Hernandez,Arrecife,4432,B,monitoring
 Wilfran Palacios Gonzalez,Arrecife,4433,B,monitoring
 Descanse En Paz Francisca Martin Crespo,Teguise,4434,B,monitoring
 Antonio Mejias Garcia,Vecindario,4435,B,monitoring
-Antonio Luis Hernandez Guerra,Las Palmas De Gran Canaria,4436,B,monitoring
-Nieves Vega Godoy,Galdar,4437,B,monitoring
-Vanesa Salguero Hawkins,Las Palmas De Gran Canaria,4438,B,monitoring
 Francisco Henriquez Morales,Arucas,4439,B,monitoring
-Antonio Hernandez Guerra,Arucas,4440,B,monitoring
-Luz Marina Santana Estevez,Santa Brigida,4442,B,monitoring
 Maria Araceli Martin Sancho,Zaragoza,5091,B,monitoring
 Mercedes Lopez Vazquez,Lugo,5092,B,monitoring
 Maria Perez Rivas,Las Palmas De Gran Canaria,5093,B,monitoring
+Florentino Gabas Gracia,Zaragoza,5121,B,monitoring
+Jesus Antonio Morata Garcia,Zaragoza,5122,B,monitoring
+Felipe Hurtado Lisa,Zaragoza,5123,B,monitoring
+Carmen Alejandre Sabio,Zaragoza,5124,B,monitoring
+Juana Anguas Torres,Zaragoza,5125,B,monitoring
+Luis Miguel Lahoz Zapata,Zaragoza,5126,B,monitoring
+Teofilo Lasilla Contin,Ejea De Los Caballeros,5127,B,monitoring
+Marina Carmen Gomez Gonzalez,Getafe,5129,B,monitoring
+Maria Esperanza Rubio Martin,Fuenlabrada,5130,B,monitoring
+Norma Nilda Tejeda Carbajal,Torrelodones,5131,B,monitoring
+Pedro Corpa Beas,San Sebastian De Los Reyes,5132,B,monitoring
+Isabel Maria Hidalgo Aguila,Getafe,5133,B,monitoring
+Ramon Tebar Martinez,Getafe,5134,B,monitoring
+Gaspar Martin Dominguez,Fuenlabrada,5135,B,monitoring
+Lucia Ruiz Gomez,Barcelona,5139,B,monitoring
+Antonio Vilaro Codina,Barcelona,5140,B,monitoring
+Francisco Gonzalez Morales,Barcelona,5141,B,monitoring
+Juan Antonio Pueyo Borrego,Barcelona,5142,B,monitoring
+Montserat Porcar Barbera,Barcelona,5143,B,monitoring
+Salvador De Tudela Edo,Barcelona,5145,B,monitoring
+Tony Padros Roca,Barcelona,5147,B,monitoring
+Jose Conti Maqueda,Barcelona,5148,B,monitoring
+Fina Rogla Sales,Barcelona,5149,B,monitoring
+Maria Lluisa Gambus Espona,Barcelona,5150,B,monitoring
+Maria Gallart Gomez,Barcelona,5151,B,monitoring
+Pilar Royo Almirall,Barcelona,5153,B,monitoring
+Miguel Angel Ramirez Jimenez,Barcelona,5156,B,monitoring
+Lluis Grifell Pons,Manresa,5161,B,monitoring
+Josep Vidal Tort,Barcelona,5164,B,monitoring
+Virgilio Zapico Fernandez,Puzol,5169,B,monitoring
+Jose Luis Bayarri Ribelles,Puzol,5170,B,monitoring
+Alfonso Ruiz Egido,Valencia,5171,B,monitoring
+Pilar Lopez Morcillo,Alfafar,5172,B,monitoring
+Palmira Andani Guillot,Valencia,5173,B,monitoring
+Maria Pilar Moya Coll,Paterna,5174,B,monitoring
+Rosario Diaz Ramirez,Alcala De Guadaira,5177,B,monitoring
+Maria Luisa Guridi Parra,Sevilla,5178,B,monitoring
+Rafael Herrera Sanchez,Alcala De Guadaira,5179,B,monitoring
+Jose Maria Bermudez Villalon,Moron De La Frontera,5180,B,monitoring
+Antonio Perez Moya,Sevilla,5181,B,monitoring
+Maria Dolores Martin Alonso,Sevilla,5182,B,monitoring
+Francisco Cuevas Recio,La Puebla De Cazalla,5183,B,monitoring
+Maria Dolores Otero De Valenzuela,San Fernando,5184,B,monitoring
+Manuel Benavides Montesinos,San Fernando,5185,B,monitoring
+Encarnacion Navarro Hernandez,Jerez De La Frontera,5186,B,monitoring
+Maria Del Carmen Calderon Castellanos,San Fernando,5187,B,monitoring
+Jose Garrido Cerezo,Tarragona,5188,B,monitoring
+Agustina Aranega Martinez,Valls,5190,B,monitoring
+Cayo Alhaja Bazaga,Miranda De Ebro,5192,B,monitoring
+Alberto Giralda Martinez,Miranda De Ebro,5193,B,monitoring
+Ignacia Martin Garcia,Palencia,5197,B,monitoring
+Nila Del Rio Santiago,Palencia,5198,B,monitoring
+Maria Luz Porro Cuesta,Carrion De Los Condes,5199,B,monitoring
+Carlos Garcia Pastor,Palencia,5200,B,monitoring
+Benito Hernandez Perez,Palencia,5201,B,monitoring
+Maria Cruz Melgar Alejandro,Palencia,5202,B,monitoring
+Maria Teresa Rodriguez De Francisco,Leon,5203,B,monitoring
+Mariano Lucas Oterino,San Leonardo De Yague,5204,B,monitoring
+Angel Oliva Moreno,Zaragoza,5208,B,monitoring
+Jose Lis Buil,Huesca,5209,B,monitoring
+Antonio Tobena Riverola,Alcampell,5210,B,monitoring
+Carmen Casarrubios Gamo,Madrid,5211,B,monitoring
+German Ignacio Jimenez Porta,Madrid,5212,B,monitoring
+Mateo Garcia Serrano,Alcala De Henares,5213,B,monitoring
+Valentin Gomez Gutierrez,Fuenlabrada,5214,B,monitoring
+Concepcion Diaz De Castro,Madrid,5215,B,monitoring
+Araceli Sanchez Del Arco,Madrid,5216,B,monitoring
+Araceli Varela Lopez,Mostoles,5217,B,monitoring
+Domitilo Luis Alvarez,Alcala De Henares,5218,B,monitoring
+Visitacion Alonso Manzano,Madrid,5219,B,monitoring
+Vasyl Lazarenko,Madrid,5220,B,monitoring
+Julio Cisneros Mateos,Pozuelo De Alarcon,5221,B,monitoring
+Maria Trinidad Baena Lopez,Leganes,5222,B,monitoring
+Enrique Estebanez Martinez,Alcorcon,5223,B,monitoring
+Ramon Eugenio Lorente Arilla,Madrid,5224,B,monitoring
+Antonio Alcalde Aparicio,Madrid,5225,B,monitoring
+Maria Carmen Prieto Lopez,Chapineria,5226,B,monitoring
+Maria Del Pilar Sevilla Alvarez,Boadilla Del Monte,5227,B,monitoring
+Maria Isabel Marban Sanchez,Madrid,5228,B,monitoring
+Pedro Jimenez Sanchez,Madrid,5229,B,monitoring
+Maria Cristina Unzurrunzaga Ibanez,Madrid,5230,B,monitoring
+Anselmo Prieto Portillo,Madrid,5231,B,monitoring
+Maria Victoria Fernandez Cortes,Alcala De Henares,5232,B,monitoring
+Antonio Miralles Munoz,Pozuelo De Alarcon,5233,B,monitoring
+Ricardo Domingo Garcia,Madrid,5234,B,monitoring
+Maria Paz Vera Torregrosa,Madrid,5235,B,monitoring
+Jose De Las Heras Gayo,Madrid,5236,B,monitoring
+Clara Villalba Palencia,Madrid,5237,B,monitoring
+Cipriano Guerra Borja,Madrid,5238,B,monitoring
+Carmen Estrada Gonzalez,Madrid,5239,B,monitoring
+Antonio Ballesteros Rodriguez,Madrid,5240,B,monitoring
+Maria Marquez Romero,Leganes,5241,B,monitoring
+Gregorio Solera Moreno,Leganes,5242,B,monitoring
+Bernardo Prudencio Gutierrez,Alcorcon,5243,B,monitoring
+Jose Da Cruz Garcia,Mostoles,5244,B,monitoring
+Jordi Estivill Pascual,Barcelona,5245,B,monitoring
+Manuela Juarez Herreros,Terrassa,5246,B,monitoring
+Rosa Guilera Noya,Sant Sadurni D Anoia,5247,B,monitoring
+Maria Pilar Ros Julia,Sitges,5248,B,monitoring
+Juan Antonio Garcia Alarcon,Mollet Del Valles,5249,B,monitoring
+Pau Sebastia Sabate,Viladecans,5250,B,monitoring
+Maria Del Carme Clopes Coll,Sant Celoni,5251,B,monitoring
+Remei Pallares De Dios,Vilanova I La Geltru,5252,B,monitoring
+Joan Roma Pujol,Tona,5253,B,monitoring
+Maria Dolores Sanchez Anez,Martorell,5254,B,monitoring
+Luisa Del Valle Alvarez,Piera,5255,B,monitoring
+Alcides Guarniz Miranda,Hospitalet De Llobregat,5256,B,monitoring
+Juan Girbau Riba,Sant Cugat Del Valles,5257,B,monitoring
+Javier Noguera Ferrer,Sant Cugat Del Valles,5258,B,monitoring
+Gracia Barrera Moreno,Rubi,5259,B,monitoring
+Isabel Raso Perez,Rubi,5260,B,monitoring
+Carmen Fernandez Martinez,Sabadell,5261,B,monitoring
+Alfons Rodo Saranana,Barcelona,5262,B,monitoring
+Montserrat Porcar Barbera,Barcelona,5263,B,monitoring
+Andres Perona Gallego,Hospitalet De Llobregat,5264,B,monitoring
+Francisco Godoy Ramirez,Ripollet,5265,B,monitoring
+Maria Angels Torres Pares,Vilafranca Del Penedes,5266,B,monitoring
+Antonio Cortes De La Fuente,Santa Coloma De Gramenet,5267,B,monitoring
+Maria Luisa Garrido Fernandez,Terrassa,5268,B,monitoring
+Antonia Garcia Pelaez,Cornella De Llobregat,5269,B,monitoring
+Lucia Galeote Galeote,Sabadell,5270,B,monitoring
+Antonio Jose Mendez,Sabadell,5271,B,monitoring
+Justo Mendez Aguirre Arbones,Barcelona,5272,B,monitoring
+Encarnacion Cruz Galindo,Sant Celoni,5273,B,monitoring
+Ramon Noguera Colillas,Igualada,5274,B,monitoring
+Maria De Lourdes Velarde Rosas,Vilafranca Del Penedes,5275,B,monitoring
+Carme Roig Casellas,Barcelona,5276,B,monitoring
+Maria Paz Quiros Ruiz,Sitges,5277,B,monitoring
+Silvia Cayuela Delgado,Roda De Ter,5278,B,monitoring
+Javier Padilla Martinez,Cerdanyola Del Valles,5279,B,monitoring
+Ana Maria Arriaza Arquellada,Valencia,5280,B,monitoring
+Rosario Leon Fernandez,Valencia,5281,B,monitoring
+Virginia Sanchez Leal,Valencia,5282,B,monitoring
+Andres Landete Moreno,Valencia,5283,B,monitoring
+Miguel Brass,Valencia,5284,B,monitoring
+Salvador Laguna Munoz,Ecija,5285,B,monitoring
+Guri Parra Maria Luisa,Sevilla,5286,B,monitoring
+Diaz Jimenez Rafael,Sevilla,5287,B,monitoring
+Rafaela Gordillo Carranza,Camas,5288,B,monitoring
+Martin Alonso Maria Dolores,Sevilla,5289,B,monitoring
+Longares Gonzalez Maria Luisa,Sevilla,5290,B,monitoring
+Juan Antonio Aguilar Aguilar,Ecija,5291,B,monitoring
+Martil Borrego Fernando,Sevilla,5292,B,monitoring
+Antonio Castro Montero,La Roda De Andalucia,5293,B,monitoring
+Perez Moya Antonio,Sevilla,5294,B,monitoring
+Alvarez Dominguez Manuel,Sevilla,5295,B,monitoring
+Garcia Gutierrez Francisco,Sevilla,5296,B,monitoring
+Martin Galan Aurora,Sevilla,5297,B,monitoring
+Zoido Naranjo Florencio,Sevilla,5298,B,monitoring
+Herrero Rodriguez Conrado,Sevilla,5299,B,monitoring
+Carmen San Jose Fernandez,Malaga,5300,B,monitoring
+Carmen Sanjose Fernandez,Malaga,5301,B,monitoring
+Pedro Garcia Lopez,Malaga,5302,B,monitoring
+Francisca Fernandez Guerrero,Malaga,5303,B,monitoring
+Maria Campos Molina,Velez Malaga,5304,B,monitoring
+Joaquina Josefa Vallejo Huesca,Malaga,5305,B,monitoring
+Ana Maria Lopez Barajas,Malaga,5306,B,monitoring
+Julia Arroyo Verdugo,Malaga,5307,B,monitoring
+Jesus Aguilera Rodriguez,Malaga,5308,B,monitoring
+Antonio Fernandez Carrasco,Marbella,5309,B,monitoring
+Diego Martinez Acosta,Mazarron,5310,B,monitoring
+Rosa Barcelona Paredes,Cartagena,5311,B,monitoring
+Maria Dolores Navarro Lorca,Cartagena,5312,B,monitoring
+Maria Del Pilar Diaz Rubio,Cartagena,5313,B,monitoring
+Asuncion Barnes Fernandez,Murcia,5314,B,monitoring
+Jose Perez Martinez,Cartagena,5315,B,monitoring
+Luis Ramirez Garcia,Cartagena,5316,B,monitoring
+Miguel Calderon Ruiz,La Linea De La Concepcion,5317,B,monitoring
+Maria Teresa Alvarez Frias,Jerez De La Frontera,5318,B,monitoring
+Alberto Lachica Rueda,Jerez De La Frontera,5319,B,monitoring
+Fernando Gallego Gonzalez,Cadiz,5320,B,monitoring
+Alfonsa Acero Ruiz,Jerez De La Frontera,5321,B,monitoring
+Eusebio Beiro Molinillo,Cadiz,5322,B,monitoring
+Andres Manzano Recio,Cadiz,5323,B,monitoring
+Antonio Garcia Diaz,Aviles,5324,B,monitoring
+Juana Maria Almagro Robles,Gijon,5325,B,monitoring
+Maria Felicidad Del Rio,Gijon,5326,B,monitoring
+Maria Elisa Cotarelo Rodil,Gijon,5327,B,monitoring
+Nieves Alvarez Garcia,Aviles,5328,B,monitoring
+Ana Fernandez Obaya,Gijon,5329,B,monitoring
+Maria Rosario Alvarez Suarez,Barres,5330,B,monitoring
+Fermin Rodil Perez,Gijon,5331,B,monitoring
+Charo Iglesias Granda,Aviles,5332,B,monitoring
+Carlota Hernandez Nuno,Gijon,5333,B,monitoring
+Wenceslao Nicieza Quesada,Oviedo,5334,B,monitoring
+Jose Ramon Oubel Fernandez,Pola De Laviana,5335,B,monitoring
+Orfelina Garcia Martinez,Langreo,5336,B,monitoring
+Jorge Daniel Gonzalez Casal,Langreo,5337,B,monitoring
+Antonio Pantiga Fanjul,Oviedo,5338,B,monitoring
+Ana Maria Lafuente Amandi,Gijon,5339,B,monitoring
+Jorge Campos Bermudez,Villaviciosa,5340,B,monitoring
+Sara Fernandez Fernandez,Gijon,5341,B,monitoring
+Maria Lourdes Silva Silva,Mieres,5342,B,monitoring
+Jose Luis Loredo Martinez,Villaviciosa,5343,B,monitoring
+Generosa Suarez Suarez,Gijon,5344,B,monitoring
+Angeles Del Rio Mier,Oviedo,5345,B,monitoring
+Luis Antonio Perez Samaniego,Vilanova De Arousa,5347,B,monitoring
+Vicente Eladio Garcia Ramos,Vilanova De Arousa,5348,B,monitoring
+Maria Mateo Prado,Pontevedra,5349,B,monitoring
+Concepcion Correa Magan,Vilanova De Arousa,5350,B,monitoring
+Pilar Millos Gonzalez,Vigo,5351,B,monitoring
+Jose Barreiro Pineiro,Cangas,5352,B,monitoring
+Carmen Soto Montes,Vigo,5353,B,monitoring
+Maria Alvarez Iglesias,Vigo,5354,B,monitoring
+Francisco Javier Rodriguez Rodriguez,O Porrino,5355,B,monitoring
+Carlos De Andres Costa,Vigo,5356,B,monitoring
+Maria Sieira Vidal,Vigo,5357,B,monitoring
+Dantonio Nievas Martin,Quentar,5358,B,monitoring
+Dolly Ortiz Ordonez,Granada,5359,B,monitoring
+Maria Del Carmen Morales Sanchez,Maracena,5360,B,monitoring
+Dantonio Gonzalez Lopez,Churriana De La Vega,5361,B,monitoring
+Marta Garcia Garrido,Granada,5362,B,monitoring
+Enriqueta Jimenez Sanchez,Maracena,5363,B,monitoring
+Jose Juan Suarez Solana,Granada,5364,B,monitoring
+Ramon Roman Roldan,Granada,5365,B,monitoring
+Jose Antonio Garrido Cerezo,Tarragona,5366,B,monitoring
+Jose Antonio Gijon Galan,Salou,5367,B,monitoring
+Maria Dolors Dols Gil,Tarragona,5368,B,monitoring
+Antonio Orellana Montenegro,Palenciana,5369,B,monitoring
+Dolores Alcaide Raigon,Montilla,5370,B,monitoring
+Antonio Amado,Villabona,5371,B,monitoring
+Aurora Redondo Santos,Hernani,5372,B,monitoring
+Pablo Maria Alcorta Larranaga,Zarautz,5373,B,monitoring
+Lucinio Moreno De Pedro,Donostia San Sebastian,5374,B,monitoring
+Vicenta Francisco Blanco,Donostia San Sebastian,5375,B,monitoring
+Juan Vergara Zurutuza,Urretxu,5376,B,monitoring
+Mertxe Ocariz Munduate,Urretxu,5377,B,monitoring
+Carlos Requejo Arranz,Errenteria,5378,B,monitoring
+Paulino Navarro Iglesias,Illescas,5379,B,monitoring
+Josefa Parejo Herrera,Montijo,5380,B,monitoring
+Margarita Ibanez Gonzalez,Tafalla,5381,B,monitoring
+Jose Maria Saenz Ullate,Pamplona,5382,B,monitoring
+Felix Carlos Serrano Marquina,San Adrian,5383,B,monitoring
+Jose Ma Saenz Ullate,Pamplona,5384,B,monitoring
+Francisco Canales Canales,Pamplona,5385,B,monitoring
+Ma Luisa Ustarroz Allue,Pamplona,5386,B,monitoring
+Felix Carlos Serrano Mrquina,San Adrian,5387,B,monitoring
+Jose Javier Lezaun Larrea,Pamplona,5388,B,monitoring
+Miguel Jesus Troncoso Hermoso De Mendoza,Pamplona,5389,B,monitoring
+Jesus Javier Muro Dufur,Pamplona,5390,B,monitoring
+Maria Luisa Ustarroz Allue,Pamplona,5391,B,monitoring
+Jose Javier Baines Enecoiz,Pamplona,5392,B,monitoring
+Maria Jesus Laquidain Imirizaldu,Pamplona,5393,B,monitoring
+Blasa Hermoso De Mendoza Plaza,Sanguesa,5394,B,monitoring
+Maria Eugenia Chasco Marturet,Estella,5395,B,monitoring
+Ma Encarnacion Arias Gonzalez,Burlada,5396,B,monitoring
+Jesus Mari Ardanaz Eguaras,Lumbier,5397,B,monitoring
+Blanca Carrillo Salaverri,Burlada,5398,B,monitoring
+Alberto Gomez Sola,Tudela,5399,B,monitoring
+Juana Maria Mansoa Martinez De Apellaniz,Pamplona,5400,B,monitoring
+Jose Alberto San Roman Romarategui,Alsasua,5401,B,monitoring
+Jose Javier Baines Fernandez,Pamplona,5402,B,monitoring
+Juan Jose Sancho Lobato,Funes,5403,B,monitoring
+Damaria Jesus Bruno Garcia,Mengibar,5404,B,monitoring
+Juana Carrasco Alvarez,Linares,5405,B,monitoring
+Jose Solana Revilla,Santander,5406,B,monitoring
+Soledad Rosa Arenal Garcia,Santander,5407,B,monitoring
+Maria Jesus Garcia Ruiz,Los Corrales De Buelna,5408,B,monitoring
+Jose Martinez Martin,Laredo,5409,B,monitoring
+Adolfo Ceballos Gutierrez,Santander,5410,B,monitoring
+Maria Del Carmen Gil Pila,Santander,5411,B,monitoring
+Carlos Fernandez Campuzano,Suances,5412,B,monitoring
+Eugenio De La Hoz Sierra,Santander,5413,B,monitoring
+Carmen Posada Soberon,Potes,5414,B,monitoring
+Francisco Mata Garcia,Reinosa,5415,B,monitoring
+Carmen Rodriguez Sainz,Puente Viesgo,5416,B,monitoring
+Oscar Perez Liano,La Abadilla De Cayon,5417,B,monitoring
+Maria Amalia Sanchez Hoyuela,Santander,5418,B,monitoring
+Julian Sainz Gonzalez,Heras,5419,B,monitoring
+Paulino Diaz Bringas,Santander,5420,B,monitoring
+Ma Inmaculada Trespalacios Martinez,Torrelavega,5421,B,monitoring
+Fernando Delgado Rocillo,Laredo,5423,B,monitoring
+Aquilino Bustillo Lopez,La Abadilla De Cayon,5424,B,monitoring
+Angel Puente Laza,Heras,5425,B,monitoring
+Luisa Gonzalez Rios,Los Corrales De Buelna,5426,B,monitoring
+Antonio Suarez Saudinos,Santander,5427,B,monitoring
+Ramon Garcia Pablo,Santander,5428,B,monitoring
+Carmela Corino Gomez,Santander,5429,B,monitoring
+Agueda Fernandez Polo,Huelva,5430,B,monitoring
+Braulio Martin Estevez,Isla Cristina,5431,B,monitoring
+Maria Del Carmen Plata Naranjo,Trobajo Del Camino,5432,B,monitoring
+Maria Carmen Plata Naranjo,San Andres Del Rabanedo,5433,B,monitoring
+Josefa Ramon Moreda,Fabero,5434,B,monitoring
+Isabel Andres Martinez,Mansilla De Las Mulas,5435,B,monitoring
+Maria Luisa Galan Valle,Bembibre,5436,B,monitoring
+Ines Silvan Silvan,Bembibre,5437,B,monitoring
+Ana Marta De Juan Blanco,Leon,5438,B,monitoring
+Josefa Vega Merayo,Bembibre,5439,B,monitoring
+Carmen Mendez Dominguez,Plasencia,5440,B,monitoring
+Juana Manzano Garcia,Pasaron De La Vera,5441,B,monitoring
+Teresa Sanchez Sanchez,Plasencia,5442,B,monitoring
+Maria Rincon Gil,Plasencia,5443,B,monitoring
+Filomena Gomez Sanchez,Navalmoral De La Mata,5444,B,monitoring
+Josefa Duran Niso,San Pedro Del Alcantara,5445,B,monitoring
+Julian Viera Perez,Coria,5446,B,monitoring
+Isabel Vallejo Cerro,Monroy,5447,B,monitoring
+Candido Esgueva Nunez,Robledillo De Trujillo,5448,B,monitoring
+Antonio Gil Ramos,Jaraiz De La Vera,5449,B,monitoring
+Eloisa Canton Leite,San Pedro Del Alcantara,5450,B,monitoring
+Pedro Esteban Garcia,Miranda De Ebro,5451,B,monitoring
+Gonzalo Perez Franco,Burgos,5452,B,monitoring
+Jose Miguel Ruiz Alonso,Burgos,5453,B,monitoring
+Lorenzo Gonzalez Marroquin,Miranda De Ebro,5454,B,monitoring
+Maria Martin Moreno,Salamanca,5455,B,monitoring
+Modesto Barbero Polo,Alba De Tormes,5456,B,monitoring
+Monica Gonzalez Bbellido,Salamanca,5457,B,monitoring
+Marcelina Montes Vicente,Cabeza Del Caballo,5458,B,monitoring
+Maria Del Mar Dorado Perez,Salamanca,5459,B,monitoring
+Eliseo Martin Martin,Salamanca,5460,B,monitoring
+Jesus Rivas Torres,Lugo,5461,B,monitoring
+Manuel Veiga Pereiro,Meira,5462,B,monitoring
+Maria Concepcion Lopez Mato,Monterroso,5463,B,monitoring
+Maria Rosa Lopez Novelle,Monforte De Lemos,5464,B,monitoring
+Manuela Vazquez Pallares,Monforte De Lemos,5465,B,monitoring
+Jose Gonzalez Balboa,Escairon,5466,B,monitoring
+Carmen Jesus Romero Padilla,Viveiro,5467,B,monitoring
+Juan Francisco Louro Bermudez,Vilalba,5468,B,monitoring
+Jesus Pineiro Castro,Baamonde,5469,B,monitoring
+Carmen Prados Rodriguez,Becerrea,5470,B,monitoring
+Jose Luis Ruiz Lopez,Calahorra,5471,B,monitoring
+Julia Ulecia Castroviejo,Logrono,5472,B,monitoring
+Juan Ignacio Zuluaga Lopategui,Logrono,5473,B,monitoring
+Goyo Fernandez Ruiz,Logrono,5474,B,monitoring
+Francisco Javier Martinez Fuertes,Aldeanueva De Ebro,5475,B,monitoring
+Josefa Maiztegui Goitia,Vitoria Gasteiz,5476,B,monitoring
+Concepcion Munoz De Frutos,Navas De San Antonio,5477,B,monitoring
+Dionisio Campo Hidalgo,Zamora,5478,B,monitoring
+Ramon Del Rio Sanz,Avila,5479,B,monitoring
+Maria Teresa Martin Jimenez,Avila,5480,B,monitoring
+Felisa Ojeda Perez,Vecindario,5481,B,monitoring
+Maria Asuncion Pestana Monroy,Las Palmas De Gran Canaria,5482,B,monitoring
+Ricarda Jimenez Fernandez,Zaragoza,5483,B,monitoring
+Luis Miguel Moral Marin,La-Rioja,5485,B,monitoring
 José-Antonio ROIG BELLVER,Zaragoza,1706,B,
 Inmaculada Hoces Leza,Zaragoza,1707,B,
 María Pilar Trasobares Andrés,Zaragoza,1708,B,
@@ -2711,6 +3447,7 @@ Francisco Sanjoaquin Avellanas,Zaragoza,2550,B,
 Luis Alberto Ruiz Espes,Zaragoza,2551,B,
 María-Ángeles Gómez Tajada,Zaragoza,2552,B,
 Florentina Sanz Miguel,Andalucía,3273,B,
+María Menchaca y Salamanca,Castilla y León,3276,B,
 Pedro Albendea,Andalucía,3278,B,
 Rodríguez Fernández,Andalucía,3278,B,
 Abdelkader Ben El Mokhtar,Andalucía,3278,B,
@@ -2728,13 +3465,14 @@ Maria Luz Iglesias,VIVEIRO,4458,B,
 Rosario Mateos Aguilar,Parla,4459,B,
 Estrella Mouriño Bernardez,PONTEAREAS,4460,B,
 Francisca Padilla Vicente,Sagunto/Sagunt,4461,B,
+Francisca Padilla Vicente Fallecida,Sagunto/Sagunt,4461,B,
 Ramon Ruiz Del Arbol Soler,TORO,4462,B,
 Manuel Gonzalez Iglesias,A CORUÑA,4463,B,
 Nieves Suarez Acebal,GIJON,4465,B,
-Antonio Aroca Nicolas,MURCIA,4468,B,
+Maria Jose Hernandez Garcia,MURCIA,4468,B,
+Jose Antonio Aroca Hernandez,MURCIA,4468,B,
 Francisco Javier Gutierrez Vallejo,Sevilla,4471,B,
 Carmen Borrull Hernandez,Torrent,4473,B,
-Yo Herederos Indeterminados,VALLADOLID,4474,B,
 Maria Pilar Garcia Magdalena,Zaragoza,4475,B,
 Eugenio Jaso Castelo,Zaragoza,4476,B,
 Martin Parmo Yague,Aranda de Duero,4480,B,
@@ -2748,9 +3486,11 @@ Francesc Escandell Castelo,EIVISSA,4489,B,
 Manuela León Martos,València,4490,B,
 Jaime Conca Fita,Ibi,4491,B,
 Maria Angeles Camacho Garcia,Ibi,4492,B,
-Pascual Diaz Conejero Diaz,Villena,4493,B,
+Cristina Diaz Aleman,Villena,4493,B,
+Nie Andres Navalon Verdejo,Villena,4493,B,
+Nie Dolores Aleman Lopez,Villena,4493,B,
 Ricardo García De La Cruz,SEGOVIA,4495,B,
-Antonio Bonastre Carbonell,Valls,4496,B,
+Bonastre Bove Jordi,Valls,4496,B,
 Lopez Sansano,Massamagrell,4497,B,
 Ramon Gonzalez Alavarcen,Quart de Poblet,4498,B,
 Colmenar Bravo,Sagunto/Sagunt,4499,B,
@@ -2766,9 +3506,10 @@ Jose Luis Pinto Perez,Málaga,4513,B,
 Maria Del Mar Molina Rodriguez,Málaga,4514,B,
 Juan Rodriguez Vergara,Marbella,4515,B,
 Melchor Burusco,Pamplona/Iruña,4517,B,
+Luis Ramos Valiñas,VIGO,4518,B,
 Maria Angeles Pedraza Jimenez,SALAMANCA,4519,B,
 Maria Isabel Martinez Ciscar,Torrent,4520,B,
-Rosa Maria Felisa De Miguel Cristobal,València,4521,B,
+Felisa De Miguel Cristobal,València,4521,B,
 Jose Luis García González,Sant Feliu De Llobregat,4524,B,
 Francisco Javier,Mataró,4525,B,
 Francisco Pacheco Henares Dni,Terrassa,4526,B,
@@ -2779,7 +3520,8 @@ Simona Redondo Rubio,Mislata,4531,B,
 María Emma Álvarez Villazón,OVIEDO,4534,B,
 Epifania Muñoz Sanchez,Madrid,4536,B,
 Engracia Muguiro Jauregui,Pamplona/Iruña,4537,B,
-Devicente Riofrio Celi,València,4538,B,
+Irma Vicenta Quizhpe Rivas,València,4538,B,
+Diego Fernando Riofrio Quizhpe,València,4538,B,
 Manuel Otero Romay Herencia,A CORUÑA,4539,B,
 Miguel Angel Leon Aguerri,Pamplona/Iruña,4540,B,
 Antonio Da Silva Santos,XINZO DE LIMIA,4543,B,
@@ -2789,18 +3531,19 @@ Madeline Jeanne Chancelaume,Madrid,4548,B,
 Romualdo Borrero Gonzalez,Reus,4550,B,
 Envolventes Hispania,Córdoba,4551,B,
 Agustín Salguero Flores,Cerdanyola del Vallès,4552,B,
-Abilio Andrade Alves,Durango,4553,B,
-Blas Benlliure Lis,Nules,4554,B,
+Ana Belen Andrade Neves,Durango,4553,B,
+Jose Manuel Andrade Neves,Durango,4553,B,
+C Maximo Thous Valencia,Nules,4554,B,
 Daniel Casado Casado,CISTIERNA,4557,B,
 Socorro Fernandez Begue,Tudela,4558,B,
 Manuel Aguado Martín,Vendrell (El),4560,B,
 Lucrecia Pagan Blazquez,Vendrell (El),4561,B,
 Vicente Luis Perez Galindo,Alzira,4562,B,
 Don Carlos Tonda Cucarella,Sagunto/Sagunt,4563,B,
-Maria Jose España Lista Raul Chaudarcas,A CORUÑA,4564,B,
+Lista Raul Chaudarcas Requejo,A CORUÑA,4564,B,
 Luis Miguel Alberto Garcia Ortuño,Orihuela,4565,B,
 Luis Miguel Anes Alonso,Torrevieja,4566,B,
-Maria De Las Nieves Alvarez Perez,GIJON,4567,B,
+Maria Belen Bastian Alvarez,GIJON,4567,B,
 Pablo Blanco García,Barcelona,4568,B,
 Juan Manuel Peralvarez Moreno,PALMA,4570,B,
 Purificacion Medina Macias,Palmas de Gran Canaria (Las),4571,B,
@@ -2813,7 +3556,7 @@ Antonio Azagra Boneta,Tafalla,4580,B,
 Isabel Fuxet Lloveras,Mataró,4584,B,
 Ana María Vicaria Pelayo,Málaga,4586,B,
 Carmen Priego Marmol,Córdoba,4589,B,
-María López Postigo Córdoba,Córdoba,4590,B,
+D María Lopez Postigo,Córdoba,4590,B,
 Ruben Saldavor Mayorga Guardia,Puerto de Santa María (El),4591,B,
 Vicente Merino Abad,Eibar,4593,B,
 Richard Henk Fulgado Dickmann,CALAHORRA,4595,B,
@@ -2830,6 +3573,9 @@ Agusti Sancho Caballe,Fuengirola,4611,B,
 Juan Antonio Banderas Espíldora,Málaga,4612,B,
 Jose Carlos Merchan Martin,SALAMANCA,4613,B,
 Maria Isabel,Reus,4614,B,
+Castor Flores Garcia,ALBACETE,4617,B,
+Rodriguez De La Cuadra,TOLEDO,4618,B,
+Morcillo De La Cuadra,TOLEDO,4618,B,
 Doña Emilia Diaz Nuñez,Madrid,4619,B,
 Sergio Mora Gomez,Lleida,4621,B,
 Montserrat García Labarta,Rubí,4622,B,
@@ -2837,23 +3583,44 @@ Rafael Anaya Fernández,Vilafranca Del Penedès,4623,B,
 José Luis Modia López,LUGO,4626,B,
 Dolores Costales Palomar,Sevilla,4628,B,
 Maria Luisa Delgado Irigaray,Tafalla,4632,B,
+Jose Paradelo Ramos,Palencia,4633,B,
 Juan Carlos Perez Gonzalez,PONTEAREAS,4634,B,
+Enrique Fons Flores,Sueca,4635,B,
 Ramón Mostajo Martínez,Calatayud,4636,B,
+Pedro Javier Pola Martinez,Calatayud,4637,B,
+Nabi Noureddine,Benidorm,4638,B,
 Doña Rita Maria Brennauer,Dénia,4639,B,
+Carlos Tenorio Vilurta,Fuenlabrada,4642,B,
 Miguel Jimenez Dominguez,SALAMANCA,4646,B,
+Maria Juana Aranjuelo Ibañez,Donostia-San Sebastián,4647,B,
+Antonio Manuel Serrano Castro,Jaén,4648,B,
 Rosa Cuscó Roca,Cornellà De Llobregat,4649,B,
 Sergio Soler Moreno,Vilafranca Del Penedès,4651,B,
 Maria Lourdes Martinez Ventosa,Santa Coloma De Farners,4653,B,
 Pilar Marco Aran,Jaca,4654,B,
+Maria Santolaria Martinez,Barcelona,4657,B,
 Manuel Diaz Garin,Barcelona,4658,B,
 Miguel Limiñana Miralles,Novelda,4659,B,
 Luis Contreras Salazar,Huércal-Overa,4660,B,
-Jaime Mariño Camean,Vendrell (El),4665,B,
+D. Jaime Mariño Camean,Vendrell (El),4665,B,
 Juan Carlos Capdevila Marques,Vendrell (El),4666,B,
+Ricardo Tejeiro Fernandez,Alicante/Alacant,4669,B,
+David Vicente Lillo Garcia,Alicante/Alacant,4670,B,
+Antonio Martinez Navarro,Alicante/Alacant,4671,B,
 Antonio Lopez Perez,Benidorm,4672,B,
-Jose Rodriguez Lopez,Torremolinos,4682,B,
+Jose Antonio Fernandez Diaz,GIJON,4673,B,
+Julia Maria Blanca González Gómez,GIJON,4674,B,
+Josefa Robles Moran,Huelva,4675,B,
+Manuel Caballero,Huelva,4676,B,
+Isabel Calvo Yugueros,Logroño,4677,B,
+Miguel Angel Melero Del Pozo,Madrid,4678,B,
+María Marin Oyon,Madrid,4679,B,
+Jose Ruiz Lopez,Málaga,4681,B,
+Julie Rodriguez,Torremolinos,4682,B,
 Maria Del Carmen Alvarez Novoa,OURENSE,4683,B,
 Valentin Maxias Lopez,VIGO,4684,B,
+Maria Gallo Garcia,Sevilla,4685,B,
+Ramon Lopez Beltran,València,4686,B,
 Gines Carrasco Angelats,Arenys De Mar,4687,B,
 Kemal Sejfula,Vilanova I La Geltrú,4688,B,
 Ivan Salvador Cadenas,Terrassa,4692,B,
@@ -2863,14 +3630,16 @@ Salvador Marcus Verd,PALMA,4715,B,
 Pedro Miranda Godoy,Palmas de Gran Canaria (Las),4716,B,
 Salvador Fernandez Fernandez,Vélez-Málaga,4727,B,
 Juan Farre Vallmitjana,Badalona,4729,B,
+Pedro Smith Prado,Bilbao,4731,B,
 Leonardo González Arg,León,4733,B,
 Mauricio Jose Pasos Martinez,MURCIA,4737,B,
 Maria Del Carmen Roelas Triviño Herencia,Ibi,4740,B,
 Juan Elias Lopez Menendez,Langreo,4741,B,
 Anselm Quixal Ramonet,Bisbal D'Empordà (La),4743,B,
+Concepcion Vaquero Rodriguez,Logroño,4751,B,
+Mohamed Rafael Aslan Vaquero,Logroño,4751,B,
 Francisco Sánchez Medina,Madrid,4753,B,
 Isabel Lopez Palacios,VALLADOLID,4759,B,
-Luis Alonso Iglesias,Palencia,4761,B,
 Miguel del Águila del Águila,Almería,4762,B,
 Luis Ramirez Romero,Madrid,4764,B,
 Josefa Barros Figueroa,VIGO,4766,B,
@@ -2889,8 +3658,7 @@ Bernardo Luna Toro,Cádiz,4787,B,
 Angel Rodriguez Hernandez,Madrid,4789,B,
 Mariano Jauregui Bravo,Málaga,4790,B,
 Pedro Emilio Santamaria Citoler,Sevilla,4793,B,
-Javier Flores,Madrid,4794,B,
-Benito González Yáñez,Sevilla,4795,B,
+D. Benito González Yáñez,Sevilla,4795,B,
 Dionisio Garcia Cueto,EIVISSA,4797,B,
 Martinez Pinillos S,Logroño,4798,B,
 Don Venancio Lopez Jimenez,Madrid,4799,B,
@@ -2898,23 +3666,29 @@ Fuensanta Guerrero Cano,MURCIA,4800,B,
 Domingo Mogena Flores,CACERES,4802,B,
 Bartolomé Francisco González Santana,Palmas de Gran Canaria (Las),4806,B,
 Moreno Fraile,Torrejón de Ardoz,4808,B,
-Rafael Polo Lopez,Salamanca,4809,B,
+Maria Natividad Martin Martin,Salamanca,4809,B,
+Nie Belisario Martin Garcia,Salamanca,4809,B,
+Nie Agustina Martin Ramirez,Salamanca,4809,B,
 Don Manuel Bernal Corbalan,València,4810,B,
 Manuel Serrano Grima,Cornellà De Llobregat,4813,B,
 Mercedes Rodriguez Huerta,Huelva,4814,B,
 Laureano Lopez Gracia,Zaragoza,4822,B,
-Eutoprio Miguel Alonso Jose Alberto Miguel,ZAMORA,4826,B,
+Jose Alberto Miguel Martin,ZAMORA,4826,B,
+Nie Fernando Monje Miguel,ZAMORA,4826,B,
+Nie Rosario Martin Amigo,ZAMORA,4826,B,
 Jose Alonso Muñoz,Alcobendas,4827,B,
-Don Hermenegildo Crespo Martin,Pamplona/Iruña,4828,B,
-Francisco Queipo Garcia Miguel Antonio Alvarez,Santander,4832,B,
+Ceimsa Electromedicina Sl,Pamplona/Iruña,4828,B,
+Alvarez De Eulate Gonzalez,Santander,4832,B,
 Manuela Gutierrez Palacios,Santander,4833,B,
 Rosario Maestro Mancebo,Santander,4834,B,
 Maria Luisa Fernandez Alvarez,PRAVIA,4836,B,
 Herencia De Carlos Ferrer Estevez,Palma del Condado (La),4837,B,
 Pedro Gil,Arganda del Rey,4838,B,
 Lieweo Dietmar Klauenberg,Almería,4839,B,
+Teofilo Rodrigo Pérez,Zaragoza,4841,B,
 Ana Dolores Parra Ruiz,Zaragoza,4841,B,
-Raul Alvarado,A CORUÑA,4845,B,
+Alvarado Frio Distribuciones Sl,A CORUÑA,4845,B,
+Asr Frio Distribucion Sl,A CORUÑA,4845,B,
 Don Angel Barrio Barjacoba Angel Escudero,CORIA,4847,B,
 Josefina Barreiro Giao,A CORUÑA,4848,B,
 Manuel Martinez Fernandez,A CORUÑA,4849,B,
@@ -2924,28 +3698,220 @@ Cándida Mier Riegas,LLANES,4854,B,
 Merce Rosell Decodes,Barcelona,4856,B,
 Adela Pinazo Gabarda,Terrassa,4857,B,
 Natividad Herrera Hernández San Cristóbal,San Cristóbal de la Laguna,4858,B,
-Jose Maria Roberts Liesa,Bisbal D'Empordà (La),4861,B,
+Josefa Suay Suay,Bisbal D'Empordà (La),4861,B,
 Jesús Manuel,Santa María de Guía de Gran Canaria,4862,B,
 Alfonso Muñoz Martin,SEGOVIA,4863,B,
+Nie Alfonso Muñoz Bermejo,SEGOVIA,4863,B,
+Nie Javier Muñoz Bermejo,SEGOVIA,4863,B,
 Jose Prades Garcia,Torrevieja,4865,B,
 Aser Fernandez Esteban Hervas Arias,Alcobendas,4868,B,
 Dña Maria Jesus Martín Ramos,Madrid,4869,B,
-Domingo Alonso Pregal,PONTEVEDRA,4871,B,
+Manuel San Juan Campos,PONTEVEDRA,4871,B,
 Maria Vanesa Peris Ciardini,València,4872,B,
-María-Dolores Catalán Sanz,Madrid - Concepción,4901,B,
-José-Enrique Catalán Sanz,Madrid - Concepción,4901,B,
-Ramón-Cesáreo Catalán Sanz,Madrid - Concepción,4901,B,
-María-Luisa Catalán González,Madrid - Concepción,4901,B,
+Alejandro Sáiz Millán,Alicante/Alacant,4875,B,
+Luis Alfonso Llaca García-Alfonso,Gran Canaria,4879,B,
+Elena Llaca Díaz,Gran Canaria,4879,B,
+Carlos Llaca Díaz,Gran Canaria,4879,B,
+Daniel Llaca Díaz,Gran Canaria,4879,B,
+Ana Llaca Díaz,Gran Canaria,4879,B,
+Alfonso Llaca Díaz,Gran Canaria,4879,B,
+Jaime Llaca Díaz,Gran Canaria,4879,B,
+Ramón Marrero González,Gran Canaria,4889,B,
+Benedicta Ferrer Montelongo,Tías - Puerto Del Carmen,4890,B,
+María Montserrat Cabrera Ferrer,Tías - Puerto Del Carmen,4890,B,
+Katia Cabrera Ferrer,Tías - Puerto Del Carmen,4890,B,
+Noemí Cabrera Ferrer,Tías - Puerto Del Carmen,4890,B,
+María Luisa Bethencourt González,Telde,4891,B,
+Juan Carlos Arija Bethencourt,Telde,4891,B,
+Ana María Arija Bethencourt,Telde,4891,B,
+Miguel Ángel Arija Betancort,Telde,4891,B,
+Mónica Arija Betancor,Telde,4891,B,
+NAUZET MANSO HIERRO,Arrecife,4892,B,
+BEATRIZ MANSO HERNÁNDEZ,Arrecife,4892,B,
+ITAHISA MANSO HERNÁNDEZ,Arrecife,4892,B,
+Pedro Santana Méndez,Telde,4898,B,
+Juan Ramón Santana Méndez,Telde,4898,B,
 María Josefa Gallego Ramos,Zaragoza,4906,B,
 José María Argento Rubio,Zaragoza,4907,B,
-María del Mar,Madrid - Chopera,4913,B,
-Sofía Maroto García,Madrid - Chopera,4913,B,
-Juan Manuel Maroto Zubicoa,Madrid - Chopera,4913,B,
-Emilio Peso Martínez,Madrid - Chopera,4914,B,
-don Carlos Diaz García,Coria Del Rio,4922,B,
-doña Maria Elena Gamiz Diaz,Coria Del Rio,4922,B,
-don Angel Francisco Gamiz Diaz,Coria Del Rio,4922,B,
-Antonio Rubio Caballero,Yecla,4956,B,
+Manuel Lorenzo Torrent,Gran Canaria,4930,B,
+Rosa María Lorenzo Torrent,Gran Canaria,4930,B,
+Marta Lorenzo Torrent,Gran Canaria,4930,B,
+Beatriz Lorenzo Torrent,Gran Canaria,4930,B,
+Rafael Lorenzo Torrent,Gran Canaria,4930,B,
+Marta Santana Lorenzo,Gran Canaria,4930,B,
+Jorge Lorenzo Santana,Gran Canaria,4930,B,
+Sergio Manuel Sosa Mateos,Telde,4933,B,
+Juan Antonio Sarmiento Delgado,Telde,4934,B,
+Santiago Orlando Sarmiento Delgado,Telde,4934,B,
+BEGOÑA OLIVEIRA CID,Verín,4938,B,
+MANUEL OLIVEIRA CID,Verín,4938,B,
+ROSA CID NOGUEIRAS,Verín,4938,B,
+Vicente Echevarria,Zaragoza,4943,B,
+Noelia Ceballos Santana,Gran Canaria,4951,B,
+Alicia Ceballos Santana,Gran Canaria,4951,B,
+Albino Ceballos Santana,Gran Canaria,4951,B,
+"Joaquín
+González Sánchez",Oviedo,4967,B,
+María Asunción Sevillano Mayo,León,4979,B,
 Manuel Miron Rodriguez Gruyser,San Vicente del Raspeig/Sant Vicent del Raspeig,5094,B,
+Miguel Angel Gonzalez Lopez,Cerdanyola Del Vallès,5095,B,
 Enrique Francisco Martín Gutiérrez,Santander,5096,B,
 Miguel Aicart Salvany,Barcelona,5099,B,
+INTECA PROYECTOS SL,Zaragoza,5105,B,
+CORRIENTE SOLAR SOCIEDAD LIMITADA,Zaragoza,5106,B,
+LOZANO SA,Zaragoza,5107,B,
+Rosa Pano Ferrer,Zaragoza,5112,B,
+Jaime Sanchez Massana,Zaragoza,5113,B,
+José Felipe Aparicio Martín,Madrid,5205,B,
+Fernando Fernandez Mejias,Madrid,5207,B,
+Juan Miguel Vicente López,Ceuta,5489,B,
+JUAN MANUEL SANCHEZ FERREIRO,Verín,5494,B,
+LUIS MIGUEL SANCHEZ FERREIRO,Verín,5494,B,
+MARIA FERREIRO MARTINEZ,Verín,5494,B,
+Inmaculada Gil Delgado,Fuensalida,5500,B,
+Santiago Gil Delgado,Fuensalida,5500,B,
+Enrique Martínez Garrigós,Alcira/Alzira,5501,B,
+Enrique Martínez España,Alcira/Alzira,5501,B,
+Vanesa Martínez España,Alcira/Alzira,5501,B,
+JOSE CAMPOY GARCIA,Garrucha,5504,B,
+FRANCISCO JAVIER CAMPOY GIMENEZ,Garrucha,5504,B,
+JOSE LUIS CAMPOY GIMENEZ,Garrucha,5504,B,
+Silvia Trias Carranza,Barcelona -Sants-,5507,B,
+Domingo Carrasco Álvarez,Cumbres Mayores,5508,B,
+Ignacia Carrasco Álvarez,Cumbres Mayores,5508,B,
+Felipe Carrasco Álvarez,Cumbres Mayores,5508,B,
+Feliciana Carrasco Álvarez,Cumbres Mayores,5508,B,
+Francisco Carrasco Álvarez,Cumbres Mayores,5508,B,
+Francisco Javier San Martín María,León,5511,B,
+José Ignacio San Martín María,León,5511,B,
+Jesús María San Martín María,León,5511,B,
+Juan Carlos San Martín María,León,5511,B,
+MANUEL ALVAREZ JUSTO,Verín,5513,B,
+DOLORES ALVAREZ JUSTO,Verín,5513,B,
+MIGUEL ALVAREZ JUSTO,Verín,5513,B,
+SOLEDAD ALVAREZ JUSTO,Verín,5513,B,
+HERMINIA ALVAREZ JUSTO,Verín,5513,B,
+Manuel Sánchez Clemente,Guadaira,5514,B,
+Victor Sánchez López,La Figuera (La),5515,B,
+Jonatan Sánchez López,La Figuera (La),5515,B,
+Maria del Pilar Forte Muñoz,Elda,5519,B,
+Antonio Ferrandez Berenguer,Elda,5519,B,
+Paseo De Gracia,Barcelona,5525,B,
+Santiago Armadas Pradas,Barcelona,5525,B,
+Ana Elena Antunez,Gran Canaria,5530,B,
+Ángel Alvarez Lera,La Robla,5534,B,
+Beatriz Alvarez Jiménez,La Robla,5534,B,
+Patricia Alvarez Jiménez,La Robla,5534,B,
+María Ascensión González Luis,Güímar,5540,B,
+Jesús Herrera Román,Alcira/Alzira,5543,B,
+Juan-Francisco Lavandeira Basanta,Avilés,5545,B,
+María-Mercedes Lavandeira Basanta,Avilés,5545,B,
+LUCIA PRIEGO ORTEGA,Bilbao,5547,B,
+Manuel Galisteo Gavilán,Andújar,5548,B,
+Joaquín Galisteo Gavilán,Andújar,5548,B,
+Pedro Vilches Galisteo,Andújar,5548,B,
+Antonia González Ciudad,Andújar,5549,B,
+Frank Gustaaf Albert Baervoets,València,5555,B,
+Jana Francesca Baervoets,València,5555,B,
+Elise Yasmin Soraya Baervoets,València,5555,B,
+Luis Sebastián Baervoets Portilla,València,5555,B,
+Ainara Navalón Escudero,València,5556,B,
+Frank Navalón Escudero,València,5556,B,
+Sandra Escudero Mendoza,València,5556,B,
+EVA DOLORES AMAGUAYA HIDALGO,València,5557,B,
+CARLOS ENRIQUEL AMAGUAYA HIDALGO,València,5557,B,
+JUAN ANTONIO AMAGUAYA HIDALGO,València,5557,B,
+MARIANA DE JESUS AMAGUAYA HIDALGO,València,5557,B,
+MARIA MERCEDES AMAGUAYA HIDALGO,València,5557,B,
+MANUEL MESIAS AMAGUAYA HIDALGO,València,5557,B,
+José Pais Romarís,Negreira,5558,B,
+Avelina Pais Pensado,Negreira,5558,B,
+Doña Rosa Delia Hernandez Diaz,Gran Canaria,5563,B,
+Fernando García Solano,Madrid,5565,B,
+Marta García Solano,Madrid,5565,B,
+Maria Luz Perez Lopez,Verín,5583,B,
+Ramos Perez Lopez,Verín,5583,B,
+MARIA TERESA RODRIGUEZ DE LOS RIOS,Ceuta,5588,B,
+FRANCISCO JAVIER RODRIGUEZ DE LOS RIOS,Ceuta,5588,B,
+INÉS MARÍA RODRIGUEZ DE LOS RIOS,Ceuta,5588,B,
+José Galindo Bordón,Telde,5590,B,
+Francisco Castillo Muñoz,Fuenlabrada,5592,B,
+Rocío Castillo Muñoz,Fuenlabrada,5592,B,
+Arturo Franco Garcés,València,5596,B,
+Enrique González Pérez,València,5598,B,
+Enrique González Borras,València,5598,B,
+Oscar Joaquín González Borras,València,5598,B,
+Joaquín González Borras,València,5598,B,
+Doña Clotilde Sánchez Cerezo,València,5599,B,
+Don Salvador Montañana Berihuete,València,5599,B,
+Don Manuel Montañana Berihuete,València,5599,B,
+Don Victor Manuel Montañana Sánchez,València,5599,B,
+Doña Manuela Montañana Sánchez,València,5599,B,
+Alberto Sarasa Gutiérrez,Barcelona -Sants-,5605,B,
+Santiago Roso Rodrigo,Villaquilambre,5608,B,
+María del Carmen Roso Rodrigo,Villaquilambre,5608,B,
+EVA-VICTORIA RODRIGUEZ ARIAS,León,5609,B,
+ALEJANDRO RODRIGUEZ ARIAS,León,5609,B,
+NATALIA RODRIGUEZ ARIAS,León,5609,B,
+NOELIA RODRIGUEZ ARIAS,León,5609,B,
+LUDIVINA ARIAS DIEZ,León,5609,B,
+Prudencia Argudo Muñoz,Colmenar Viejo,5610,B,
+Manuel Argudo Muñoz,Colmenar Viejo,5610,B,
+Andrés Argudo Muñoz,Colmenar Viejo,5610,B,
+Francisco Rodríguez Gómez,Telde,5620,B,
+Zaira Rodríguez Pérez,Telde,5620,B,
+Pedro José Moreno Castillo,Archena,5622,B,
+María Teresa Tarrega Taberner,València,5627,B,
+Genaro Tarrega Taberner,València,5627,B,
+AINAR NAVALON ESCUDERO,València,5628,B,
+Mercedes Sánchez Herrada,Barcelona,5634,B,
+Margarita Fernández García,León,5640,B,
+Doña María Isabel Sánchez Raso,Fuensalida,5643,B,
+Doña Begoña Sánchez Raso,Fuensalida,5643,B,
+Doña María del Mar Sánchez Raso,Fuensalida,5643,B,
+Doña Miriam Sánchez Raso,Fuensalida,5643,B,
+Doña Juana Raso Mariscal,Fuensalida,5643,B,
+ROCÍO MEDRANO DÍAZ,Fuensalida,5644,B,
+ITZIAR MEDRANO DÍAZ,Fuensalida,5644,B,
+MARÍA ROSA DÍAZ MEDRADO,Fuensalida,5644,B,
+Juan Antonio Sánchez-Escalonilla García-Rojo,Fuensalida,5645,B,
+Paloma Gutiérrez Guio,Fuensalida,5645,B,
+Hosam-Eddin Fattouh Artero,Alboraya,5646,B,
+Luna Fattouh Artero,Alboraya,5646,B,
+Sawsan Fawzi Hussien Abusharkh,Alboraya,5646,B,
+Luis Manuel Ley Pedrero,Gran Canaria,5653,B,
+Rafael Alejandro Ley Pedrero,Gran Canaria,5653,B,
+Marta Esperanza Ley Pedrero,Gran Canaria,5653,B,
+Ricardo Ley Pedrero,Gran Canaria,5653,B,
+María Luisa Pedrero Manchado,Gran Canaria,5653,B,
+Manuel Méndez Arias,Lugo,5656,B,
+José Méndez Arias,Lugo,5656,B,
+Julia Méndez Arias,Lugo,5656,B,
+María Méndez Arias,Lugo,5656,B,
+Elena Méndez Arias,Lugo,5656,B,
+Baselisa Méndez Arias,Lugo,5656,B,
+Herminia Cervero Maján,Madrid,5657,B,
+Juan Pedro Cervero Maján,Madrid,5657,B,
+Sabino Cervero Maján,Madrid,5657,B,
+María Carmen Cervero Maján,Madrid,5657,B,
+María Josefa Martínez García,Madrid,5657,B,
+Roberto Martínez García,Madrid,5657,B,
+Marceliano Muñoz Martínez,Madrid,5657,B,
+Pablo Mauro Muñoz Martínez,Madrid,5657,B,
+Ángel Muñoz Martínez,Madrid,5657,B,
+Lucía Francisca Martínez Remacha,Madrid,5657,B,
+Francisco José Martínez Remacha,Madrid,5657,B,
+Elisa Garnica,Arcos (Los),5660,B,
+Primitivo Garnica,Arcos (Los),5660,B,
+Flora Garnica,Arcos (Los),5660,B,
+Ángel Garnica,Arcos (Los),5660,B,
+José María Garnica,Arcos (Los),5660,B,
+Luisa Garnica,Arcos (Los),5660,B,
+Mariano Garnica,Arcos (Los),5660,B,
+Jesús Garnica,Arcos (Los),5660,B,
+Francisco Javier Jiménez Nayas,Sevilla - Nervión,5662,B,
+María-Jesús Rodríguez Álvarez,Fuensalida,5663,B,
+Javier Rodríguez Álvarez,Fuensalida,5663,B,
+María-Jesús Álvarez Arellano,Fuensalida,5663,B,
+JOSEFA COFRADES MÍNGUEZ,Fuensalida,5664,B,
+JOSÉ PABLO COFRADES MÍNGUEZ,Fuensalida,5664,B,

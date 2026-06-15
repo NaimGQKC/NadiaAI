@@ -262,14 +262,21 @@ NOTARIA_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-# Queries to run — each targets a different type of inheritance publication
+# Queries to run — each targets a different type of inheritance publication.
+# NOTE: BOA's TITU-C is an AND-of-words *title* search. When a word combination
+# matches zero titles, BOA serves an HTML error page (not an empty JSON array),
+# which fetch_boa_json discards. "acta+notoriedad+herederos" matched nothing
+# (verified 2026-06-14) — the three words never co-occur in a BOA title — so it
+# was a guaranteed no-op every run. Replaced with "aceptacion+herencia", which
+# returns live inheritance edicts. ("acta+de+notoriedad" was rejected: it returns
+# results but they're mostly non-inheritance property/possession acts, 0 named.)
 SEARCH_QUERIES = [
     "sucesion+legal+comunidad+autonoma+aragon",
     "Junta+Distribuidora+Herencias",
     "declaracion+de+herederos",
     "herencia+yacente",
     "herederos+abintestato",
-    "acta+notoriedad+herederos",
+    "aceptacion+herencia",
 ]
 
 
