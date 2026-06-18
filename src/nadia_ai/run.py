@@ -297,6 +297,18 @@ def run_pipeline(days: int = 90) -> dict:
             xlsx = build()
             summary["call_list"] = xlsx
             logger.info("Actionable call-list written to %s", xlsx)
+
+            # Email the worklist to Nadia as an attachment (skips silently if
+            # SMTP/recipient not configured). The dashboard is the live view;
+            # this is the zero-setup copy in her inbox each morning.
+            try:
+                from nadia_ai.delivery import email_worklist
+
+                if email_worklist(xlsx, summary):
+                    summary["worklist_emailed"] = True
+            except Exception as e:
+                logger.error("Worklist email failed (non-critical): %s", e)
+                summary["errors"].append(f"worklist_email: {e}")
         except Exception as e:
             logger.error("Call-list export failed (non-critical): %s", e)
             summary["errors"].append(f"call_list: {e}")
