@@ -37,6 +37,12 @@ jobs:
           EXTRACTION_API_URL: https://openrouter.ai/api/v1/chat/completions
           EXTRACTION_MODEL: minimax/minimax-m3
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+          # Email the daily A/B worklist (.xlsx) to Nadia. All three must be set
+          # for the email to send; if any is missing the step skips silently.
+          # SMTP_PASSWORD must be a Gmail *app password* (2FA), not the account password.
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAMA_EMAIL: ${{ secrets.MAMA_EMAIL }}
         run: python -m nadia_ai --cron
 
   on-failure:
