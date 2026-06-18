@@ -7,7 +7,7 @@
     size: A4;
     margin: 1.6cm 1.7cm 1.5cm 1.7cm;
     @bottom-center {
-      content: "NadiaAI · Propuesta de contactabilidad · Confidencial";
+      content: "NadiaAI · Estado del proyecto y siguiente paso · Confidencial";
       font-size: 7.5pt; color: #9098a6; font-family: 'Helvetica Neue', Arial, sans-serif;
     }
     @bottom-right {
@@ -18,8 +18,8 @@
   * { box-sizing: border-box; }
   body {
     font-family: 'Helvetica Neue', Arial, sans-serif;
-    font-size: 9.4pt;
-    line-height: 1.42;
+    font-size: 9.6pt;
+    line-height: 1.45;
     color: #232a33;
     margin: 0;
   }
@@ -42,16 +42,28 @@
   }
   p { margin: 4px 0; }
   ul { margin: 4px 0 4px 0; padding-left: 16px; }
-  li { margin: 2.5px 0; }
+  li { margin: 3px 0; }
   strong { color: #16202b; }
   .lead {
     background: #f2f7f4; border-left: 3px solid #1f6f54; padding: 8px 11px;
-    margin: 6px 0 10px 0; border-radius: 0 4px 4px 0; font-size: 9.4pt;
+    margin: 6px 0 10px 0; border-radius: 0 4px 4px 0;
   }
-  table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 8.6pt; }
-  th { background: #1f6f54; color: #fff; text-align: left; padding: 5px 7px; font-weight: 600; }
-  td { padding: 4.5px 7px; border-bottom: 1px solid #e2e7ec; vertical-align: top; }
-  tr:nth-child(even) td { background: #f7f9f8; }
+  .kpi { display: flex; gap: 8px; margin: 9px 0 4px 0; }
+  .kpi div {
+    flex: 1; background: #f2f7f4; border-radius: 5px; padding: 8px 6px; text-align: center;
+  }
+  .kpi .big { font-size: 15pt; font-weight: 700; color: #1f6f54; display: block; line-height: 1.1; }
+  .kpi .lbl { font-size: 7.3pt; color: #5a6573; text-transform: uppercase; letter-spacing: 0.3px; }
+  .flow { display: flex; gap: 7px; margin: 9px 0; align-items: stretch; }
+  .flow .step {
+    flex: 1; border: 1px solid #d8e0da; border-radius: 5px; padding: 8px 9px; position: relative;
+  }
+  .flow .step .num {
+    font-size: 7.5pt; font-weight: 700; color: #1f6f54; letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .flow .step .t { font-weight: 700; color: #16202b; display: block; margin: 1px 0 2px 0; font-size: 9.4pt; }
+  .flow .step .d { font-size: 8.4pt; color: #4a5560; }
+  .flow .arrow { align-self: center; color: #1f6f54; font-weight: 700; font-size: 13pt; }
   .phase { margin: 7px 0; padding: 8px 11px; border: 1px solid #d8e0da; border-radius: 5px; }
   .phase .tag {
     font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px;
@@ -59,95 +71,89 @@
   }
   .phase .ttl { font-weight: 700; color: #16202b; font-size: 9.6pt; }
   .why { color: #5a6573; font-style: italic; }
-  .cols { display: flex; gap: 14px; }
-  .col { flex: 1; }
-  .kpi { display: flex; gap: 8px; margin: 8px 0 4px 0; }
-  .kpi div {
-    flex: 1; background: #f2f7f4; border-radius: 5px; padding: 7px 8px; text-align: center;
-  }
-  .kpi .big { font-size: 14pt; font-weight: 700; color: #1f6f54; display: block; }
-  .kpi .lbl { font-size: 7.3pt; color: #5a6573; text-transform: uppercase; letter-spacing: 0.4px; }
+  .ok { color: #1f6f54; font-weight: 700; }
+  .gap { color: #b4541f; font-weight: 700; }
   .footnote { font-size: 7.6pt; color: #828c98; margin-top: 10px; border-top: 1px solid #e2e7ec; padding-top: 6px; }
   .nowrap { white-space: nowrap; }
+  code { font-size: 8.6pt; background:#eef2f0; padding:0 3px; border-radius:3px; }
 </style>
 </head>
 <body>
 
 <div class="header">
   <div class="brand">NadiaAI · Captación predictiva de herencias</div>
-  <h1>Cerrar la brecha de contacto: precisión postal e <i>inbound</i> consentido</h1>
-  <p class="subtitle">Propuesta de producto y plan de despliegue · Junio 2026</p>
+  <h1>Estado del proyecto y el siguiente paso: el mailing</h1>
+  <p class="subtitle">Resumen para clienta · Junio 2026</p>
 </div>
 
 <div class="lead">
-<strong>En una frase:</strong> dejamos de perseguir el teléfono del heredero —que en España no se puede usar legalmente para llamar en frío— y construimos un canal <strong>100&nbsp;% legal</strong>: una carta inteligente a la dirección del inmueble que invita al heredero a pedir una valoración gratuita. Es él quien nos contacta y nos da su consentimiento. El verdadero trabajo técnico no es conseguir teléfonos, sino <strong>afinar la dirección</strong>.
+<strong>En una frase:</strong> NadiaAI ya detecta cada día herencias que se convertirán en venta en los próximos meses. El motor funciona y produce una lista de oportunidades. El siguiente paso es <strong>llegar a esas familias de forma legal y automática</strong> — y la vía correcta en España es una <strong>carta inteligente</strong>, no la llamada.
 </div>
 
-<h2><span class="n">1</span>El punto de partida</h2>
-<p>NadiaAI detecta cada día herencias a punto de generar una venta (3–18 meses de ventana) a partir de fuentes públicas oficiales, con <strong>~92&nbsp;% de acierto en la identidad del heredero</strong> y el plazo legal calculado por separado para Aragón (Derecho Foral) y el resto de España. El entregable diario <span class="nowrap"><code>leads_accionables</code></span> los ordena en tres acciones:</p>
+<h2><span class="n">1</span>Qué hace NadiaAI</h2>
+<p>NadiaAI vigila a diario las fuentes públicas oficiales (boletines del Estado, autonómicos y provinciales, registros y esquelas) para detectar <strong>fallecimientos cuya vivienda saldrá al mercado en los próximos 3 a 18 meses</strong>. El objetivo es estar delante del heredero <strong>antes</strong> de que el inmueble se anuncie en portales.</p>
+<p>Cada día genera una lista, <span class="nowrap"><code>leads_accionables</code></span>, organizada en tres tipos de oportunidad y separada entre <strong>Zaragoza/Aragón</strong> y <strong>resto de España</strong> (porque el plazo legal de la herencia se calcula distinto en Aragón por su Derecho Foral):</p>
 <ul>
-  <li><strong>1 · CONTACTAR</strong> (notarial): heredero nombrado + notaría que tramita.</li>
-  <li><strong>2 · INVESTIGAR</strong> (judicial): juzgado competente + nº de procedimiento.</li>
-  <li><strong>3 · SEGUIMIENTO</strong> (esquela): deceso detectado, a la espera de apertura del expediente.</li>
+  <li><strong>Contactar</strong> — el heredero y la notaría que tramita ya están identificados.</li>
+  <li><strong>Investigar</strong> — herencia en vía judicial; tenemos juzgado y nº de procedimiento.</li>
+  <li><strong>Seguimiento</strong> — fallecimiento detectado, esperando que se abra el expediente.</li>
 </ul>
-<p>Hoy la lista es un <strong>excelente directorio de prospección</strong>, pero el contacto directo con el heredero está al <strong>0&nbsp;%</strong>. Esta propuesta lo resuelve.</p>
 
-<h2><span class="n">2</span>Por qué no perseguimos el teléfono</h2>
-<p>Desde 2023 (Ley General de Telecomunicaciones, art. 66), <strong>la llamada comercial en frío a un particular es ilegal sin su consentimiento previo</strong>, sin importar de dónde salga el número. Comprar el móvil del heredero no sirve: no podríamos usarlo. Por eso el objetivo no es «tener el teléfono», sino <strong>generar una vía de contacto consentida</strong>. El canal <strong>postal físico</strong>, en cambio, sí es viable bajo interés legítimo (RGPD art. 6.1.f) con el aviso del art. 14 —que NadiaAI ya adjunta— y cribado contra la Lista Robinson.</p>
-
-<h2><span class="n">3</span>La solución: de la carta al cliente que llama</h2>
-<p>Convertimos cada dirección de herencia en un embudo de captación legal y automatizado:</p>
-<div class="cols">
-  <div class="col">
-    <div class="phase"><span class="tag">Outbound</span><span class="ttl">Carta inteligente</span><br>
-    Envío postal al domicilio del inmueble con una propuesta de <strong>valoración gratuita</strong> y un <strong>código QR único</strong> hacia una <i>landing</i>.</div>
-  </div>
-  <div class="col">
-    <div class="phase"><span class="tag">Inbound consentido</span><span class="ttl">El heredero responde</span><br>
-    Escanea, pide su informe y <strong>deja su teléfono dando consentimiento</strong>. A partir de ahí la llamada es 100&nbsp;% legal y el dato es reutilizable.</div>
-  </div>
+<h2><span class="n">2</span>Dónde estamos hoy</h2>
+<div class="kpi">
+  <div><span class="big">Funcionando</span><span class="lbl">Motor diario automático</span></div>
+  <div><span class="big">~92%</span><span class="lbl">Acierto en identidad del heredero</span></div>
+  <div><span class="big">Miles</span><span class="lbl">Oportunidades acumuladas</span></div>
+  <div><span class="big gap">0%</span><span class="lbl">Contacto directo (la brecha)</span></div>
 </div>
-<div class="lead" style="margin-top:8px">
-<strong>El verdadero desbloqueante es la dirección, no el teléfono.</strong> Hoy ubicamos el ~99&nbsp;% de los leads <u>a nivel ciudad</u>, pero solo una minoría a nivel calle/puerta —y una carta no se puede enviar a «Zaragoza»—. Subir de ciudad a portal es la prioridad de ingeniería nº&nbsp;1, y se apoya en datos que ya recibimos.
-</div>
+<p><span class="ok">Lo que ya funciona:</span> el motor corre solo cada día, identifica al fallecido y la localidad con alta fiabilidad, calcula el plazo legal abierto de cada caso y ordena las oportunidades por prioridad. Es, hoy, un <strong>excelente directorio de prospección</strong>.</p>
+<p><span class="gap">Lo que falta (esta propuesta):</span> tenemos el <em>quién</em> y el <em>cuándo</em>, pero <strong>no una vía de contacto lista para usar</strong>: no hay teléfono del heredero. Por eso hoy cada oportunidad exige un paso manual. Cerrar esa brecha es lo que convierte la lista en negocio.</p>
 
-<h2><span class="n">4</span>Cómo afinamos la dirección (3 vías, por orden de coste)</h2>
-<table>
-  <tr><th style="width:23%">Vía</th><th style="width:43%">Qué hace</th><th style="width:18%">Coste</th><th style="width:16%">Para qué leads</th></tr>
-  <tr><td><strong>A · Parseo de edictos</strong></td><td>Extraer el <i>último domicilio</i> que el propio edicto notarial/judicial ya incluye. Dato que <strong>ya recibimos</strong>; solo hay que estructurarlo.</td><td>Desarrollo interno (sin coste por lead)</td><td>Notariales y judiciales</td></tr>
-  <tr><td><strong>B · Normalización Catastro</strong></td><td>Completar y estandarizar portal/calle cuando hay dirección parcial. <i>No</i> se puede consultar Catastro por nombre del titular (ilegal para privados); sí por dirección.</td><td>Gratuito / céntimos</td><td>Con dirección parcial</td></tr>
-  <tr><td><strong>C · Nota de Localización</strong> (Registro)</td><td>Localiza la finca exacta. Reservada a <strong>casos de alto valor</strong> y tramitada <strong>vía gestoría colaboradora</strong> con legitimación, no en prospección masiva.</td><td>9,02&nbsp;€ + IVA / consulta</td><td>Judiciales de alto valor</td></tr>
-</table>
+<h2><span class="n">3</span>El siguiente paso: el mailing (y por qué no el teléfono)</h2>
+<p>En España, desde 2023, <strong>llamar por teléfono en frío a un particular es ilegal sin su consentimiento previo</strong>, da igual de dónde se saque el número. Comprar teléfonos no sirve: no podríamos usarlos. La carta postal, en cambio, <strong>sí es legal</strong> (interés legítimo + aviso obligatorio que NadiaAI ya incluye). Por eso el siguiente paso es el <strong>mailing inteligente</strong>.</p>
 
-<h2><span class="n">5</span>Plan de despliegue y el porqué de cada paso</h2>
+<p><strong>Cómo funciona:</strong> convertimos cada herencia en un embudo donde <strong>es la familia quien nos contacta</strong> y nos da permiso para llamarla.</p>
 
-<div class="phase">
-<span class="tag">Mes 1 — Validar antes de construir</span>
-<span class="ttl">MVP postal + piloto de alianzas</span>
-<p style="margin:3px 0"><strong>Qué:</strong> parsear el domicilio de los edictos notariales que <u>ya tenemos</u> (Vía A) + envío manual de cartas con QR + <i>landing</i> de valoración. En paralelo, acuerdo de derivación con <strong>1–2 notarías o gestorías</strong>.</p>
-<p style="margin:3px 0" class="why"><strong>Por qué:</strong> mide la conversión real (escaneo → consentimiento) con datos propios antes de invertir en plataforma. Las notarías y gestorías son el filtro natural del heredero: una alianza es el canal más limpio y resuelve la legitimación de la Vía C.</p>
-</div>
-
-<div class="phase">
-<span class="tag">Meses 2–3 — Escalar lo que funciona</span>
-<span class="ttl">Automatización del flujo postal</span>
-<p style="margin:3px 0"><strong>Qué:</strong> integrar normalización de direcciones (Vía B) y un proveedor de correo automatizado (impresión + envío + QR dinámico por API). Cartas segmentadas por hoja <strong>Aragón (foral)</strong> vs. <strong>España</strong>.</p>
-<p style="margin:3px 0" class="why"><strong>Por qué:</strong> solo se automatiza una vez confirmada la conversión del Mes 1. El coste por carta (~1&nbsp;€) convierte unos cientos de envíos al mes en un canal de captación de coste muy inferior a una comisión inmobiliaria.</p>
-</div>
-
-<div class="phase">
-<span class="tag">Meses 4–6 — Exprimir los leads premium</span>
-<span class="ttl">Nota de Localización para alto valor</span>
-<p style="margin:3px 0"><strong>Qué:</strong> para leads judiciales sin dirección y de alto valor, tramitar la Nota de Localización vía la gestoría aliada.</p>
-<p style="margin:3px 0" class="why"><strong>Por qué:</strong> es un coste por consulta que solo se justifica cuando el valor del activo lo paga con creces. Se reserva para la cima de la lista, no para el volumen.</p>
+<div class="flow">
+  <div class="step"><span class="num">1 · Carta</span><span class="t">Envío postal</span><span class="d">Una carta breve y cuidada al domicilio, ofreciendo una <strong>valoración gratuita</strong> del inmueble heredado.</span></div>
+  <div class="arrow">›</div>
+  <div class="step"><span class="num">2 · QR</span><span class="t">Escanea y entra</span><span class="d">Un <strong>código QR único</strong> lleva a una página sencilla con el caso ya preparado.</span></div>
+  <div class="arrow">›</div>
+  <div class="step"><span class="num">3 · Permiso</span><span class="t">Deja su teléfono</span><span class="d">Para recibir la valoración, <strong>deja su contacto y da su consentimiento</strong>.</span></div>
+  <div class="arrow">›</div>
+  <div class="step"><span class="num">4 · Llamada</span><span class="t">Contacto legal</span><span class="d">Ahora sí podemos llamar: el dato es <strong>100% legal</strong> y reutilizable.</span></div>
 </div>
 
 <div class="lead">
-<strong>Decisión que pedimos confirmar:</strong> arrancamos con el <strong>MVP ligero (Mes 1)</strong> para validar conversión con datos reales antes de comprometer el desarrollo de la plataforma. Si el objetivo a medio plazo es <strong>revender el feed a agentes de otras provincias</strong>, ese mismo motor postal es la base del producto multi-cliente.
+<strong>El reto técnico real no es el teléfono: es la dirección exacta.</strong> Hoy ubicamos casi todas las oportunidades a nivel <u>ciudad</u>, pero una carta necesita <u>calle y puerta</u>. Afinar esa dirección (a partir de datos que ya recibimos en los propios edictos) es el trabajo principal de la primera fase. No te abrumamos con el detalle técnico aquí; lo importante es que el camino está claro.
+</div>
+
+<h2><span class="n">4</span>Plan: validar primero, escalar después</h2>
+
+<div class="phase">
+<span class="tag">Mes 1 — Probar con poco</span>
+<span class="ttl">Piloto de mailing manual</span>
+<p style="margin:3px 0" class="why"><strong>Por qué:</strong> antes de automatizar nada, enviamos un primer lote de cartas a mano y medimos cuántas familias responden. Así decidimos con datos reales, no con suposiciones. En paralelo, exploramos un acuerdo con <strong>1–2 notarías o gestorías</strong>, que son el contacto natural del heredero.</p>
+</div>
+
+<div class="phase">
+<span class="tag">Meses 2–3 — Automatizar lo que funcione</span>
+<span class="ttl">Mailing automático a escala</span>
+<p style="margin:3px 0" class="why"><strong>Por qué:</strong> una vez confirmado que el mailing convierte, lo automatizamos de punta a punta (impresión, envío y QR). Coste por carta ~1&nbsp;€: unos cientos de envíos al mes a un coste muy inferior a una sola comisión de venta.</p>
+</div>
+
+<div class="phase">
+<span class="tag">Meses 4–6 — Casos premium</span>
+<span class="ttl">Refuerzo para los inmuebles de mayor valor</span>
+<p style="margin:3px 0" class="why"><strong>Por qué:</strong> en los casos de más valor donde falte la dirección, usamos herramientas registrales de pago puntual. Solo se aplica cuando el valor del inmueble lo justifica.</p>
+</div>
+
+<div class="lead">
+<strong>Lo que pedimos confirmar:</strong> arrancar con el <strong>piloto del Mes 1</strong> para validar la respuesta real antes de invertir en automatización. Es el camino más prudente y el que antes te pone oportunidades reales en la mano.
 </div>
 
 <div class="footnote">
-Notas sobre cifras: la ubicación «~99&nbsp;%» es a nivel ciudad; la cobertura a nivel portal es hoy minoritaria y es precisamente el objetivo del Mes 1. El coste de adquisición por lead consentido se estimará con la conversión real medida en el piloto (no se incluye cifra proyectada para evitar supuestos no verificados). Base legal: RGPD art. 6.1.f y 14; LGT art. 66; Circular AEPD 1/2023. Consulta de exclusión: Lista Robinson (canal postal incluido).
+Nota: la cobertura «a nivel ciudad» es muy alta; la dirección exacta (calle y puerta) es hoy parcial y es el foco de la primera fase. El coste por contacto conseguido se medirá con los resultados reales del piloto. Marco legal del mailing: RGPD (interés legítimo + aviso del art. 14) y cribado contra la Lista Robinson.
 </div>
 
 </body>
