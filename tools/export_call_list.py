@@ -220,6 +220,10 @@ def build(db_path: str = DB) -> str:
         l for l in leads
         if (l.get("causante") or "").strip() or (l.get("heir_name") or "").strip()
     ]
+    # Focus the worklist on actionable tiers only. Tier C (insufficient data to
+    # act) and Tier X (distress/auction — outreach disabled, buy-side not list-side)
+    # are dropped so the agent works a clean A/B list.
+    leads = [l for l in leads if (l.get("tier") or "C") in ("A", "B")]
     # Defensive dedup on person+source. merge.py already dedups named leads at write
     # time; this is belt-and-suspenders so the worklist never shows the same case twice.
     seen: set = set()

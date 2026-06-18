@@ -48,10 +48,17 @@ def api_leads():
     
     conn = _get_conn()
     try:
-        query_where = "(days_since_death IS NULL OR days_since_death <= 730)"
+        # Focus the board on actionable leads only: Tier A (hot) and B (warm).
+        # Tier C (insufficient data) and Tier X (distress/auction, outreach
+        # disabled) are intentionally excluded — they are not worked leads.
+        query_where = (
+            "(days_since_death IS NULL OR days_since_death <= 730) "
+            "AND tier IN ('A', 'B')"
+        )
         params = []
-        
-        if tier_filter and tier_filter != "all":
+
+        # An explicit tier filter can only narrow within A/B (never re-add C/X).
+        if tier_filter in ("A", "B"):
             query_where += " AND tier = ?"
             params.append(tier_filter)
             
@@ -76,7 +83,7 @@ def api_leads():
                FROM leads
                WHERE {query_where}
                ORDER BY
-                   CASE tier WHEN 'A' THEN 0 WHEN 'B' THEN 1 WHEN 'X' THEN 2 ELSE 3 END,
+                   CASE tier WHEN 'A' THEN 0 WHEN 'B' THEN 1 ELSE 2 END,
                    days_since_death DESC NULLS LAST
                LIMIT ? OFFSET ?""",
             params
@@ -118,7 +125,6 @@ def api_leads():
             "stats": {
                 "tier_a": sum(1 for l in leads if l["tier"] == "A"),
                 "tier_b": sum(1 for l in leads if l["tier"] == "B"),
-                "tier_x": sum(1 for l in leads if l["tier"] == "X"),
                 "urgent": len(columns["urgent"]),
             },
         })
