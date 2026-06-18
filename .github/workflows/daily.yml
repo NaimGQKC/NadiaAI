@@ -11,7 +11,9 @@ on:
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # The worklist email sends at the end of the pipeline (Step 8b), so the run
+    # must be allowed to complete a full scrape+merge+export before delivery.
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
