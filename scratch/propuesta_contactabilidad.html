@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<style>
+  @page {
+    size: A4;
+    margin: 1.6cm 1.7cm 1.5cm 1.7cm;
+    @bottom-center {
+      content: "NadiaAI · Estado del proyecto y siguiente paso · Confidencial";
+      font-size: 7.5pt; color: #9098a6; font-family: 'Helvetica Neue', Arial, sans-serif;
+    }
+    @bottom-right {
+      content: "Pág. " counter(page) " / " counter(pages);
+      font-size: 7.5pt; color: #9098a6; font-family: 'Helvetica Neue', Arial, sans-serif;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 9.6pt;
+    line-height: 1.45;
+    color: #232a33;
+    margin: 0;
+  }
+  .header {
+    border-bottom: 2.5px solid #1f6f54;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+  }
+  .header .brand { font-size: 8pt; letter-spacing: 1.6px; color: #1f6f54; font-weight: 700; text-transform: uppercase; }
+  h1 { font-size: 16.5pt; margin: 3px 0 2px 0; color: #16202b; letter-spacing: -0.2px; }
+  .subtitle { font-size: 9pt; color: #5a6573; margin: 0; }
+  h2 {
+    font-size: 10.5pt; color: #1f6f54; margin: 14px 0 5px 0;
+    padding-bottom: 2px; border-bottom: 1px solid #d8e0da;
+  }
+  h2 .n {
+    display: inline-block; background: #1f6f54; color: #fff; font-size: 8pt;
+    width: 15px; height: 15px; line-height: 15px; text-align: center; border-radius: 3px;
+    margin-right: 6px; vertical-align: 1px;
+  }
+  p { margin: 4px 0; }
+  ul { margin: 4px 0 4px 0; padding-left: 16px; }
+  li { margin: 3px 0; }
+  strong { color: #16202b; }
+  .lead {
+    background: #f2f7f4; border-left: 3px solid #1f6f54; padding: 8px 11px;
+    margin: 6px 0 10px 0; border-radius: 0 4px 4px 0;
+  }
+  .kpi { display: flex; gap: 8px; margin: 9px 0 4px 0; }
+  .kpi div {
+    flex: 1; background: #f2f7f4; border-radius: 5px; padding: 8px 6px; text-align: center;
+  }
+  .kpi .big { font-size: 15pt; font-weight: 700; color: #1f6f54; display: block; line-height: 1.1; }
+  .kpi .lbl { font-size: 7.3pt; color: #5a6573; text-transform: uppercase; letter-spacing: 0.3px; }
+  .flow { display: flex; gap: 7px; margin: 9px 0; align-items: stretch; }
+  .flow .step {
+    flex: 1; border: 1px solid #d8e0da; border-radius: 5px; padding: 8px 9px; position: relative;
+  }
+  .flow .step .num {
+    font-size: 7.5pt; font-weight: 700; color: #1f6f54; letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .flow .step .t { font-weight: 700; color: #16202b; display: block; margin: 1px 0 2px 0; font-size: 9.4pt; }
+  .flow .step .d { font-size: 8.4pt; color: #4a5560; }
+  .flow .arrow { align-self: center; color: #1f6f54; font-weight: 700; font-size: 13pt; }
+  .phase { margin: 7px 0; padding: 8px 11px; border: 1px solid #d8e0da; border-radius: 5px; }
+  .phase .tag {
+    font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px;
+    color: #1f6f54; display: block; margin-bottom: 2px;
+  }
+  .phase .ttl { font-weight: 700; color: #16202b; font-size: 9.6pt; }
+  .why { color: #5a6573; font-style: italic; }
+  .ok { color: #1f6f54; font-weight: 700; }
+  .gap { color: #b4541f; font-weight: 700; }
+  .footnote { font-size: 7.6pt; color: #828c98; margin-top: 10px; border-top: 1px solid #e2e7ec; padding-top: 6px; }
+  .nowrap { white-space: nowrap; }
+  code { font-size: 8.6pt; background:#eef2f0; padding:0 3px; border-radius:3px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="brand">NadiaAI · Captación predictiva de herencias</div>
+  <h1>Estado del proyecto y el siguiente paso: el mailing</h1>
+  <p class="subtitle">Resumen para clienta · Junio 2026</p>
+</div>
+
+<div class="lead">
+<strong>En una frase:</strong> NadiaAI ya detecta cada día herencias que se convertirán en venta en los próximos meses. El motor funciona y produce una lista de oportunidades. El siguiente paso es <strong>llegar a esas familias de forma legal y automática</strong> — y la vía correcta en España es una <strong>carta inteligente</strong>, no la llamada.
+</div>
+
+<h2><span class="n">1</span>Qué hace NadiaAI</h2>
+<p>NadiaAI vigila a diario las fuentes públicas oficiales (boletines del Estado, autonómicos y provinciales, registros y esquelas) para detectar <strong>fallecimientos cuya vivienda saldrá al mercado en los próximos 3 a 18 meses</strong>. El objetivo es estar delante del heredero <strong>antes</strong> de que el inmueble se anuncie en portales.</p>
+<p>Cada día genera una lista, <span class="nowrap"><code>leads_accionables</code></span>, organizada en tres tipos de oportunidad y separada entre <strong>Zaragoza/Aragón</strong> y <strong>resto de España</strong> (porque el plazo legal de la herencia se calcula distinto en Aragón por su Derecho Foral):</p>
+<ul>
+  <li><strong>Contactar</strong> — el heredero y la notaría que tramita ya están identificados.</li>
+  <li><strong>Investigar</strong> — herencia en vía judicial; tenemos juzgado y nº de procedimiento.</li>
+  <li><strong>Seguimiento</strong> — fallecimiento detectado, esperando que se abra el expediente.</li>
+</ul>
+
+<h2><span class="n">2</span>Dónde estamos hoy</h2>
+<div class="kpi">
+  <div><span class="big">Funcionando</span><span class="lbl">Motor diario automático</span></div>
+  <div><span class="big">~92%</span><span class="lbl">Acierto en identidad del heredero</span></div>
+  <div><span class="big">Miles</span><span class="lbl">Oportunidades acumuladas</span></div>
+  <div><span class="big gap">0%</span><span class="lbl">Contacto directo (la brecha)</span></div>
+</div>
+<p><span class="ok">Lo que ya funciona:</span> el motor corre solo cada día, identifica al fallecido y la localidad con alta fiabilidad, calcula el plazo legal abierto de cada caso y ordena las oportunidades por prioridad. Es, hoy, un <strong>excelente directorio de prospección</strong>.</p>
+<p><span class="gap">Lo que falta (esta propuesta):</span> tenemos el <em>quién</em> y el <em>cuándo</em>, pero <strong>no una vía de contacto lista para usar</strong>: no hay teléfono del heredero. Por eso hoy cada oportunidad exige un paso manual. Cerrar esa brecha es lo que convierte la lista en negocio.</p>
+
+<h2><span class="n">3</span>El siguiente paso: el mailing (y por qué no el teléfono)</h2>
+<p>En España, desde 2023, <strong>llamar por teléfono en frío a un particular es ilegal sin su consentimiento previo</strong>, da igual de dónde se saque el número. Comprar teléfonos no sirve: no podríamos usarlos. La carta postal, en cambio, <strong>sí es legal</strong> (interés legítimo + aviso obligatorio que NadiaAI ya incluye). Por eso el siguiente paso es el <strong>mailing inteligente</strong>.</p>
+
+<p><strong>Cómo funciona:</strong> convertimos cada herencia en un embudo donde <strong>es la familia quien nos contacta</strong> y nos da permiso para llamarla.</p>
+
+<div class="flow">
+  <div class="step"><span class="num">1 · Carta</span><span class="t">Envío postal</span><span class="d">Una carta breve y cuidada al domicilio, ofreciendo una <strong>valoración gratuita</strong> del inmueble heredado.</span></div>
+  <div class="arrow">›</div>
+  <div class="step"><span class="num">2 · QR</span><span class="t">Escanea y entra</span><span class="d">Un <strong>código QR único</strong> lleva a una página sencilla con el caso ya preparado.</span></div>
+  <div class="arrow">›</div>
+  <div class="step"><span class="num">3 · Permiso</span><span class="t">Deja su teléfono</span><span class="d">Para recibir la valoración, <strong>deja su contacto y da su consentimiento</strong>.</span></div>
+  <div class="arrow">›</div>
+  <div class="step"><span class="num">4 · Llamada</span><span class="t">Contacto legal</span><span class="d">Ahora sí podemos llamar: el dato es <strong>100% legal</strong> y reutilizable.</span></div>
+</div>
+
+<div class="lead">
+<strong>El reto técnico real no es el teléfono: es la dirección exacta.</strong> Hoy ubicamos casi todas las oportunidades a nivel <u>ciudad</u>, pero una carta necesita <u>calle y puerta</u>. Afinar esa dirección (a partir de datos que ya recibimos en los propios edictos) es el trabajo principal de la primera fase. No te abrumamos con el detalle técnico aquí; lo importante es que el camino está claro.
+</div>
+
+<h2><span class="n">4</span>Plan: validar primero, escalar después</h2>
+
+<div class="phase">
+<span class="tag">Mes 1 — Probar con poco</span>
+<span class="ttl">Piloto de mailing manual</span>
+<p style="margin:3px 0" class="why"><strong>Por qué:</strong> antes de automatizar nada, enviamos un primer lote de cartas a mano y medimos cuántas familias responden. Así decidimos con datos reales, no con suposiciones. En paralelo, exploramos un acuerdo con <strong>1–2 notarías o gestorías</strong>, que son el contacto natural del heredero.</p>
+</div>
+
+<div class="phase">
+<span class="tag">Meses 2–3 — Automatizar lo que funcione</span>
+<span class="ttl">Mailing automático a escala</span>
+<p style="margin:3px 0" class="why"><strong>Por qué:</strong> una vez confirmado que el mailing convierte, lo automatizamos de punta a punta (impresión, envío y QR). Coste por carta ~1&nbsp;€: unos cientos de envíos al mes a un coste muy inferior a una sola comisión de venta.</p>
+</div>
+
+<div class="phase">
+<span class="tag">Meses 4–6 — Casos premium</span>
+<span class="ttl">Refuerzo para los inmuebles de mayor valor</span>
+<p style="margin:3px 0" class="why"><strong>Por qué:</strong> en los casos de más valor donde falte la dirección, usamos herramientas registrales de pago puntual. Solo se aplica cuando el valor del inmueble lo justifica.</p>
+</div>
+
+<div class="lead">
+<strong>Lo que pedimos confirmar:</strong> arrancar con el <strong>piloto del Mes 1</strong> para validar la respuesta real antes de invertir en automatización. Es el camino más prudente y el que antes te pone oportunidades reales en la mano.
+</div>
+
+<div class="footnote">
+Nota: la cobertura «a nivel ciudad» es muy alta; la dirección exacta (calle y puerta) es hoy parcial y es el foco de la primera fase. El coste por contacto conseguido se medirá con los resultados reales del piloto. Marco legal del mailing: RGPD (interés legítimo + aviso del art. 14) y cribado contra la Lista Robinson.
+</div>
+
+</body>
+</html>

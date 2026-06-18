@@ -346,6 +346,57 @@ def send_email(leads: list[LeadRow], sheet_ok: bool) -> None:
     logger.info("Daily email sent to Nadia — %d leads", n_new)
 
 
+def email_worklist(xlsx_path: str | Path, summary: dict | None = None) -> bool:
+    """Email the daily actionable worklist (leads_accionables .xlsx) to Nadia.
+
+    The dashboard remains the live view; this puts the same A/B worklist in her
+    inbox every morning as an attachment she can open with no setup. Gracefully
+    skips (returns False) when SMTP or the recipient is not configured, so it can
+    never break the pipeline run.
+    """
+    path = Path(xlsx_path)
+    if not (SMTP_USER and SMTP_PASSWORD and MAMA_EMAIL):
+        logger.info("SMTP/recipient not configured — worklist email skipped")
+        return False
+    if not path.exists():
+        logger.warning("Worklist file %s not found — email skipped", path)
+        return False
+
+    summary = summary or {}
+    today = datetime.now(UTC).strftime("%d/%m/%Y")
+    n_a = summary.get("tier_a")
+    n_b = summary.get("tier_b")
+    counts = (
+        f" ({n_a} Tier A, {n_b} Tier B nuevos hoy)"
+        if n_a is not None and n_b is not None
+        else ""
+    )
+
+    subject = f"NadiaAI — Lista de leads accionables {today}"
+    body_text = (
+        f"Hola Nadia,\n\n"
+        f"Adjunto la lista de leads accionables de hoy ({today}){counts}.\n\n"
+        f"Ábrela y trabaja de arriba abajo: ya viene ordenada por prioridad y "
+        f"plazo legal, con las hojas Zaragoza-Aragón, España y una Guía.\n"
+        f"Solo incluye leads Tier A (calientes) y B (templados).\n\n"
+        f"¡Buen día!\nNadiaAI"
+    )
+    body_html = (
+        f"<p>Hola Nadia,</p>"
+        f"<p>Adjunto la <strong>lista de leads accionables</strong> de hoy "
+        f"({today}){counts}.</p>"
+        f"<p>Ábrela y trabaja de arriba abajo: ya viene ordenada por prioridad y "
+        f"plazo legal, con las hojas <em>Zaragoza-Aragón</em>, <em>España</em> y "
+        f"una <em>Guía</em>. Solo incluye leads <strong>Tier A</strong> (calientes) "
+        f"y <strong>B</strong> (templados).</p>"
+        f"<p>¡Buen día!<br>NadiaAI</p>"
+    )
+
+    _send_smtp(MAMA_EMAIL, subject, body_text, body_html, attachment=path)
+    logger.info("Worklist emailed to Nadia — %s", path.name)
+    return True
+
+
 def send_dev_alert(error_msg: str) -> None:
     """Send a failure alert to the developer."""
     if not DEV_ALERT_EMAIL:
@@ -355,14 +406,35 @@ def send_dev_alert(error_msg: str) -> None:
     _send_smtp(DEV_ALERT_EMAIL, subject, body, f"<p>{body}</p>")
 
 
-def _send_smtp(to: str, subject: str, body_text: str, body_html: str) -> None:
-    """Send an email via Gmail SMTP."""
-    msg = MIMEMultipart("alternative")
+def _send_smtp(
+    to: str,
+    subject: str,
+    body_text: str,
+    body_html: str,
+    attachment: Path | None = None,
+) -> None:
+    """Send an email via Gmail SMTP, optionally with a file attachment."""
+    msg = MIMEMultipart("mixed")
     msg["Subject"] = subject
     msg["From"] = SMTP_USER
     msg["To"] = to
-    msg.attach(MIMEText(body_text, "plain", "utf-8"))
-    msg.attach(MIMEText(body_html, "html", "utf-8"))
+
+    alt = MIMEMultipart("alternative")
+    alt.attach(MIMEText(body_text, "plain", "utf-8"))
+    alt.attach(MIMEText(body_html, "html", "utf-8"))
+    msg.attach(alt)
+
+    if attachment is not None:
+        from email.mime.base import MIMEBase
+        from email import encoders
+
+        part = MIMEBase("application", "octet-stream")
+        part.set_payload(attachment.read_bytes())
+        encoders.encode_base64(part)
+        part.add_header(
+            "Content-Disposition", f'attachment; filename="{attachment.name}"'
+        )
+        msg.attach(part)
 
     # Port 465 (SSL) preferred over 587 (STARTTLS) — more reliable from GitHub Actions runners
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
