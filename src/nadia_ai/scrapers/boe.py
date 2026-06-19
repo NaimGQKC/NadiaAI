@@ -35,6 +35,19 @@ HEADERS = {
 SESSION = requests.Session()
 SESSION.headers.update(HEADERS)
 
+# Optional outbound proxy for boe.es. Spanish government sites (BOE, AEAT,
+# Catastro…) block many datacenter / CI IP ranges at the TCP layer — the
+# connection times out rather than returning a 403 — so the same code that works
+# from a laptop yields 0 records from a GitHub Actions runner. Routing BOE through
+# a residential / Spain-based proxy restores access. Set BOE_PROXY_URL to a full
+# proxy URL (e.g. http://user:pass@host:port or socks5://host:port). Unset =
+# direct connection (default), so this is a no-op until configured.
+_BOE_PROXY = os.getenv("BOE_PROXY_URL", "").strip()
+if _BOE_PROXY:
+    SESSION.proxies.update({"http": _BOE_PROXY, "https": _BOE_PROXY})
+    # Log the host only — never the user:pass embedded in the URL.
+    logger.info("BOE requests routed through proxy %s", _BOE_PROXY.rsplit("@", 1)[-1])
+
 # --- Circuit breaker for boe.es -------------------------------------------------
 # BOE is scanned day-by-day over a ~90-day window across several loops. When the
 # host is unreachable, every request otherwise blocks for the full connect
@@ -262,7 +275,7 @@ def fetch_item_text(doc_id: str) -> str:
     """Fetch the XML content of a specific BOE document to check the body text."""
     url = f"https://www.boe.es/diario_boe/xml.php?id={doc_id}"
     try:
-        r = requests.get(url, timeout=10)
+        r = SESSION.get(url, timeout=10)  # SESSION carries the optional BOE proxy
         if r.status_code == 200:
             root = ET.fromstring(r.content)
             # Combine all paragraph text

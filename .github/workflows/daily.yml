@@ -45,6 +45,9 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           MAMA_EMAIL: ${{ secrets.MAMA_EMAIL }}
+          # Optional: route boe.es through a residential/Spain proxy to dodge the
+          # datacenter-IP block. Unset = direct connection (no-op).
+          BOE_PROXY_URL: ${{ secrets.BOE_PROXY_URL }}
         run: python -m nadia_ai --cron
 
   on-failure:
