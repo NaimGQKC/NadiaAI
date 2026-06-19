@@ -35,6 +35,57 @@ HEADERS = {
 SESSION = requests.Session()
 SESSION.headers.update(HEADERS)
 
+# --- Circuit breaker for boe.es -------------------------------------------------
+# BOE is scanned day-by-day over a ~90-day window across several loops. When the
+# host is unreachable, every request otherwise blocks for the full connect
+# timeout, so a single outage can burn 25-40 min and starve the rest of the
+# pipeline (the export + worklist email run last). After a few consecutive
+# connection failures we trip a shared breaker so the remaining BOE requests
+# fail instantly instead of each waiting the timeout. A success resets it.
+_BOE_FAILS = 0
+_BOE_BREAKER_TRIPPED = False
+_BOE_MAX_CONSECUTIVE_FAILS = 4
+# (connect, read): fail a dead host fast, but still allow a slow read to finish.
+_BOE_TIMEOUT = (8, 25)
+
+
+class _BOEDown(Exception):
+    """Raised when boe.es has been deemed unreachable for this run."""
+
+
+def _reset_boe_breaker() -> None:
+    global _BOE_FAILS, _BOE_BREAKER_TRIPPED
+    _BOE_FAILS = 0
+    _BOE_BREAKER_TRIPPED = False
+
+
+def _boe_get(url, **kwargs):
+    """SESSION.get for boe.es guarded by a shared circuit breaker.
+
+    Trips after _BOE_MAX_CONSECUTIVE_FAILS consecutive connection failures so the
+    day-by-day loops short-circuit when the host is down. Callers already treat a
+    raised exception as "skip this day", so no call site needs to change behaviour.
+    """
+    global _BOE_FAILS, _BOE_BREAKER_TRIPPED
+    if _BOE_BREAKER_TRIPPED:
+        raise _BOEDown("BOE host unreachable — circuit breaker open")
+    kwargs.setdefault("timeout", _BOE_TIMEOUT)
+    try:
+        r = SESSION.get(url, **kwargs)
+        _BOE_FAILS = 0
+        return r
+    except requests.RequestException as e:
+        _BOE_FAILS += 1
+        if _BOE_FAILS >= _BOE_MAX_CONSECUTIVE_FAILS and not _BOE_BREAKER_TRIPPED:
+            _BOE_BREAKER_TRIPPED = True
+            logger.error(
+                "BOE circuit breaker tripped after %d consecutive failures — "
+                "skipping remaining BOE requests this run (%s)",
+                _BOE_FAILS, e,
+            )
+        raise
+
+
 # Name extraction patterns
 # Using (?i:...) to make only the prefix case-insensitive.
 # The actual name must start with an uppercase letter to avoid picking up "su padre" or "la causante".
@@ -153,7 +204,7 @@ def _extract_name(text: str) -> str | None:
 def fetch_boe_sumario(date: datetime) -> str:
     url = BOE_SUMARIO_URL.format(date=date.strftime("%Y%m%d"))
     try:
-        response = SESSION.get(url, timeout=15)
+        response = _boe_get(url)
         response.raise_for_status()
         return response.text
     except Exception as e:
@@ -163,7 +214,7 @@ def fetch_boe_sumario(date: datetime) -> str:
 def fetch_boe_doc_xml(doc_id: str) -> str:
     url = BOE_DOC_XML_URL.format(doc_id=doc_id)
     try:
-        response = SESSION.get(url, timeout=15)
+        response = _boe_get(url)
         response.raise_for_status()
         return response.text
     except Exception as e:
@@ -402,7 +453,7 @@ def _search_teju_ids(days: int) -> dict[str, datetime | None]:
             "accion": "Buscar",
         }
         try:
-            r = SESSION.get(TEJU_SEARCH_URL, params=params, timeout=30)
+            r = _boe_get(TEJU_SEARCH_URL, params=params)
             r.raise_for_status()
         except Exception as e:
             logger.error("TEJU search failed for %s: %s", query, e)
@@ -539,11 +590,14 @@ def scrape_notarial_notifications(days: int) -> list[EdictRecord]:
 
     records = []
     for i in range(days):
+        if _BOE_BREAKER_TRIPPED:
+            logger.warning("BOE-N: host unreachable, stopping after %d/%d days", i, days)
+            break
         date_obj = datetime.now(UTC) - timedelta(days=i)
         date_path = date_obj.strftime("%Y/%m/%d")
         url = f"https://www.boe.es/boe_n/dias/{date_path}/index.php?l=N"
         try:
-            r = SESSION.get(url, timeout=30)
+            r = _boe_get(url)
             if r.status_code != 200:
                 continue
         except Exception as e:
@@ -594,11 +648,15 @@ def scrape_notarial_notifications(days: int) -> list[EdictRecord]:
 def scrape_boe(days: int = 90) -> list[EdictRecord]:
     """Scrape BOE Section IV, V, TEJU and Notificaciones for inheritance leads."""
     logger.info("Scraping BOE for the last %d days...", days)
-    
+    _reset_boe_breaker()
+
     # 1. Scrape regular sections via XML API
     api_records = []
     seen_ids = set()
     for i in range(days):
+        if _BOE_BREAKER_TRIPPED:
+            logger.warning("BOE summary scan: host unreachable, stopping after %d/%d days", i, days)
+            break
         date = datetime.now(UTC) - timedelta(days=i)
         xml_data = fetch_boe_sumario(date)
         if not xml_data: continue
