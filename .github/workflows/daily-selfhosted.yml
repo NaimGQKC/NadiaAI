@@ -34,11 +34,10 @@ jobs:
       # "Add to PATH") and we use that system interpreter via Git Bash below.
 
       - name: Install dependencies
-        shell: bash
         run: pip install -e .
 
       - name: Run pipeline
-        shell: bash
+        shell: powershell   # Windows runner: PowerShell, NOT bash (bash resolves to WSL and breaks)
         env:
           EXTRACTION_API_KEY: ${{ secrets.EXTRACTION_API_KEY }}
           EXTRACTION_API_URL: https://openrouter.ai/api/v1/chat/completions
@@ -53,8 +52,8 @@ jobs:
         run: |
           # Persist the DB outside the workspace so `actions/checkout` (which runs
           # `git clean`) can't wipe it. This is what makes enrichment cumulative.
-          export NADIA_DB_PATH="$HOME/nadia-ai-data/nadia_ai.db"
-          mkdir -p "$(dirname "$NADIA_DB_PATH")"
-          echo "Using persistent DB at $NADIA_DB_PATH"
+          $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
+          New-Item -ItemType Directory -Force -Path (Split-Path $env:NADIA_DB_PATH) | Out-Null
+          Write-Host "Using persistent DB at $env:NADIA_DB_PATH"
           python -m nadia_ai --cron
 

@@ -22,11 +22,9 @@ jobs:
       # tries to install Python and fails on a self-hosted runner).
 
       - name: Install dependencies
-        shell: bash
         run: pip install -e .
 
       - name: Run pipeline
-        shell: bash
         env:
           # Delivery is the self-hosted dashboard (reads the DB the cron commits).
           # Two LLMs, one job each — both graceful if unset:
