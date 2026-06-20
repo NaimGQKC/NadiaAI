@@ -10,10 +10,10 @@ on:
 
 jobs:
   run-pipeline:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted   # TEMP: route to the self-hosted runner for a one-off test (revert to ubuntu-latest after)
     # The worklist email sends at the end of the pipeline (Step 8b), so the run
     # must be allowed to complete a full scrape+merge+export before delivery.
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - uses: actions/checkout@v4
