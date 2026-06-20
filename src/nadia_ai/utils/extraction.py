@@ -3,6 +3,7 @@ import logging
 import re
 import sqlite3
 import os
+import time
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
@@ -326,14 +327,17 @@ def extract_inheritance_data(text: str, causante_hint: str = None) -> dict:
         logger.warning("Extraction failed entirely: %s", e)
         return {}
 
-def run_heir_extraction(conn, limit: int = 200, extra_where: str = ""):
+def run_heir_extraction(conn, limit: int = 200, extra_where: str = "", deadline: float | None = None):
     """Enrich pending leads by extracting heirs and addresses from their source documents.
 
     Includes Catastro validation as a gatekeeper for Tier A.
 
     `limit` caps how many leads are processed; `extra_where` is an optional extra
     SQL filter (e.g. a province + source scope) ANDed onto the pending-leads query
-    for targeted/pilot runs.
+    for targeted/pilot runs. `deadline` is an optional `time.monotonic()` cutoff:
+    each lead can cost tens of seconds (a slow/garbled LLM retries up to 4x), so the
+    loop stops cleanly once past it, leaving the rest pending for the next run. This
+    is what keeps a slow LLM from starving the worklist email at the end of the run.
     """
     from nadia_ai.catastro import lookup_by_rc
     from nadia_ai.config import EXTRACTION_API_KEY
@@ -374,6 +378,12 @@ def run_heir_extraction(conn, limit: int = 200, extra_where: str = ""):
     
     count = 0
     for lead in leads:
+        if deadline is not None and time.monotonic() > deadline:
+            logger.warning(
+                "Heir extraction hit the time budget after %d leads — stopping; "
+                "remaining leads stay pending for the next run.", count
+            )
+            break
         lead_id = lead["id"]
         causante = lead["causante"]
         urls = json.loads(lead["source_urls"] or "[]")

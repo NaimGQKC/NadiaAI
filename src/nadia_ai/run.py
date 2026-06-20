@@ -180,7 +180,12 @@ def run_pipeline(days: int = 90) -> dict:
     try:
         from nadia_ai.utils.extraction import run_heir_extraction
 
-        extracted = run_heir_extraction(conn) if _budget_ok("heir extraction") else 0
+        # Pass the budget deadline INTO extraction: each lead can cost ~80s on a
+        # slow/garbled LLM (4 retries), so the per-lead loop must stop at the
+        # deadline itself — checking only before the step (like the others) let it
+        # overrun to 30 min in run #54.
+        _deadline = (_t0 + _budget_s) if _budget_s > 0 else None
+        extracted = run_heir_extraction(conn, deadline=_deadline) if _budget_ok("heir extraction") else 0
         summary["heirs_extracted"] = extracted
         logger.info("LLM heir extraction: %d leads enriched", extracted)
     except Exception as e:
@@ -278,8 +283,12 @@ def run_pipeline(days: int = 90) -> dict:
         )
 
         init_enrichment_schema(conn)
-        fetch_subastas(conn)
-        fetch_obras(conn)
+        # Network fetches hit subastas.boe.es (often IP-blocked from CI, 60s
+        # timeouts) — skip them once the budget is spent, but still cross-join any
+        # data already cached so delivery is never delayed by this step.
+        if _budget_ok("subastas/obras fetch"):
+            fetch_subastas(conn)
+            fetch_obras(conn)
         subastas_enriched = enrich_leads_from_subastas(conn)
         obras_enriched = enrich_leads_from_obras(conn)
         summary["subastas_enriched"] = subastas_enriched
