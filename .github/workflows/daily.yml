@@ -10,16 +10,19 @@ on:
 
 jobs:
   run-pipeline:
-    runs-on: self-hosted   # TEMP: route to the self-hosted runner for a one-off test (revert to ubuntu-latest after)
+    runs-on: ubuntu-latest
     # The worklist email sends at the end of the pipeline (Step 8b), so the run
     # must be allowed to complete a full scrape+merge+export before delivery.
-    timeout-minutes: 45
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
 
-      # TEMP test on self-hosted: use the machine's own Python 3.11 (setup-python
-      # tries to install Python and fails on a self-hosted runner).
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
 
       - name: Install dependencies
         run: pip install -e .
