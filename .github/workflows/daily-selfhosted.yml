@@ -29,15 +29,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      # No actions/setup-python here: on a self-hosted runner it tries to *install*
+      # Python and fails. Install Python 3.11 once on the machine (python.org, with
+      # "Add to PATH") and we use that system interpreter via Git Bash below.
 
       - name: Install dependencies
+        shell: bash
         run: pip install -e .
 
       - name: Run pipeline
+        shell: bash
         env:
           EXTRACTION_API_KEY: ${{ secrets.EXTRACTION_API_KEY }}
           EXTRACTION_API_URL: https://openrouter.ai/api/v1/chat/completions
@@ -56,3 +57,4 @@ jobs:
           mkdir -p "$(dirname "$NADIA_DB_PATH")"
           echo "Using persistent DB at $NADIA_DB_PATH"
           python -m nadia_ai --cron
+

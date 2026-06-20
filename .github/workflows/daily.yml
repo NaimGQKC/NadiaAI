@@ -18,16 +18,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
+      # TEMP test on self-hosted: use the machine's own Python 3.11 (setup-python
+      # tries to install Python and fails on a self-hosted runner).
 
       - name: Install dependencies
+        shell: bash
         run: pip install -e .
 
       - name: Run pipeline
+        shell: bash
         env:
           # Delivery is the self-hosted dashboard (reads the DB the cron commits).
           # Two LLMs, one job each — both graceful if unset:
