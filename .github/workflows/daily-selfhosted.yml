@@ -16,8 +16,10 @@ name: NadiaAI Daily Pipeline (self-hosted)
 
 on:
   workflow_dispatch:
-  # schedule:
-  #   - cron: '0 7 * * *'   # 08:00/09:00 Madrid — enable after verifying
+  schedule:
+    # 07:00 UTC = 09:00 Madrid (CEST). If PEDRO is off at this time the job
+    # queues and runs as soon as the machine comes online.
+    - cron: '0 7 * * *'
 
 jobs:
   run-pipeline:
