@@ -114,17 +114,18 @@ def _parse_json_response(content: str) -> dict | None:
 
 
 def _extract_via_llm(prompt: str) -> dict | None:
-    """Extract via the configured OpenAI-compatible extraction model (DeepSeek by
-    default; swap to Qwen/MiniMax/etc. via the EXTRACTION_* env vars). Works in CI.
+    """Extract via the configured OpenAI-compatible extraction model. Works in CI.
     Returns the raw 5-key dict, or None to defer to regex.
 
-    IMPORTANT: we deliberately do NOT send response_format={"type":"json_object"}.
-    Measured 2026-06-14: the configured MiniMax M3 reasoning model returns EMPTY
-    content ~2 of every 3 calls when that param is set (6/6 succeed without it),
-    which silently killed extraction and forced a regex-only fallback. The model
-    reliably emits JSON on its own (sometimes fenced / with trailing prose), which
-    the tolerant parser handles. We retry a couple times because reasoning models
-    occasionally emit reasoning-only with an empty body."""
+    Use a NON-reasoning model (default: deepseek/deepseek-chat on OpenRouter). A
+    reasoning model (e.g. MiniMax M3) spends its output-token budget "thinking" and
+    returns EMPTY content on long edict bodies (judicial BOE-J texts up to 10k
+    chars), which silently killed extraction once BOE became reachable. A plain
+    chat model emits the JSON directly.
+
+    We deliberately do NOT send response_format={"type":"json_object"}: the tolerant
+    parser already handles fenced / trailing-prose JSON, and that param caused empty
+    bodies with some providers. One short retry covers a rare transient empty."""
     from nadia_ai.config import EXTRACTION_API_KEY, EXTRACTION_API_URL, EXTRACTION_MODEL
     if not EXTRACTION_API_KEY:
         return None
@@ -132,14 +133,13 @@ def _extract_via_llm(prompt: str) -> dict | None:
         "Authorization": f"Bearer {EXTRACTION_API_KEY}",
         "Content-Type": "application/json",
     }
-    # OpenRouter FREE-TIER reserves the full max_tokens worth of credits up front
-    # and 402s if that reservation exceeds the affordable amount ("requires more
-    # credits, or fewer max_tokens"). The affordable ceiling shrinks as the $5
-    # trial balance is spent, so we start conservative (1500 — ample for reasoning
-    # + the short JSON) and HALVE on that specific 402 so extraction self-heals
-    # instead of dying. ~2000 is the cap near a full balance; 1500 leaves headroom.
+    # OpenRouter reserves the full max_tokens worth of credits up front and 402s if
+    # that reservation exceeds the affordable balance. The extraction JSON is short,
+    # so 1500 is ample for a non-reasoning model; we HALVE on a max_tokens 402 so it
+    # self-heals as the balance shrinks instead of dying.
     max_tokens = 1500
-    for attempt in range(4):
+    attempts = 2  # 1 try + 1 retry — a non-reasoning model rarely returns empty
+    for attempt in range(attempts):
         payload = {
             "model": EXTRACTION_MODEL,
             "messages": [{"role": "user", "content": prompt}],
@@ -175,10 +175,13 @@ def _extract_via_llm(prompt: str) -> dict | None:
             if parsed is not None:
                 return parsed
             logger.info(
-                "Extraction LLM returned empty/garbled body (attempt %d/4), retrying", attempt + 1
+                "Extraction LLM returned empty/garbled body (attempt %d/%d), retrying",
+                attempt + 1, attempts,
             )
         except Exception as e:
-            logger.warning("LLM extraction call failed (attempt %d/4): %s", attempt + 1, e)
+            logger.warning(
+                "LLM extraction call failed (attempt %d/%d): %s", attempt + 1, attempts, e
+            )
     return None
 
 

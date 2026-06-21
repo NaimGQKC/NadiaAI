@@ -37,7 +37,7 @@ jobs:
           # CONTACT_ENRICH_MAX_PER_RUN caps search spend per run.
           EXTRACTION_API_KEY: ${{ secrets.EXTRACTION_API_KEY }}
           EXTRACTION_API_URL: https://openrouter.ai/api/v1/chat/completions
-          EXTRACTION_MODEL: minimax/minimax-m3
+          EXTRACTION_MODEL: deepseek/deepseek-chat   # non-reasoning: emits JSON directly (M3 reasoning returned empty on long edicts)
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
           # Email the daily A/B worklist (.xlsx) to Nadia. All three must be set
           # for the email to send; if any is missing the step skips silently.

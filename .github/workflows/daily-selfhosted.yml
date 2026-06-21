@@ -43,7 +43,7 @@ jobs:
         env:
           EXTRACTION_API_KEY: ${{ secrets.EXTRACTION_API_KEY }}
           EXTRACTION_API_URL: https://openrouter.ai/api/v1/chat/completions
-          EXTRACTION_MODEL: minimax/minimax-m3
+          EXTRACTION_MODEL: deepseek/deepseek-chat   # non-reasoning: emits JSON directly (M3 reasoning returned empty on long edicts)
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
