@@ -62,6 +62,25 @@ def run_pipeline(days: int = 90) -> dict:
         "errors": [],
     }
 
+    # Soft wall-clock budget. The network-heavy enrichment steps below fetch one
+    # BOE PDF per lead; with a large notarial backlog they can run for tens of
+    # minutes and, on CI, overran the job timeout before the worklist email could
+    # send. Once this budget is spent we skip the remaining *optional* enrichment
+    # and go straight to merge/export/deliver (which never depend on it), so a
+    # slow BOE day can never again starve delivery. 0 disables the guard.
+    import os
+
+    _budget_s = int(os.getenv("PIPELINE_SOFT_BUDGET_SECONDS", "1080"))  # 18 min
+    _t0 = time.monotonic()
+
+    def _budget_ok(step: str) -> bool:
+        if _budget_s <= 0 or (time.monotonic() - _t0) < _budget_s:
+            return True
+        logger.warning(
+            "Time budget (%ds) spent — skipping %s to guarantee delivery", _budget_s, step
+        )
+        return False
+
     # Step 1b: Recompute Plusvalía Clock for all existing leads
     try:
         from nadia_ai.merge import recompute_all_deadlines, init_leads_schema
@@ -161,7 +180,12 @@ def run_pipeline(days: int = 90) -> dict:
     try:
         from nadia_ai.utils.extraction import run_heir_extraction
 
-        extracted = run_heir_extraction(conn)
+        # Pass the budget deadline INTO extraction: each lead can cost ~80s on a
+        # slow/garbled LLM (4 retries), so the per-lead loop must stop at the
+        # deadline itself — checking only before the step (like the others) let it
+        # overrun to 30 min in run #54.
+        _deadline = (_t0 + _budget_s) if _budget_s > 0 else None
+        extracted = run_heir_extraction(conn, deadline=_deadline) if _budget_ok("heir extraction") else 0
         summary["heirs_extracted"] = extracted
         logger.info("LLM heir extraction: %d leads enriched", extracted)
     except Exception as e:
@@ -175,7 +199,7 @@ def run_pipeline(days: int = 90) -> dict:
     try:
         from nadia_ai.catastro import resolve_lead_addresses
 
-        rc_resolved = resolve_lead_addresses(conn)
+        rc_resolved = resolve_lead_addresses(conn) if _budget_ok("catastro RC") else 0
         summary["rc_resolved"] = rc_resolved
         logger.info("Catastro address→RC: %d leads resolved", rc_resolved)
     except Exception as e:
@@ -190,7 +214,14 @@ def run_pipeline(days: int = 90) -> dict:
     try:
         from nadia_ai.utils.edict_parse import backfill_edict_contacts
 
-        office_stats = backfill_edict_contacts(conn)
+        # limit caps a single pass (one BOE PDF fetch per lead); the budget guard
+        # caps the cumulative time across enrichment steps.
+        _backfill_limit = int(os.getenv("BOE_BACKFILL_MAX_PER_RUN", "150"))
+        office_stats = (
+            backfill_edict_contacts(conn, limit=_backfill_limit)
+            if _budget_ok("office-contact backfill")
+            else {}
+        )
         summary["office_contacts"] = office_stats
         logger.info("Office-contact backfill: %s", office_stats)
     except Exception as e:
@@ -220,7 +251,7 @@ def run_pipeline(days: int = 90) -> dict:
     try:
         from nadia_ai.enrich_contact import resolve_office_phones
 
-        office_phones = resolve_office_phones(conn)
+        office_phones = resolve_office_phones(conn) if _budget_ok("notaría phone") else 0
         summary["office_phones"] = office_phones
         logger.info("Notaría phone resolution: %d leads got a phone", office_phones)
     except Exception as e:
@@ -234,7 +265,7 @@ def run_pipeline(days: int = 90) -> dict:
     try:
         from nadia_ai.enrich_contact import run_contact_enrichment
 
-        contacts = run_contact_enrichment(conn)
+        contacts = run_contact_enrichment(conn) if _budget_ok("contact discovery") else 0
         summary["contacts_found"] = contacts
         logger.info("Contact enrichment: %d leads got a contact path", contacts)
     except Exception as e:
@@ -252,8 +283,12 @@ def run_pipeline(days: int = 90) -> dict:
         )
 
         init_enrichment_schema(conn)
-        fetch_subastas(conn)
-        fetch_obras(conn)
+        # Network fetches hit subastas.boe.es (often IP-blocked from CI, 60s
+        # timeouts) — skip them once the budget is spent, but still cross-join any
+        # data already cached so delivery is never delayed by this step.
+        if _budget_ok("subastas/obras fetch"):
+            fetch_subastas(conn)
+            fetch_obras(conn)
         subastas_enriched = enrich_leads_from_subastas(conn)
         obras_enriched = enrich_leads_from_obras(conn)
         summary["subastas_enriched"] = subastas_enriched

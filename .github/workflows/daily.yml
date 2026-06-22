@@ -1,17 +1,19 @@
 name: NadiaAI Daily Pipeline
 
 on:
-  schedule:
-    # 07:00 UTC = 08:00 CET / 09:00 CEST (main daily run)
-    # Note: during DST (last Sunday of March → last Sunday of October),
-    # this runs at 09:00 local. Acceptable for a morning summary.
-    - cron: '0 7 * * *'
-  workflow_dispatch: # Allow manual trigger
+  # Daily schedule DISABLED: the self-hosted workflow (daily-selfhosted.yml) is now
+  # the scheduled driver — it reaches BOE from a Spanish IP and persists the DB.
+  # This GitHub-hosted workflow stays as a manual fallback (Run workflow button).
+  # schedule:
+  #   - cron: '0 7 * * *'   # 07:00 UTC = 09:00 Madrid
+  workflow_dispatch: # Manual fallback only
 
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # The worklist email sends at the end of the pipeline (Step 8b), so the run
+    # must be allowed to complete a full scrape+merge+export before delivery.
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
@@ -35,7 +37,7 @@ jobs:
           # CONTACT_ENRICH_MAX_PER_RUN caps search spend per run.
           EXTRACTION_API_KEY: ${{ secrets.EXTRACTION_API_KEY }}
           EXTRACTION_API_URL: https://openrouter.ai/api/v1/chat/completions
-          EXTRACTION_MODEL: minimax/minimax-m3
+          EXTRACTION_MODEL: deepseek/deepseek-chat   # non-reasoning: emits JSON directly (M3 reasoning returned empty on long edicts)
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
           # Email the daily A/B worklist (.xlsx) to Nadia. All three must be set
           # for the email to send; if any is missing the step skips silently.
@@ -43,6 +45,9 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           MAMA_EMAIL: ${{ secrets.MAMA_EMAIL }}
+          # Optional: route boe.es through a residential/Spain proxy to dodge the
+          # datacenter-IP block. Unset = direct connection (no-op).
+          BOE_PROXY_URL: ${{ secrets.BOE_PROXY_URL }}
         run: python -m nadia_ai --cron
 
   on-failure:

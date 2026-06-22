@@ -1,0 +1,61 @@
+name: NadiaAI Daily Pipeline (self-hosted)
+
+# Runs the pipeline on a SELF-HOSTED runner installed on a machine in Spain.
+# Why: boe.es blocks GitHub's datacenter IPs at the TCP layer, so from the
+# cloud runner BOE intermittently yields 0 (losing the best notarial/judicial
+# leads). A machine on a Spanish residential/business connection is not blocked.
+# Bonus: the SQLite DB is kept OUTSIDE the checked-out workspace, so it persists
+# between runs and enrichment finally makes day-over-day progress (the GitHub
+# runner starts from an empty DB every time).
+#
+# Setup guide: docs/SELF_HOSTED_RUNNER.md
+#
+# Start as manual-only. Once you've confirmed a green run + the email arrives,
+# uncomment the `schedule` below AND disable the schedule in daily.yml so the
+# pipeline (and the email) does not run twice.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 07:00 UTC = 09:00 Madrid (CEST). If PEDRO is off at this time the job
+    # queues and runs as soon as the machine comes online.
+    - cron: '0 7 * * *'
+
+jobs:
+  run-pipeline:
+    # Targets your self-hosted runner. The `nadia` label is set when you register
+    # the runner (see the guide); it keeps this job off any other self-hosted box.
+    runs-on: [self-hosted, nadia]
+    timeout-minutes: 60   # generous: it's your own machine, no per-minute billing
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # No actions/setup-python here: on a self-hosted runner it tries to *install*
+      # Python and fails. Install Python 3.11 once on the machine (python.org, with
+      # "Add to PATH") and we use that system interpreter via Git Bash below.
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Run pipeline
+        shell: powershell   # Windows runner: PowerShell, NOT bash (bash resolves to WSL and breaks)
+        env:
+          EXTRACTION_API_KEY: ${{ secrets.EXTRACTION_API_KEY }}
+          EXTRACTION_API_URL: https://openrouter.ai/api/v1/chat/completions
+          EXTRACTION_MODEL: deepseek/deepseek-chat   # non-reasoning: emits JSON directly (M3 reasoning returned empty on long edicts)
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAMA_EMAIL: ${{ secrets.MAMA_EMAIL }}
+          # On a non-blocked Spanish IP you do NOT need a proxy. Left wired in case
+          # you ever run the self-hosted box behind one.
+          BOE_PROXY_URL: ${{ secrets.BOE_PROXY_URL }}
+        run: |
+          # Persist the DB outside the workspace so `actions/checkout` (which runs
+          # `git clean`) can't wipe it. This is what makes enrichment cumulative.
+          $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
+          New-Item -ItemType Directory -Force -Path (Split-Path $env:NADIA_DB_PATH) | Out-Null
+          Write-Host "Using persistent DB at $env:NADIA_DB_PATH"
+          python -m nadia_ai --cron
+
