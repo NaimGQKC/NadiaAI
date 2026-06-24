@@ -153,6 +153,12 @@ def build(limit_inh: int = 30, limit_fsbo: int = 25, use_llm: bool = False,
             cell = ws_call.cell(r, len(CALL_COLS))
             cell.value, cell.hyperlink = "Ver anuncio", url
             cell.font = Font(color="2E86C1", underline="single", size=10)
+        # Conversion tracking: log the intended FSBO call (idempotent within
+        # cooldown, so re-running the pack the same day doesn't double-count).
+        # FSBO leads are only logged when they carry a DB id (most do not, as the
+        # FSBO feed is a separate product); the guard keeps this a safe no-op.
+        if lead.get("id"):
+            log_outreach(conn, lead["id"], channel="call", tipo=o["tipo"])
         r += 1
     ws_call.auto_filter.ref = f"A1:{get_column_letter(len(CALL_COLS))}{max(r - 1, 1)}"
 
