@@ -174,7 +174,42 @@ _NOT_HEIR = re.compile(
     r"(?i)por\s+su\s+\w+\s+(?:don |do[ñn]a |d\.\s*|d[ªº]\.\s*)([A-Za-zñÑáéíóúÁÉÍÓÚ .'-]{5,60}?)\s+se\s+"
 )
 _NOT_PROTO = re.compile(r"(?i)n[uú]mero\s+([0-9]{1,6})\s+de\s+mi\s+protocolo")
-_NOT_DOMICILE = re.compile(r"(?i)[uú]ltimo\s+domicilio\s+en\s+([A-Za-zñÑáéíóúÁÉÍÓÚ ()-]{3,60}?)[,.]")
+# Último domicilio of the causante (often the inherited property — the postal
+# target). The OLD pattern allowed only letters, so it stopped at the first digit
+# and dropped the house NUMBER — making every address unresolvable in Catastro,
+# which requires a number. We now capture the full street + number (+ city).
+# Markers are tried most-precise first so "vecino de Huesca con domicilio en
+# C/ Mayor 23" yields the street, not "Huesca".
+_DOMICILE_MARKERS = (
+    r"[uú]ltimo\s+domicilio(?:\s+conocido)?\s+en",
+    r"con\s+domicilio\s+en",
+    r"domiciliad[oa]\s+en",
+    r"vecin[oa]\s+de",
+)
+# Where the address ends: sentence punctuation, a protocol/number reference, or a
+# boilerplate continuation ("a fin de que…", "de mi protocolo").
+_DOMICILE_STOP = re.compile(
+    r"(?i)(?:[.;\n]|,\s*n[uú]mero\b|,\s*n[.º°]|\s+de\s+mi\s+protocolo\b|"
+    r"\s+a\s+fin\b|\s+al\s+objeto\b|\s+para\s+que\b|\s+y\s+a\s+los\b|\s+donde\b)"
+)
+
+
+def _extract_domicile(t: str) -> str:
+    """Pull the street-level último domicilio from edict text, keeping the number."""
+    for marker in _DOMICILE_MARKERS:
+        m = re.search(
+            r"(?i)" + marker + r"\s+([A-Za-zñÑáéíóúÁÉÍÓÚ0-9ºª°/.\-,\s]{4,80})", t
+        )
+        if not m:
+            continue
+        chunk = m.group(1)
+        stop = _DOMICILE_STOP.search(chunk)
+        if stop:
+            chunk = chunk[: stop.start()]
+        chunk = " ".join(chunk.split()).strip(" ,.-")
+        if chunk:
+            return chunk
+    return ""
 _NOT_OFFICE = re.compile(r"(?i)despacho\s+profesional\s+sito\s+en\s+(.+?)[,.](?:\s+a\s+fin|\s+de\s+[A-Z])")
 
 
@@ -194,9 +229,7 @@ def parse_notaria_edict(text: str) -> dict:
     m = _NOT_HEIR.search(t)
     if m and is_valid_person_name(m.group(1).strip().title()):
         out["heir"] = m.group(1).strip().title()
-    m = _NOT_DOMICILE.search(t)
-    if m:
-        out["domicile"] = m.group(1).strip()
+    out["domicile"] = _extract_domicile(t)
     m = _NOT_PROTO.search(t)
     if m:
         out["protocol"] = m.group(1)
@@ -235,7 +268,7 @@ def backfill_edict_contacts(conn: sqlite3.Connection, limit: int | None = None) 
         q += f" LIMIT {int(limit)}"
     leads = conn.execute(q).fetchall()
 
-    stats = {"scanned": 0, "office": 0, "phone": 0, "heirs_added": 0, "causante_filled": 0}
+    stats = {"scanned": 0, "office": 0, "phone": 0, "heirs_added": 0, "causante_filled": 0, "address": 0}
     for lead in leads:
         urls = json.loads(lead["source_urls"] or "[]")
         url = next((u for u in urls if "boe.es" in u), None)
@@ -254,6 +287,12 @@ def backfill_edict_contacts(conn: sqlite3.Connection, limit: int | None = None) 
         email = "" if is_notarial else parsed.get("email", "")
         procedure = parsed.get("protocol", "") if is_notarial else parsed.get("procedure", "")
 
+        # Último domicilio of the causante → the lead's street address (the postal
+        # target / Catastro key). Only persist a STREET-level value (contains a
+        # number); a city-only string can't be geocoded and just shadows localidad.
+        domicile = parsed.get("domicile", "") if is_notarial else ""
+        address_fill = domicile.strip() if re.search(r"\d", domicile or "") else ""
+
         # Named parties/heir: TEJU `parties`, BOE-N single `heir`.
         new_heirs = parsed.get("parties", []) if not is_notarial else (
             [parsed["heir"]] if parsed.get("heir") else []
@@ -264,7 +303,7 @@ def backfill_edict_contacts(conn: sqlite3.Connection, limit: int | None = None) 
 
         causante_fill = parsed.get("causante", "") if not (lead["causante"] or "").strip() else ""
 
-        if not office and not phone and not heir_added and not causante_fill:
+        if not office and not phone and not heir_added and not causante_fill and not address_fill:
             # Nothing parseable — still mark scanned so we don't refetch forever.
             conn.execute(
                 "UPDATE leads SET contact_source = COALESCE(NULLIF(contact_source,''), ?) WHERE id = ?",
@@ -284,6 +323,7 @@ def backfill_edict_contacts(conn: sqlite3.Connection, limit: int | None = None) 
                 contact_source_url = COALESCE(NULLIF(contact_source_url, ''), ?),
                 procedimiento = COALESCE(NULLIF(procedimiento, ''), ?),
                 causante = COALESCE(NULLIF(causante, ''), ?),
+                direccion = COALESCE(NULLIF(direccion, ''), ?),
                 heir_names_json = ?,
                 heir_name = COALESCE(NULLIF(heir_name, ''), ?),
                 last_updated_at = CURRENT_TIMESTAMP
@@ -297,6 +337,7 @@ def backfill_edict_contacts(conn: sqlite3.Connection, limit: int | None = None) 
                 url,
                 procedure or "",
                 causante_fill or "",
+                address_fill or "",
                 json.dumps(merged_heirs),
                 merged_heirs[0] if merged_heirs else "",
                 lead["id"],
@@ -307,6 +348,8 @@ def backfill_edict_contacts(conn: sqlite3.Connection, limit: int | None = None) 
             stats["office"] += 1
         if phone:
             stats["phone"] += 1
+        if address_fill:
+            stats["address"] += 1
         if heir_added:
             stats["heirs_added"] += 1
         if causante_fill:

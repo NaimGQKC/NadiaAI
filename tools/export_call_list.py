@@ -31,7 +31,14 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
-DB = "nadia_ai.db"
+DB = "nadia_ai.db"  # overridden below to honour NADIA_DB_PATH
+try:
+    from nadia_ai.config import DB_PATH
+    # Respect NADIA_DB_PATH (the self-hosted persistent DB). The hardcoded default
+    # read an empty workspace file and broke delivery with "no such table: leads".
+    DB = str(DB_PATH)
+except Exception:
+    pass
 ARAGON = {"Zaragoza", "Huesca", "Teruel"}
 NOTARIAL = {"BOE-N", "Tablón", "Tabl�n", "BOA-JD"}          # class 1 — call the notaría/juzgado
 JUDICIAL = {"BOE-TEJU", "BOE-V.B"}                               # class 2 — court known, heirs unknown

@@ -249,9 +249,17 @@ def run_pipeline(days: int = 90) -> dict:
     # this makes the warmest cohort callable. Citation+format guarded; only touches
     # leads missing a phone, so it's ~12 calls/day in steady state.
     try:
+        from nadia_ai.config import RESOLVE_NOTARY_PHONE
         from nadia_ai.enrich_contact import resolve_office_phones
 
-        office_phones = resolve_office_phones(conn) if _budget_ok("notaría phone") else 0
+        if not RESOLVE_NOTARY_PHONE:
+            # Disabled by default — the client wants the heir's contact, not the
+            # notaría's. Skipping also stops the Perplexity 401 spam and frees the
+            # budget for address/Catastro enrichment (the postal-mail path).
+            logger.info("Notaría phone resolution disabled (RESOLVE_NOTARY_PHONE=0)")
+            office_phones = 0
+        else:
+            office_phones = resolve_office_phones(conn) if _budget_ok("notaría phone") else 0
         summary["office_phones"] = office_phones
         logger.info("Notaría phone resolution: %d leads got a phone", office_phones)
     except Exception as e:

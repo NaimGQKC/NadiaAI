@@ -23,13 +23,16 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
+from nadia_ai.config import DB_PATH
 from nadia_ai.contact_resolve import resolve_for_lead
 from nadia_ai.outreach import lead_type, render_outreach
 from nadia_ai.outreach_log import init_outreach_log_schema, log_outreach
 from nadia_ai.suppression import filter_suppressed, init_suppression_schema
 from nadia_ai.tenancy import get_tenant, leads_for_tenant
 
-DB = "nadia_ai.db"
+# Respect NADIA_DB_PATH (the self-hosted persistent DB); the hardcoded default read
+# an empty workspace file and broke this step with "no such table: leads".
+DB = str(DB_PATH)
 
 HDR_FILL = PatternFill("solid", fgColor="1F3864")
 HDR_FONT = Font(color="FFFFFF", bold=True, size=11)
