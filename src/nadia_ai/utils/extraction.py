@@ -307,6 +307,19 @@ def extract_inheritance_data(text: str, causante_hint: str = None) -> dict:
         # en el texto") and any other non-name strings.
         heirs = clean_name_list(heirs)
 
+        # Drop self-references. An heir equal to the DECEASED is a common,
+        # nonsensical LLM error; the notary/court is already filtered by
+        # sanitize() (notar/juzgado/registro keywords). Compare on a normalized
+        # (accent/case/space-folded) full name so "JUAN PÉREZ" == "Juan Perez".
+        from nadia_ai.merge import strip_accents
+
+        def _norm_name(s):
+            return " ".join(strip_accents(str(s)).lower().split()) if s else ""
+
+        _dead = {_norm_name(causante_hint), _norm_name(result.get("deceased_name"))} - {""}
+        if _dead:
+            heirs = [h for h in heirs if _norm_name(h) not in _dead]
+
         # If LLM didn't find heirs but regex does, merge them
         if not heirs:
             heirs = extract_heirs_regex(text)

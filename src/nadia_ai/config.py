@@ -107,6 +107,12 @@ CONTACT_SKIPTRACE_API_KEY = os.getenv("CONTACT_SKIPTRACE_API_KEY", "")
 # pass on a hand-picked high-value cohort.
 CONTACT_ENRICH_MAX_PER_RUN = int(os.getenv("CONTACT_ENRICH_MAX_PER_RUN", "0"))
 
+# Resolve the handling NOTARY's public phone (search-native, uses Perplexity).
+# OFF by default: the client wants the heir's contact, not the notaría's, and the
+# search was 401-spamming + burning ~7 min of budget. Set RESOLVE_NOTARY_PHONE=1
+# to re-enable (it is still the only legal warm channel for the notarial cohort).
+RESOLVE_NOTARY_PHONE = os.getenv("RESOLVE_NOTARY_PHONE", "0") == "1"
+
 # ── Outreach generation (lead → ready-to-send Spanish call script / WhatsApp /
 # letter) ──────────────────────────────────────────────────────────────────────
 # Reuses the provider-neutral OpenAI-compatible endpoint by default. Override
