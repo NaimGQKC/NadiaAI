@@ -1,6 +1,32 @@
 """Province → comunidad autónoma resolution tests."""
 
-from nadia_ai.utils.regions import UNKNOWN, ccaa_for
+from nadia_ai.utils.regions import UNKNOWN, catastro_province, ccaa_for
+
+
+class TestCatastroProvince:
+    def test_postal_code_is_authoritative(self):
+        # First 2 digits of the CP = province code, canonical Catastro name.
+        assert catastro_province("Calle Mayor 5, 50001 Zaragoza") == "ZARAGOZA"
+        assert catastro_province("C/ X 3, 08010 Barcelona") == "BARCELONA"
+        assert catastro_province("Rua Y 2, 15001 A Coruña") == "A CORUÑA"
+
+    def test_region_province_name_canonicalized(self):
+        # Obituary leads store region = province; map to the canonical spelling.
+        assert catastro_province("Calle X 4", region="Coruna") == "A CORUÑA"
+        assert catastro_province("Calle X 4", region="Gerona") == "GIRONA"
+        assert catastro_province("Calle X 4", region="Vizcaya") == "BIZKAIA"
+
+    def test_city_fallback(self):
+        assert catastro_province("Calle X 4", localidad="Calatayud") == "ZARAGOZA"
+        assert catastro_province("Calle X 4", localidad="Dos Hermanas") == "SEVILLA"
+
+    def test_ccaa_region_is_not_a_province(self):
+        # BOE leads store region = CCAA ("Andalucía"); that is NOT a province, so
+        # without a CP/city we return None rather than send Catastro garbage.
+        assert catastro_province("Calle X 4", region="Andalucía") is None
+
+    def test_unknown_returns_none(self):
+        assert catastro_province("Calle X 4", region="", localidad="") is None
 
 
 def test_province_maps_to_ccaa():

@@ -301,7 +301,7 @@ def resolve_lead_addresses(conn: sqlite3.Connection, limit: int = 200) -> int:
     conn.row_factory = sqlite3.Row
     rows = conn.execute(
         """
-        SELECT id, direccion, localidad
+        SELECT id, direccion, localidad, region
         FROM leads
         WHERE (referencia_catastral IS NULL OR referencia_catastral = '')
           AND direccion IS NOT NULL AND direccion != ''
@@ -314,28 +314,36 @@ def resolve_lead_addresses(conn: sqlite3.Connection, limit: int = 200) -> int:
     resolved = 0
     reverse_filled = 0
     # Why the other N-resolved fail: aggregate so the next iteration optimises the
-    # real bottleneck (no municipio? vía not in callejero? número missing?) instead
-    # of guessing. Logged as a summary at the end.
-    reasons: dict[str, int] = {}
+    # real bottleneck (no province? vía not in callejero? número missing?) instead
+    # of guessing. Logged as a summary at the end, with a few example addresses per
+    # reason so the long-tail "VÍA NO EXISTE" can be fixed with real cases.
+    from nadia_ai.utils.regions import catastro_province
 
-    def _bump(reason: str) -> None:
+    reasons: dict[str, int] = {}
+    samples: dict[str, list[str]] = {}
+
+    def _bump(reason: str, addr: str = "") -> None:
         reasons[reason] = reasons.get(reason, 0) + 1
+        if addr and len(samples.setdefault(reason, [])) < 3:
+            samples[reason].append(addr[:60])
 
     for row in rows:
         direccion = row["direccion"]
-        # Prefer an explicit municipality; fall back to localidad, then default.
-        municipio = (row["localidad"] or "").strip()
-        if not municipio:
-            # Try to read a city out of the address tail (e.g. "..., Zaragoza").
-            municipio = _city_from_address(direccion) or ""
-        if not municipio:
-            _bump("no-municipio")
+        # Canonical Catastro province (postal code → region → city). Without it the
+        # callejero returns "LA PROVINCIA NO EXISTE" — the dominant failure mode.
+        provincia = catastro_province(direccion, row["region"], row["localidad"])
+        if not provincia:
+            _bump("no-province", direccion)
             continue
-        provincia = _PROVINCIA_BY_CITY.get(strip_accents(municipio).lower(), municipio)
+        # Municipio (the city) for the callejero.
+        municipio = (row["localidad"] or "").strip() or _city_from_address(direccion) or ""
+        if not municipio:
+            _bump("no-municipio", direccion)
+            continue
 
         rc, reason = lookup_rc_by_address(provincia, municipio, direccion)
         if not rc:
-            _bump(reason)
+            _bump(reason, direccion)
             continue
 
         # Reverse-fill: pull Catastro's normalised address (ldt) and write it back,
@@ -363,6 +371,11 @@ def resolve_lead_addresses(conn: sqlite3.Connection, limit: int = 200) -> int:
         "Failure modes: %s",
         resolved, len(rows), reverse_filled, reasons or "none",
     )
+    # Example addresses per failure reason — so the long-tail "VÍA NO EXISTE" can be
+    # diagnosed against real street names next iteration, not guessed.
+    for reason, addrs in samples.items():
+        if reason != "ok":
+            logger.info("Catastro fail '%s' e.g.: %s", reason, " | ".join(addrs))
     return resolved
 
 

@@ -76,3 +76,53 @@ Honest caveat: the *regex* finca backfill added 0 new addresses this run
 (`address: 0`); the gain came from the **LLM** (now asked for the finca) plus the
 **Catastro geography fix**. The regex stays as the deterministic fallback. Net: the
 LLM does the heavy lifting on free-text addresses, as expected.
+
+## Catastro failure analysis + territory (2026-06-27, run 28274715433)
+
+Instrumented the resolver to log *why* each address fails. Result on 155 candidates
+(4 resolved) — the bottleneck is now precisely known:
+
+| Failure mode | Count | Share | Fix |
+|---|---|---|---|
+| LA PROVINCIA NO EXISTE | 86 | 55% | **postal-code → canonical province** (done) |
+| LA VÍA NO EXISTE | 48 | 31% | callejero name mismatch — sample logging added to diagnose next |
+| EL NUMERO NO EXISTE | 5 | 3% | number not in callejero (genuine) |
+| unparseable | 8 | 5% | address has no clean street+number |
+| no inmueble / other | ~8 | 5% | genuine misses |
+
+Root cause of the 86: `region` is **inconsistent by source** — BOE leads store the
+*comunidad* ("Andalucía"), obituary leads store the *provincia* ("Zaragoza"), and we
+were sending the city as the province. Fixed with `utils/regions.catastro_province`
+(postal code → region → city → canonical Catastro name; skip if unknown).
+
+### Cumulative territory — leads per comunidad × tier (whole DB ≈ 4,295)
+
+The commercial map. `ready` = Tier A/B with a named heir AND a contact path
+(street address or phone) = sellable today.
+
+| Comunidad | A | B | C | ready |
+|---|---|---|---|---|
+| Otra/Desconocida | 83 | 1553 | 452 | 78 |
+| Andalucía | 19 | 353 | 29 | 20 |
+| Castilla y León | 24 | 309 | 64 | 11 |
+| **Aragón** (home) | 65 | 184 | 20 | 3 |
+| Cataluña | 14 | 180 | 38 | 3 |
+| Madrid | 13 | 151 | 45 | 9 |
+| Comunidad Valenciana | 14 | 114 | 39 | 13 |
+| Murcia | 5 | 65 | 4 | 4 |
+| Navarra | 1 | 58 | 1 | 0 |
+| País Vasco | 6 | 57 | 7 | 2 |
+| Cantabria | 3 | 55 | 10 | 1 |
+| La Rioja | 0 | 53 | 7 | 0 |
+| Galicia | 7 | 38 | 5 | 3 |
+| Castilla-La Mancha | 1 | 37 | 2 | 1 |
+| Canarias | 6 | 31 | 12 | 7 |
+| Asturias | 6 | 30 | 8 | 5 |
+| Extremadura | 0 | 11 | 2 | 0 |
+| Ceuta / Melilla | 0 | 2 | 2 | 0 |
+
+**Read:** "Otra/Desconocida" = ~49% of the DB — mostly BOE leads whose region wasn't
+extracted. The canonical-province fix (postal code) also feeds CCAA classification,
+so this should shrink next run. Aragón has the most Tier A (65) but few `ready` (3)
+— the home market is rich in candidates but thin on resolved contact paths, which is
+exactly what the Catastro/address work unlocks.
