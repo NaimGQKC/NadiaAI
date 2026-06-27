@@ -104,34 +104,90 @@ def _extract_edict_links(html: str, base_url: str) -> list[tuple[str, str]]:
     return out
 
 
+def _find_links(html: str, pattern: re.Pattern, base_url: str) -> list[str]:
+    """All hrefs (absolute) matching a regex — used to walk a year/sumario index."""
+    out, seen = [], set()
+    try:
+        soup = BeautifulSoup(html, "html.parser")
+    except Exception:
+        return out
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        if pattern.search(href):
+            url = urljoin(base_url, href)
+            if url not in seen:
+                seen.add(url)
+                out.append(url)
+    return out
+
+
+def _record(source: str, link_url: str, title: str, seen: set[str]) -> EdictRecord | None:
+    sid = hashlib.md5(f"{source}:{link_url}".encode()).hexdigest()[:12]
+    if sid in seen:
+        return None
+    seen.add(sid)
+    return EdictRecord(
+        source=source,
+        source_id=sid,
+        edict_type="declaracion_herederos_abintestato",
+        published_at=datetime.now(UTC),
+        source_url=link_url,
+        causante=_causante_from_title(title),
+    )
+
+
+def _scrape_search(cfg: dict, seen: set[str]) -> list[EdictRecord]:
+    """Keyword-search mode: query the bulletin's buscador, follow edict links."""
+    records: list[EdictRecord] = []
+    source = cfg["source"]
+    for kw in _QUERIES:
+        html = _get(cfg["search_url"].format(q=quote(kw)))
+        if not html:
+            continue
+        links = _extract_edict_links(html, cfg["base"])
+        logger.info("%s '%s': %d candidate edicts", source, kw, len(links))
+        for link_url, title in links:
+            rec = _record(source, link_url, title, seen)
+            if rec:
+                records.append(rec)
+    return records
+
+
+def _scrape_index_crawl(cfg: dict, seen: set[str]) -> list[EdictRecord]:
+    """Sumario-index mode (BOJA): year index → recent boletines → edict links.
+
+    Uses the bulletin's stable URL structure instead of a guessed search param,
+    so it's more robust. `index_url` lists boletines; `boletin_link_re` matches a
+    sumario link; each sumario page is scanned for inheritance-edict anchors."""
+    records: list[EdictRecord] = []
+    source = cfg["source"]
+    year = datetime.now(UTC).year
+    index_html = _get(cfg["index_url"].format(year=year))
+    if not index_html:
+        return records
+    boletines = _find_links(index_html, cfg["boletin_link_re"], cfg["base"])
+    logger.info("%s index: %d boletines found", source, len(boletines))
+    for b_url in boletines[: cfg.get("max_boletines", 8)]:
+        sumario = _get(b_url)
+        if not sumario:
+            continue
+        for link_url, title in _extract_edict_links(sumario, cfg["base"]):
+            rec = _record(source, link_url, title, seen)
+            if rec:
+                records.append(rec)
+    return records
+
+
 def scrape_boletin(cfg: dict, since: datetime | None = None) -> list[EdictRecord]:
     """Run the generic bulletin scrape for one comunidad config. Never raises."""
     records: list[EdictRecord] = []
     seen: set[str] = set()
     source = cfg["source"]
     try:
-        for kw in _QUERIES:
-            url = cfg["search_url"].format(q=quote(kw))
-            html = _get(url)
-            if not html:
-                continue
-            links = _extract_edict_links(html, cfg["base"])
-            logger.info("%s '%s': %d candidate edicts", source, kw, len(links))
-            for link_url, title in links:
-                sid = hashlib.md5(f"{source}:{link_url}".encode()).hexdigest()[:12]
-                if sid in seen:
-                    continue
-                seen.add(sid)
-                records.append(
-                    EdictRecord(
-                        source=source,
-                        source_id=sid,
-                        edict_type="declaracion_herederos_abintestato",
-                        published_at=datetime.now(UTC),
-                        source_url=link_url,
-                        causante=_causante_from_title(title),
-                    )
-                )
+        if cfg.get("mode") == "index_crawl":
+            records = _scrape_index_crawl(cfg, seen)
+        else:
+            records = _scrape_search(cfg, seen)
     except Exception as e:  # defensive: a bulletin must never break the run
         logger.warning("%s scrape failed: %s", source, e)
     logger.info("%s scrape complete: %d records", source, len(records))
@@ -155,6 +211,23 @@ DOGC_CONFIG = {
     "search_url": "https://dogc.gencat.cat/es/cercador-dogc/?accio=cerca&text={q}",
 }
 
+# BOJA uses its CONFIRMED, stable sumario structure (research, not a guessed search
+# param): year index → boletines at /eboja/{year}/{n}/index.html → edict links.
+BOJA_CONFIG = {
+    "source": "boja",  # Boletín Oficial de la Junta de Andalucía
+    "base": "https://www.juntadeandalucia.es",
+    "mode": "index_crawl",
+    "index_url": "https://www.juntadeandalucia.es/eboja/{year}.html",
+    "boletin_link_re": re.compile(r"/eboja/\d{4}/\d+/(?:index\.html)?$"),
+    "max_boletines": 8,
+}
+
+DOGV_CONFIG = {
+    "source": "dogv",  # Diari Oficial de la Generalitat Valenciana
+    "base": "https://dogv.gva.es",
+    "search_url": "https://dogv.gva.es/es/resultats-dogv?text={q}",
+}
+
 
 def scrape_bocm(since: datetime | None = None) -> list[EdictRecord]:
     """Madrid — Boletín Oficial de la Comunidad de Madrid (inheritance edicts)."""
@@ -164,3 +237,13 @@ def scrape_bocm(since: datetime | None = None) -> list[EdictRecord]:
 def scrape_dogc(since: datetime | None = None) -> list[EdictRecord]:
     """Cataluña — Diari Oficial de la Generalitat de Catalunya (inheritance edicts)."""
     return scrape_boletin(DOGC_CONFIG, since)
+
+
+def scrape_boja(since: datetime | None = None) -> list[EdictRecord]:
+    """Andalucía — Boletín Oficial de la Junta de Andalucía (inheritance edicts)."""
+    return scrape_boletin(BOJA_CONFIG, since)
+
+
+def scrape_dogv(since: datetime | None = None) -> list[EdictRecord]:
+    """C. Valenciana — Diari Oficial de la Generalitat Valenciana (inheritance edicts)."""
+    return scrape_boletin(DOGV_CONFIG, since)

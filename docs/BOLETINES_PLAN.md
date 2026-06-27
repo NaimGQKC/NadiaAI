@@ -36,10 +36,10 @@ Prioridad por tamaño de mercado infra-representado:
 |---|---|---|---|
 | ✅ | BOE | Nacional | activo (cubre notarial+judicial de toda España) |
 | ✅ | BOA | Aragón | activo (extracción de dirección de referencia) |
-| ✅ | **BOCM** | Madrid | **implementado** (motor genérico) — validar endpoint en PEDRO |
-| ✅ | **DOGC** | Cataluña | **implementado** (motor genérico) — validar endpoint en PEDRO |
-| 3 | **BOJA** | Andalucía | pendiente (añadir config en `boletin_autonomico.py`) |
-| 4 | **DOGV** | C. Valenciana | pendiente (añadir config) |
+| ✅ | **BOCM** | Madrid | **implementado** (buscador) — validar endpoint en PEDRO |
+| ✅ | **DOGC** | Cataluña | **implementado** (buscador) — validar endpoint en PEDRO |
+| ✅ | **BOJA** | Andalucía | **implementado** (crawl de sumario, estructura confirmada) |
+| ✅ | **DOGV** | C. Valenciana | **implementado** (buscador) — validar endpoint en PEDRO |
 | 5 | BOCYL | Castilla y León | pendiente |
 | 6 | BOPV | País Vasco | pendiente |
 | 7–17 | BOPA, DOG, BORM, BOIB, BOC (Canarias/Cantabria), BON, BOR, DOE, BOPA Asturias | resto | pendiente |
@@ -49,7 +49,27 @@ Prioridad por tamaño de mercado infra-representado:
 PEDRO (a) nº de edictos de herencia/mes y (b) % con dirección calle+número que NO
 estuvieran ya en BOE. Si el solape con BOE es ~total, se desactiva (coste sin valor).
 
-**Arquitectura (BOCM/DOGC y futuros):** un único motor genérico
+## Research de open-data APIs (jun-2026)
+
+Qué ofrece cada boletín para acceso programático (investigado, no validable desde el
+entorno cloud porque su IP está bloqueada igual que la del pipeline):
+
+- **BOE** — única con **API JSON/XML limpia**: `…/datosabiertos/api/boe/sumario/{YYYYMMDD}`.
+  Ya la usa `boe.py`, y cubre los edictos notariales/judiciales de **toda España**.
+- **BOJA** — sin API JSON pública, pero **estructura de sumario estable y confirmada**:
+  índice por año `…/eboja/{año}.html` → boletines `…/eboja/{año}/{nº}/index.html` →
+  documentos en HTML. Por eso BOJA usa el modo `index_crawl` (no depende de adivinar
+  parámetros de buscador → más fiable). También existe un portal CKAN
+  (`juntadeandalucia.es/datosabiertos`) con datasets anuales de disposiciones.
+- **DOGC** — buscador + plataforma de dades obertes de Catalunya (API genérica), pero
+  sin endpoint de documento documentado → modo buscador.
+- **DOGV** — buscador (`dogv.gva.es/es/resultats-dogv`) + alertas por email; sin API
+  de documento documentada → modo buscador.
+
+Conclusión: solo BOE tiene API limpia (ya integrada). Para los autonómicos, BOJA va
+por su sumario confirmado; el resto por buscador HTML hasta validar en PEDRO.
+
+**Arquitectura (motor genérico):** un único motor
 `scrapers/boletin_autonomico.py` descubre los enlaces de edictos de herencia en la
 búsqueda del boletín; la extracción de heredero+dirección la hace el pipeline
 existente (LLM `run_heir_extraction` + `edict_parse`), igual que BOE/BOA. Añadir una

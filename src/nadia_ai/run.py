@@ -108,6 +108,8 @@ def run_pipeline(days: int = 90) -> dict:
         # with addresses, beyond Aragón's BOA. Endpoints validated on the runner.
         "bocm": ("nadia_ai.scrapers.boletin_autonomico", "scrape_bocm", {"since": cutoff_date}),
         "dogc": ("nadia_ai.scrapers.boletin_autonomico", "scrape_dogc", {"since": cutoff_date}),
+        "boja": ("nadia_ai.scrapers.boletin_autonomico", "scrape_boja", {"since": cutoff_date}),
+        "dogv": ("nadia_ai.scrapers.boletin_autonomico", "scrape_dogv", {"since": cutoff_date}),
         "borme": ("nadia_ai.scrapers.borme", "scrape_borme", {}),
         "esquelas": ("nadia_ai.scrapers.esquelas", "scrape_esquelas", {"since": cutoff_date}),
         "heraldo": ("nadia_ai.scrapers.heraldo", "scrape_heraldo", {"since": cutoff_date}),

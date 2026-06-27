@@ -54,3 +54,44 @@ def test_scrape_boletin_never_raises_on_network_error():
     with mock.patch.object(ba, "_get", side_effect=Exception("boom")):
         # Engine must swallow errors and return [] so the pipeline never breaks.
         assert ba.scrape_boletin(ba.BOCM_CONFIG) == []
+
+
+def test_find_links_matches_boletin_pattern():
+    import re
+    html = (
+        '<a href="/eboja/2026/12/index.html">BOJA 12</a>'
+        '<a href="/eboja/2026/13/index.html">BOJA 13</a>'
+        '<a href="/eboja/sobre-boja/info.html">Sobre BOJA</a>'
+    )
+    links = ba._find_links(html, re.compile(r"/eboja/\d{4}/\d+/(?:index\.html)?$"),
+                           "https://www.juntadeandalucia.es")
+    assert "https://www.juntadeandalucia.es/eboja/2026/12/index.html" in links
+    assert len(links) == 2  # the "sobre-boja" link is excluded
+
+
+def test_boja_index_crawl_mode(monkeypatch):
+    # Year index lists 2 boletines; each sumario has one inheritance edict.
+    index_html = (
+        '<a href="/eboja/2026/12/index.html">BOJA 12</a>'
+        '<a href="/eboja/2026/13/index.html">BOJA 13</a>'
+    )
+    sumario_html = (
+        '<a href="/eboja/2026/12/4.html">Edicto. Declaración de herederos '
+        'abintestato de Don Pedro Ruiz Mora</a>'
+    )
+
+    def fake_get(url):
+        return index_html if url.endswith(".html") and "/eboja/2026.html" in url else sumario_html
+
+    monkeypatch.setattr(ba, "_get", fake_get)
+    recs = ba.scrape_boja()
+    assert recs and all(r.source == "boja" for r in recs)
+    assert any(r.causante == "Pedro Ruiz Mora" for r in recs)
+
+
+def test_new_configs_registered():
+    assert ba.BOJA_CONFIG["mode"] == "index_crawl"
+    assert ba.DOGV_CONFIG["source"] == "dogv"
+    # scrape_dogv uses search mode and is fail-safe.
+    with mock.patch.object(ba, "_get", return_value=None):
+        assert ba.scrape_dogv() == []
