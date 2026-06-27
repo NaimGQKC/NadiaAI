@@ -36,18 +36,28 @@ Prioridad por tamaño de mercado infra-representado:
 |---|---|---|---|
 | ✅ | BOE | Nacional | activo (cubre notarial+judicial de toda España) |
 | ✅ | BOA | Aragón | activo (extracción de dirección de referencia) |
-| 1 | **BOCM** | Madrid | pendiente — mayor mercado, máxima prioridad |
-| 2 | **DOGC** | Cataluña | pendiente |
-| 3 | **BOJA** | Andalucía | pendiente |
-| 4 | **DOGV** | C. Valenciana | pendiente |
+| ✅ | **BOCM** | Madrid | **implementado** (motor genérico) — validar endpoint en PEDRO |
+| ✅ | **DOGC** | Cataluña | **implementado** (motor genérico) — validar endpoint en PEDRO |
+| 3 | **BOJA** | Andalucía | pendiente (añadir config en `boletin_autonomico.py`) |
+| 4 | **DOGV** | C. Valenciana | pendiente (añadir config) |
 | 5 | BOCYL | Castilla y León | pendiente |
 | 6 | BOPV | País Vasco | pendiente |
 | 7–17 | BOPA, DOG, BORM, BOIB, BOC (Canarias/Cantabria), BON, BOR, DOE, BOPA Asturias | resto | pendiente |
 | — | BOPs provinciales | por provincia | evaluar duplicación con BOE antes |
 
-**Criterio de aceptación por fuente:** antes de activar, medir en PEDRO (a) nº de
-edictos de herencia/mes y (b) % con dirección calle+número que NO estuvieran ya en
-BOE. Si el solape con BOE es ~total, no se activa (coste sin valor).
+**Criterio de aceptación por fuente:** antes de dar por bueno un boletín, medir en
+PEDRO (a) nº de edictos de herencia/mes y (b) % con dirección calle+número que NO
+estuvieran ya en BOE. Si el solape con BOE es ~total, se desactiva (coste sin valor).
+
+**Arquitectura (BOCM/DOGC y futuros):** un único motor genérico
+`scrapers/boletin_autonomico.py` descubre los enlaces de edictos de herencia en la
+búsqueda del boletín; la extracción de heredero+dirección la hace el pipeline
+existente (LLM `run_heir_extraction` + `edict_parse`), igual que BOE/BOA. Añadir una
+comunidad = añadir una config (`base`, `search_url`, `source`). El motor es
+**defensivo**: cualquier error de red/parseo loguea y devuelve `[]`, así un endpoint
+mal afinado da 0 leads pero **nunca rompe el run**. Los `search_url` de BOCM/DOGC son
+best-effort y deben confirmarse contra el sitio en vivo desde PEDRO (la IP cloud no
+los alcanza).
 
 ## Qué NO mueve la aguja de Tier A
 - Des-hardcodear **iEsquelas/Defunciones/Rememori** a nacional: dan **nombre+ciudad
