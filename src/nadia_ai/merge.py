@@ -107,6 +107,10 @@ SOURCE_LABELS = {
     "boe_secv": "BOE (Sec.V)",
     "boe_n": "BOE Notarial",
     "boe_nationwide": "BOE",
+    "bocm": "BOCM",
+    "dogc": "DOGC",
+    "boja": "BOJA",
+    "dogv": "DOGV",
     "rememori": "Rememori",
     "borme_i": "BORME-I",
     "borme_ii": "BORME-II",
@@ -128,6 +132,10 @@ SUBSOURCE_CODES = {
     "boe_secv": "BOE-V.B",
     "boe_n": "BOE-N",
     "boe_nationwide": "BOE",
+    "bocm": "BOCM",
+    "dogc": "DOGC",
+    "boja": "BOJA",
+    "dogv": "DOGV",
     "rememori": "Rememori",
     "borme_i": "BORME-I",
     "borme_ii": "BORME-II",
@@ -392,7 +400,13 @@ def compute_tier(lead: dict) -> str:
         return "X"
 
     has_name = bool(lead.get("causante"))
-    has_address = bool(lead.get("direccion"))
+    # Tier A must mean "we can actually act" = a mailable street address (with a
+    # house number) OR a referencia catastral. A city-only `direccion` ("Zaragoza")
+    # is NOT actionable and used to inflate Tier A — especially for sources that
+    # store the locality in `direccion`. Require a digit (street number) or an RC.
+    direccion = lead.get("direccion") or ""
+    has_rc = bool(lead.get("referencia_catastral") or lead.get("ref_catastral"))
+    has_address = bool(re.search(r"\d", direccion)) or has_rc
     days = lead.get("days_since_death")
 
     # ITE desfavorable is a capex signal — outreach allowed but Tier B

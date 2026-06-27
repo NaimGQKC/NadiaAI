@@ -10,7 +10,7 @@ Two jobs, one source of truth:
 
 2. **Catastro** (`catastro_province`): the *canonical* province name the Catastro
    callejero (Consulta_DNPLOC) accepts. Its `Provincia` field is strict and uses
-   specific spellings ("A CORUÑA", "GIRONA", "ARABA/ALAVA", "STA. CRUZ DE
+   specific spellings ("A CORUÑA", "GERONA", "ALAVA", "STA. CRUZ DE
    TENERIFE"). The dominant Catastro failure was "LA PROVINCIA NO EXISTE" (55% of
    misses) because we were sending the city name as the province. The most
    reliable key is the **postal code** (first 2 digits = province code), then a
@@ -36,24 +36,24 @@ def _norm(s: str | None) -> str:
 # Postal-code 2-digit prefix → canonical Catastro province name. Authoritative
 # whenever the address carries a CP, and complete (all 52 provinces).
 _CP2_TO_PROVINCE = {
-    "01": "ARABA/ALAVA", "02": "ALBACETE", "03": "ALICANTE", "04": "ALMERIA",
+    "01": "ALAVA", "02": "ALBACETE", "03": "ALICANTE", "04": "ALMERIA",
     "05": "AVILA", "06": "BADAJOZ", "07": "ILLES BALEARS", "08": "BARCELONA",
     "09": "BURGOS", "10": "CACERES", "11": "CADIZ", "12": "CASTELLON",
     "13": "CIUDAD REAL", "14": "CORDOBA", "15": "A CORUÑA", "16": "CUENCA",
-    "17": "GIRONA", "18": "GRANADA", "19": "GUADALAJARA", "20": "GIPUZKOA",
-    "21": "HUELVA", "22": "HUESCA", "23": "JAEN", "24": "LEON", "25": "LLEIDA",
+    "17": "GERONA", "18": "GRANADA", "19": "GUADALAJARA", "20": "GUIPUZCOA",
+    "21": "HUELVA", "22": "HUESCA", "23": "JAEN", "24": "LEON", "25": "LERIDA",
     "26": "LA RIOJA", "27": "LUGO", "28": "MADRID", "29": "MALAGA", "30": "MURCIA",
-    "31": "NAVARRA", "32": "OURENSE", "33": "ASTURIAS", "34": "PALENCIA",
+    "31": "NAVARRA", "32": "ORENSE", "33": "ASTURIAS", "34": "PALENCIA",
     "35": "LAS PALMAS", "36": "PONTEVEDRA", "37": "SALAMANCA",
     "38": "STA. CRUZ DE TENERIFE", "39": "CANTABRIA", "40": "SEGOVIA",
     "41": "SEVILLA", "42": "SORIA", "43": "TARRAGONA", "44": "TERUEL",
-    "45": "TOLEDO", "46": "VALENCIA", "47": "VALLADOLID", "48": "BIZKAIA",
+    "45": "TOLEDO", "46": "VALENCIA", "47": "VALLADOLID", "48": "VIZCAYA",
     "49": "ZAMORA", "50": "ZARAGOZA", "51": "CEUTA", "52": "MELILLA",
 }
 
 # Canonical province → comunidad autónoma.
 _PROVINCE_CCAA = {
-    "ARABA/ALAVA": "País Vasco", "GIPUZKOA": "País Vasco", "BIZKAIA": "País Vasco",
+    "ALAVA": "País Vasco", "GUIPUZCOA": "País Vasco", "VIZCAYA": "País Vasco",
     "ALBACETE": "Castilla-La Mancha", "CIUDAD REAL": "Castilla-La Mancha",
     "CUENCA": "Castilla-La Mancha", "GUADALAJARA": "Castilla-La Mancha",
     "TOLEDO": "Castilla-La Mancha",
@@ -68,9 +68,9 @@ _PROVINCE_CCAA = {
     "VALLADOLID": "Castilla y León", "ZAMORA": "Castilla y León",
     "BADAJOZ": "Extremadura", "CACERES": "Extremadura",
     "ILLES BALEARS": "Baleares",
-    "BARCELONA": "Cataluña", "GIRONA": "Cataluña", "LLEIDA": "Cataluña",
+    "BARCELONA": "Cataluña", "GERONA": "Cataluña", "LERIDA": "Cataluña",
     "TARRAGONA": "Cataluña",
-    "A CORUÑA": "Galicia", "LUGO": "Galicia", "OURENSE": "Galicia",
+    "A CORUÑA": "Galicia", "LUGO": "Galicia", "ORENSE": "Galicia",
     "PONTEVEDRA": "Galicia",
     "CANTABRIA": "Cantabria", "LA RIOJA": "La Rioja", "MADRID": "Madrid",
     "MURCIA": "Murcia", "NAVARRA": "Navarra", "ASTURIAS": "Asturias",
@@ -85,17 +85,19 @@ _TO_CANONICAL.update({
     _norm(k): v for k, v in {
         # Galician / Catalan / Basque official vs. common Castilian spellings.
         "coruna": "A CORUÑA", "a coruna": "A CORUÑA", "la coruna": "A CORUÑA",
-        "gerona": "GIRONA", "lerida": "LLEIDA", "orense": "OURENSE",
-        "alava": "ARABA/ALAVA", "araba": "ARABA/ALAVA",
-        "guipuzcoa": "GIPUZKOA", "vizcaya": "BIZKAIA",
+        "gerona": "GERONA", "girona": "GERONA", "lerida": "LERIDA",
+        "lleida": "LERIDA", "orense": "ORENSE", "ourense": "ORENSE",
+        "alava": "ALAVA", "araba": "ALAVA", "araba/alava": "ALAVA",
+        "guipuzcoa": "GUIPUZCOA", "gipuzkoa": "GUIPUZCOA",
+        "vizcaya": "VIZCAYA", "bizkaia": "VIZCAYA",
         "baleares": "ILLES BALEARS", "islas baleares": "ILLES BALEARS",
         "illes balears": "ILLES BALEARS",
         "tenerife": "STA. CRUZ DE TENERIFE",
         "santa cruz de tenerife": "STA. CRUZ DE TENERIFE",
         "rioja": "LA RIOJA",
         # Capital cities whose name ≠ province name.
-        "bilbao": "BIZKAIA", "san sebastian": "GIPUZKOA", "donostia": "GIPUZKOA",
-        "vitoria": "ARABA/ALAVA", "vitoria gasteiz": "ARABA/ALAVA",
+        "bilbao": "VIZCAYA", "san sebastian": "GUIPUZCOA", "donostia": "GUIPUZCOA",
+        "vitoria": "ALAVA", "vitoria gasteiz": "ALAVA",
         "pamplona": "NAVARRA", "iruna": "NAVARRA", "santander": "CANTABRIA",
         "logrono": "LA RIOJA", "oviedo": "ASTURIAS", "gijon": "ASTURIAS",
         "palma": "ILLES BALEARS", "palma de mallorca": "ILLES BALEARS",
@@ -152,6 +154,29 @@ def catastro_province(direccion: str | None, region: str | None = None,
                       localidad: str | None = None) -> str | None:
     """Canonical province name accepted by Catastro DNPLOC, or None if unknown."""
     return _province_from(direccion, region, localidad)
+
+
+# Co-official / alternate spellings to retry when Catastro answers "LA PROVINCIA
+# NO EXISTE". We default to the traditional Castilian name (which the OVC callejero
+# accepts for the bulk) and fall back to the co-official form — so we don't have to
+# guess the exact string a given OVC deployment wants. Instrumentation confirmed
+# "BIZKAIA" was rejected, hence the traditional primaries.
+_PROVINCE_ALTERNATES = {
+    "ALAVA": ["ARABA/ALAVA", "ARABA"],
+    "GUIPUZCOA": ["GIPUZKOA"],
+    "VIZCAYA": ["BIZKAIA"],
+    "GERONA": ["GIRONA"],
+    "LERIDA": ["LLEIDA"],
+    "ORENSE": ["OURENSE"],
+    "A CORUÑA": ["CORUÑA", "LA CORUÑA"],
+    "ILLES BALEARS": ["BALEARS", "ISLAS BALEARES", "BALEARES"],
+    "STA. CRUZ DE TENERIFE": ["SANTA CRUZ DE TENERIFE", "S.C. TENERIFE"],
+}
+
+
+def province_alternates(name: str | None) -> list[str]:
+    """Alternate spellings to retry for a canonical province name (may be empty)."""
+    return _PROVINCE_ALTERNATES.get((name or "").upper(), [])
 
 
 def ccaa_for(*candidates: str | None) -> str:

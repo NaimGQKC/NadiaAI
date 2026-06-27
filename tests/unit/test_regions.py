@@ -11,10 +11,18 @@ class TestCatastroProvince:
         assert catastro_province("Rua Y 2, 15001 A Coruña") == "A CORUÑA"
 
     def test_region_province_name_canonicalized(self):
-        # Obituary leads store region = province; map to the canonical spelling.
+        # Obituary leads store region = province; map to the Catastro spelling
+        # (traditional Castilian — co-official forms are tried as retry alternates).
         assert catastro_province("Calle X 4", region="Coruna") == "A CORUÑA"
-        assert catastro_province("Calle X 4", region="Gerona") == "GIRONA"
-        assert catastro_province("Calle X 4", region="Vizcaya") == "BIZKAIA"
+        assert catastro_province("Calle X 4", region="Gerona") == "GERONA"
+        assert catastro_province("Calle X 4", region="Vizcaya") == "VIZCAYA"
+        assert catastro_province("Calle X 4", region="Bizkaia") == "VIZCAYA"
+
+    def test_province_alternates(self):
+        from nadia_ai.utils.regions import province_alternates
+        assert "BIZKAIA" in province_alternates("VIZCAYA")
+        assert "GIRONA" in province_alternates("GERONA")
+        assert province_alternates("MADRID") == []
 
     def test_city_fallback(self):
         assert catastro_province("Calle X 4", localidad="Calatayud") == "ZARAGOZA"

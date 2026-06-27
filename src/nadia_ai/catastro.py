@@ -317,7 +317,7 @@ def resolve_lead_addresses(conn: sqlite3.Connection, limit: int = 200) -> int:
     # real bottleneck (no province? vía not in callejero? número missing?) instead
     # of guessing. Logged as a summary at the end, with a few example addresses per
     # reason so the long-tail "VÍA NO EXISTE" can be fixed with real cases.
-    from nadia_ai.utils.regions import catastro_province
+    from nadia_ai.utils.regions import catastro_province, province_alternates
 
     reasons: dict[str, int] = {}
     samples: dict[str, list[str]] = {}
@@ -342,6 +342,13 @@ def resolve_lead_addresses(conn: sqlite3.Connection, limit: int = 200) -> int:
             continue
 
         rc, reason = lookup_rc_by_address(provincia, municipio, direccion)
+        # If the province name was rejected, retry with co-official/alternate
+        # spellings (BIZKAIA↔VIZCAYA, GIRONA↔GERONA…) before giving up.
+        if not rc and "PROVINCIA" in reason:
+            for alt in province_alternates(provincia):
+                rc, reason = lookup_rc_by_address(alt, municipio, direccion)
+                if rc:
+                    break
         if not rc:
             _bump(reason, direccion)
             continue
