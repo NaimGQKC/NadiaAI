@@ -143,9 +143,20 @@ def _record(source: str, link_url: str, title: str, seen: set[str]) -> EdictReco
 
 
 def _scrape_search(cfg: dict, seen: set[str]) -> list[EdictRecord]:
-    """Keyword-search mode: query the bulletin's buscador, follow edict links."""
+    """Keyword-search mode: query the bulletin's buscador (and any fixed seed pages,
+    e.g. a "Administración de Justicia" section index), follow the edict links."""
     records: list[EdictRecord] = []
     source = cfg["source"]
+    # Fixed seed pages (section indexes) — a confirmed discovery surface that doesn't
+    # depend on guessing a search param.
+    for seed in cfg.get("seed_urls", []):
+        html = _get(seed)
+        if not html:
+            continue
+        for link_url, title in _extract_edict_links(html, cfg["base"]):
+            rec = _record(source, link_url, title, seen)
+            if rec:
+                records.append(rec)
     for kw in _QUERIES:
         html = _get(cfg["search_url"].format(q=quote(kw)))
         if not html:
@@ -208,6 +219,11 @@ def scrape_boletin(cfg: dict, since: datetime | None = None) -> list[EdictRecord
 BOCM_CONFIG = {
     "source": "bocm",  # Boletín Oficial de la Comunidad de Madrid
     "base": "https://www.bocm.es",
+    # Confirmed (research): BOCM has a "Sección IV. Administración de Justicia" where
+    # herencia-yacente / declaración-de-herederos edicts are published, as PDFs at
+    # /boletin/CM_Orden_BOCM/{Y}/{M}/{D}/BOCM-{YYYYMMDD}-{n}.PDF. The section index
+    # page is a stable discovery surface; the buscador is the keyword fallback.
+    "seed_urls": ["https://www.bocm.es/seccion-iv-administracion-de-justicia"],
     "search_url": "https://www.bocm.es/buscador-boletin?palabra={q}",
 }
 

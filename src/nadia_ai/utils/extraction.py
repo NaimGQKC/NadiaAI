@@ -344,6 +344,102 @@ def extract_inheritance_data(text: str, causante_hint: str = None) -> dict:
         logger.warning("Extraction failed entirely: %s", e)
         return {}
 
+def _extract_lead_payload(lead: dict) -> tuple:
+    """Network-only worker for one lead — NO database access, so it is safe to run
+    in a thread pool (SQLite connections are not thread-safe). Does the fetch +
+    deterministic gate + LLM extraction + Catastro RC validation and returns an
+    action tuple the main thread applies serially:
+
+      ("done", id)   → mark extraction done (obituary-only, or no fetchable text)
+      ("cold", id)   → mark done + Tier C (failed the inheritance keyword gate)
+      ("defer", id)  → leave pending (LLM unavailable for this lead)
+      ("write", id, payload) → write the extracted fields
+    """
+    lead_id = lead["id"]
+    causante = lead["causante"]
+    urls = json.loads(lead["source_urls"] or "[]")
+
+    # Obituary-only sources are a death SIGNAL, not a heir document (~0% yield).
+    sources_list = json.loads(lead["sources"] or "[]")
+    if sources_list and all(
+        s in ("Esquelas", "Defunciones", "iEsquelas", "rememori") for s in sources_list
+    ):
+        return ("done", lead_id)
+
+    # 1. Fetch full text
+    full_text = ""
+    for url in urls:
+        fetch_url = url
+        if "zaragoza.es/sede/servicio/tablon-edicto/" in url and not url.endswith("/document"):
+            fetch_url = url + "/document"
+        if "boe.es" in fetch_url:
+            full_text = extract_pdf_text(fetch_url)
+        else:
+            try:
+                r = requests.get(fetch_url, timeout=15)
+                if r.status_code == 200:
+                    soup = BeautifulSoup(r.text, "html.parser")
+                    main = soup.select_one(".content, #main, article, .esquela-detalle, .texto-esquela")
+                    full_text = main.get_text(separator=" ", strip=True) if main else soup.get_text(separator=" ", strip=True)
+            except Exception as e:
+                logger.warning("Failed to fetch text from %s: %s", fetch_url, e)
+        if full_text:
+            break
+
+    if not full_text:
+        return ("done", lead_id)  # no fetchable text — stop re-queueing it
+    if not is_worth_llm_compute(full_text):
+        return ("cold", lead_id)  # no inheritance keywords
+
+    data = extract_inheritance_data(full_text, causante_hint=causante)
+    if not data:
+        return ("defer", lead_id)  # LLM unavailable — leave pending for retry
+
+    # Trust but verify: validate any RC via Catastro (network, no DB).
+    from nadia_ai.catastro import lookup_by_rc
+    rc = data.get("referencia_catastral")
+    if rc:
+        parcel = lookup_by_rc(rc)
+        if not parcel:
+            data["referencia_catastral"] = None
+            data["property_address"] = None
+        elif parcel.address:
+            data["property_address"] = parcel.address
+
+    # Tier A = mailable: street number or RC (consistent with merge.compute_tier).
+    _pa = data.get("property_address") or ""
+    final_tier = "A" if (re.search(r"\d", _pa) or data.get("referencia_catastral")) else "B"
+
+    heirs_list = data.get("list_of_heirs", [])
+    if not isinstance(heirs_list, list):
+        heirs_list = [str(heirs_list)]
+    heirs_list = clean_name_list(heirs_list)
+
+    death_date = data.get("date_of_death")
+    if isinstance(death_date, list):
+        death_date = death_date[0] if death_date else None
+    death_date = str(death_date) if death_date else None
+
+    prop_addr = data.get("property_address")
+    rc_val = data.get("referencia_catastral")
+    from nadia_ai.merge import normalize_address, normalize_name
+    extracted_deceased = (data.get("deceased_name") or "").strip() or None
+    final_causante = (causante or "").strip() or extracted_deceased
+
+    return ("write", lead_id, {
+        "heirs_json": json.dumps(heirs_list),
+        "primary_heir": heirs_list[0] if heirs_list else None,
+        "final_causante": final_causante,
+        "final_causante_norm": normalize_name(final_causante) if final_causante else None,
+        "prop_addr": prop_addr,
+        "addr_norm": normalize_address(prop_addr) if prop_addr else None,
+        "rc_val": rc_val,
+        "death_date": death_date,
+        "final_tier": final_tier,
+        "n_heirs": len(heirs_list),
+    })
+
+
 def run_heir_extraction(conn, limit: int = 200, extra_where: str = "", deadline: float | None = None):
     """Enrich pending leads by extracting heirs and addresses from their source documents.
 
@@ -395,159 +491,67 @@ def run_heir_extraction(conn, limit: int = 200, extra_where: str = "", deadline:
     leads = cursor.fetchall()
     
     count = 0
-    for lead in leads:
-        if deadline is not None and time.monotonic() > deadline:
-            logger.warning(
-                "Heir extraction hit the time budget after %d leads — stopping; "
-                "remaining leads stay pending for the next run.", count
-            )
-            break
-        lead_id = lead["id"]
-        causante = lead["causante"]
-        urls = json.loads(lead["source_urls"] or "[]")
 
-        # Obituary-only sources (Memora esquelas / defunciones / iEsquelas /
-        # rememori) are a name+city death SIGNAL, not a heir document: the detail
-        # page is just name, date and tanatorio — no family members are published.
-        # Verified ~0% heir yield across ~900 such leads, so the fetch+LLM is pure
-        # waste. Mark done without spending: this frees the 200/run extraction
-        # queue for BOE notarial (Sección V) leads, which yield heirs ~65%.
-        sources_list = json.loads(lead["sources"] or "[]")
-        if sources_list and all(
-            s in ("Esquelas", "Defunciones", "iEsquelas", "rememori") for s in sources_list
-        ):
+    def _apply(action: tuple) -> None:
+        """Apply one worker's result to the DB. Main-thread only (SQLite serial)."""
+        nonlocal count
+        kind, lead_id = action[0], action[1]
+        if kind == "done":
             conn.execute("UPDATE leads SET ai_extraction_done = 1 WHERE id = ?", (lead_id,))
             conn.commit()
-            continue
-
-        # 1. Fetch full text
-        full_text = ""
-        for url in urls:
-            fetch_url = url
-            if "zaragoza.es/sede/servicio/tablon-edicto/" in url and not url.endswith("/document"):
-                fetch_url = url + "/document"
-                
-            if "boe.es" in fetch_url:
-                full_text = extract_pdf_text(fetch_url)
-            else:
-                # Generic webpage text extraction
-                try:
-                    r = requests.get(fetch_url, timeout=15)
-                    if r.status_code == 200:
-                        soup = BeautifulSoup(r.text, "html.parser")
-                        # Try to find main content or just get all text
-                        main = soup.select_one(".content, #main, article, .esquela-detalle, .texto-esquela")
-                        full_text = main.get_text(separator=" ", strip=True) if main else soup.get_text(separator=" ", strip=True)
-                except Exception as e:
-                    logger.warning("Failed to fetch text from %s: %s", fetch_url, e)
-            
-            if full_text: break
-        
-        if not full_text:
-            # No fetchable text (dead link, PDF-only source, parse failure).
-            # Mark done so the lead stops re-entering the 200-per-run queue
-            # and clogging it for leads whose documents ARE readable.
-            logger.info("Lead %d: no fetchable text — marking extraction done.", lead_id)
-            conn.execute("UPDATE leads SET ai_extraction_done = 1 WHERE id = ?", (lead_id,))
-            conn.commit()
-            continue
-            
-        # 2. Deterministic Funnel: The "Wake Word" check
-        if not is_worth_llm_compute(full_text):
-            logger.info("Skipping Lead %d: Failed deterministic check (no inheritance keywords).", lead_id)
+        elif kind == "cold":
             conn.execute("UPDATE leads SET ai_extraction_done = 1, tier = 'C' WHERE id = ?", (lead_id,))
             conn.commit()
-            continue
-            
-        # 3. Extract entities
-        data = extract_inheritance_data(full_text, causante_hint=causante)
-        if not data:
-            continue
+        elif kind == "defer":
+            pass  # LLM unavailable — leave pending, no clobber
+        elif kind == "write":
+            p = action[2]
+            conn.execute("""
+                UPDATE leads
+                SET heir_names_json = ?, heir_name = ?, causante = ?,
+                    causante_norm = COALESCE(?, causante_norm),
+                    direccion = ?, address_norm = COALESCE(?, address_norm),
+                    referencia_catastral = ?,
+                    ref_catastral = COALESCE(NULLIF(?, ''), ref_catastral),
+                    date_of_death = ?, tier = ?, ai_extraction_done = 1,
+                    last_updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            """, (
+                p["heirs_json"], p["primary_heir"], p["final_causante"],
+                p["final_causante_norm"], p["prop_addr"], p["addr_norm"],
+                p["rc_val"], p["rc_val"] or "", p["death_date"], p["final_tier"], lead_id,
+            ))
+            conn.commit()
+            count += 1
+            logger.info("Lead %d: Tier %s, heirs=%d", lead_id, p["final_tier"], p["n_heirs"])
 
-        # 3. Trust but Verify: Catastro Hook
-        rc = data.get("referencia_catastral")
-        if rc:
-            logger.info("Validating RC %s for Lead %d via Catastro...", rc, lead_id)
-            parcel = lookup_by_rc(rc)
-            if not parcel:
-                logger.warning("Lead %d: Invalid RC '%s'. Nullifying address.", lead_id, rc)
-                data["referencia_catastral"] = None
-                data["property_address"] = None
-            elif parcel.address:
-                data["property_address"] = parcel.address
-        
-        # 4. Determine final tier. Tier A = actually mailable: a street address with
-        # a house number, or a referencia catastral. A city-only property_address
-        # ("Madrid") is not actionable and must stay Tier B (consistent with
-        # merge.compute_tier).
-        _pa = data.get("property_address") or ""
-        final_tier = "B"
-        if (re.search(r"\d", _pa)) or data.get("referencia_catastral"):
-            final_tier = "A"
-        
-        # 5. Update Database
-        heirs_list = data.get("list_of_heirs", [])
-        if not isinstance(heirs_list, list):
-            heirs_list = [str(heirs_list)]
-        heirs_list = clean_name_list(heirs_list)
-        heirs_json = json.dumps(heirs_list)
-        primary_heir = heirs_list[0] if heirs_list else None
-        
-        death_date = data.get("date_of_death")
-        if isinstance(death_date, list):
-            death_date = death_date[0] if death_date else None
-        death_date = str(death_date) if death_date else None
+    # Parallelise the network-bound work (fetch + LLM + Catastro) across a thread
+    # pool — it's ~all of the run's wall-clock — while keeping every DB write on the
+    # main thread (SQLite connections aren't thread-safe). EXTRACTION_WORKERS=1 keeps
+    # the old sequential behaviour. Workers only read the row dict passed to them.
+    workers = max(1, int(os.getenv("EXTRACTION_WORKERS", "6")))
+    lead_dicts = [dict(lead) for lead in leads]
 
-        prop_addr = data.get("property_address")
-        rc_val = data.get("referencia_catastral")
-        # address_norm / ref_catastral are the match keys used by merge dedup and
-        # enrichment cross-joins — keep them in sync with the display columns so
-        # a resolved RC/address actually participates in obras/subastas matching.
-        from nadia_ai.merge import normalize_address, normalize_name
-        addr_norm = normalize_address(prop_addr) if prop_addr else None
+    if workers == 1:
+        for ld in lead_dicts:
+            if deadline is not None and time.monotonic() > deadline:
+                logger.warning("Heir extraction hit the time budget — stopping; remaining pending.")
+                break
+            _apply(_extract_lead_payload(ld))
+    else:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        with ThreadPoolExecutor(max_workers=workers) as ex:
+            futures = {ex.submit(_extract_lead_payload, ld): ld["id"] for ld in lead_dicts}
+            for fut in as_completed(futures):
+                if deadline is not None and time.monotonic() > deadline:
+                    logger.warning("Heir extraction hit the time budget — stopping; remaining pending.")
+                    for f in futures:
+                        f.cancel()
+                    break
+                try:
+                    _apply(fut.result())
+                except Exception as e:
+                    logger.warning("Lead extraction worker failed: %s", e)
 
-        # Backfill the causante (deceased) when the scrape-time title parse left it
-        # empty but the document body named them. Notarial BOE-N declarations are the
-        # worst offender: the index title sometimes fails the NOTARIAL_CAUSANTE regex,
-        # so the lead is created heir-rich but causante-blank ("16 heirs, no deceased")
-        # — useless for the agent. The not.php body always carries "...Ab intestato de
-        # Don/Doña <NAME>...", which the extractor returns as deceased_name. Only fill
-        # when currently empty; never clobber a name we already trust.
-        extracted_deceased = (data.get("deceased_name") or "").strip() or None
-        current_causante = (causante or "").strip()
-        final_causante = current_causante or extracted_deceased
-        final_causante_norm = normalize_name(final_causante) if final_causante else None
-
-        conn.execute("""
-            UPDATE leads
-            SET heir_names_json = ?,
-                heir_name = ?,
-                causante = ?,
-                causante_norm = COALESCE(?, causante_norm),
-                direccion = ?,
-                address_norm = COALESCE(?, address_norm),
-                referencia_catastral = ?,
-                ref_catastral = COALESCE(NULLIF(?, ''), ref_catastral),
-                date_of_death = ?,
-                tier = ?,
-                ai_extraction_done = 1,
-                last_updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-        """, (
-            heirs_json,
-            primary_heir,
-            final_causante,
-            final_causante_norm,
-            prop_addr,
-            addr_norm,
-            rc_val,
-            rc_val or "",
-            death_date,
-            final_tier,
-            lead_id
-        ))
-        conn.commit()
-        count += 1
-        logger.info("Lead %d: Tier %s, heirs=%d", lead_id, final_tier, len(data.get("list_of_heirs", [])))
-    
+    logger.info("Heir extraction: %d leads enriched (workers=%d)", count, workers)
     return count

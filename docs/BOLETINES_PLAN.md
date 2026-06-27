@@ -65,6 +65,16 @@ entorno cloud porque su IP está bloqueada igual que la del pipeline):
   sin endpoint de documento documentado → modo buscador.
 - **DOGV** — buscador (`dogv.gva.es/es/resultats-dogv`) + alertas por email; sin API
   de documento documentada → modo buscador.
+- **BOCM** — **confirmado que SÍ tiene los datos**: Sección IV "Administración de
+  Justicia" publica edictos de *herencia yacente* y *declaración de herederos*
+  (https://www.bocm.es/seccion-iv-administracion-de-justicia). Documentos en PDF con
+  estructura estable `…/boletin/CM_Orden_BOCM/{Y}/{M}/{D}/BOCM-{YYYYMMDD}-{n}.PDF` y
+  sumario diario `…/CM_Boletin_BOCM/{Y}/{M}/{D}/{nnn}00.PDF`. Hay una API CKAN de
+  datos abiertos (`datos.comunidad.madrid/api/3/action/`, docs comunitarias en
+  github.com/codejovz/BOCM-API-documentation) pero es un catálogo de datasets, **no**
+  expone las disposiciones del boletín → no sirve para edictos. Integrado vía la
+  página de Sección IV (seed) + buscador. **Extracción: idéntica a BOE** (son PDFs de
+  edictos judiciales) → LLM + `edict_parse`, sin código nuevo.
 
 Conclusión: solo BOE tiene API limpia (ya integrada). Para los autonómicos, BOJA va
 por su sumario confirmado; el resto por buscador HTML hasta validar en PEDRO.
