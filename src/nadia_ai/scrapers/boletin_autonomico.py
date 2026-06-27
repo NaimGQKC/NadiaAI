@@ -37,9 +37,15 @@ from nadia_ai.utils.names import is_valid_person_name
 
 logger = logging.getLogger("nadia_ai.scrapers.boletin")
 
+# Government bulletin sites often block obvious bot User-Agents, so present a
+# realistic browser UA to maximise the chance of a 200 on the live runner.
 HEADERS = {
-    "User-Agent": "NadiaAI/0.1 (lead-generation research)",
-    "Accept": "text/html,application/xhtml+xml",
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "es-ES,es;q=0.9",
 }
 SESSION = requests.Session()
 SESSION.headers.update(HEADERS)

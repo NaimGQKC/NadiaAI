@@ -384,7 +384,8 @@ def run_heir_extraction(conn, limit: int = 200, extra_where: str = "", deadline:
         WHERE {where}
         ORDER BY
             CASE
-                WHEN sources LIKE '%BOE%' OR sources LIKE '%Tablón%' OR sources LIKE '%BOA%' OR sources LIKE '%BOP%' THEN 0
+                WHEN sources LIKE '%BOE%' OR sources LIKE '%Tablón%' OR sources LIKE '%BOA%' OR sources LIKE '%BOP%'
+                  OR sources LIKE '%BOCM%' OR sources LIKE '%DOGC%' OR sources LIKE '%BOJA%' OR sources LIKE '%DOGV%' THEN 0
                 ELSE 1
             END ASC,
             tier ASC,
