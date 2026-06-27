@@ -148,6 +148,28 @@ class TestComputeTier:
         }
         assert compute_tier(lead) == "B"
 
+    def test_city_only_address_is_not_tier_a(self):
+        # A city-only direccion ("Zaragoza", no street number) is NOT mailable, so
+        # name + city must stay Tier B, not be inflated to A.
+        lead = {
+            "causante": "García López",
+            "direccion": "Zaragoza",
+            "sources": '["Tablón"]',
+            "first_seen_at": datetime.now(UTC).isoformat(),
+        }
+        assert compute_tier(lead) == "B"
+
+    def test_referencia_catastral_makes_tier_a(self):
+        # An RC is actionable even if the free-text address has no number.
+        lead = {
+            "causante": "García López",
+            "direccion": "Zaragoza",
+            "referencia_catastral": "9872301TF6697S0001WX",
+            "sources": '["BOE"]',
+            "first_seen_at": datetime.now(UTC).isoformat(),
+        }
+        assert compute_tier(lead) == "A"
+
     def test_tier_b_address_only(self):
         lead = {
             "causante": "",

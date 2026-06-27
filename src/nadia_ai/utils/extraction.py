@@ -475,9 +475,13 @@ def run_heir_extraction(conn, limit: int = 200, extra_where: str = "", deadline:
             elif parcel.address:
                 data["property_address"] = parcel.address
         
-        # 4. Determine final tier
+        # 4. Determine final tier. Tier A = actually mailable: a street address with
+        # a house number, or a referencia catastral. A city-only property_address
+        # ("Madrid") is not actionable and must stay Tier B (consistent with
+        # merge.compute_tier).
+        _pa = data.get("property_address") or ""
         final_tier = "B"
-        if data.get("property_address") or data.get("referencia_catastral"):
+        if (re.search(r"\d", _pa)) or data.get("referencia_catastral"):
             final_tier = "A"
         
         # 5. Update Database
