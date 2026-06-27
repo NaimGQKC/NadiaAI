@@ -216,10 +216,16 @@ BOCM_CONFIG = {
     "search_url": "https://www.bocm.es/buscador-boletin?palabra={q}",
 }
 
+# DOGC DOES carry the data: its sections explicitly include "Administració de
+# Justícia … edictes, notificacions, anuncis". Documents are addressable at
+# /ca/document-del-dogc/?document={id} (HTML is official since 2013) and there's a
+# Dades-obertes service. The exact buscador GET param isn't confirmable from the
+# cloud (gencat blocks the proxy) → validate on PEDRO (open the cercador, search
+# "herència jacent", copy the results URL into search_url).
 DOGC_CONFIG = {
     "source": "dogc",  # Diari Oficial de la Generalitat de Catalunya
     "base": "https://dogc.gencat.cat",
-    "search_url": "https://dogc.gencat.cat/es/cercador-dogc/?accio=cerca&text={q}",
+    "search_url": "https://dogc.gencat.cat/ca/cercador-dogc/?accio=cerca&text={q}",
 }
 
 # BOJA uses its CONFIRMED, stable structure (research, not a guessed search param):

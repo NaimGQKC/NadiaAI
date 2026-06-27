@@ -331,36 +331,15 @@ def run_pipeline(days: int = 90) -> dict:
         summary["tier_b"] = sum(1 for l in leads if l.tier == "B")
         logger.info("Today's leads: %d (A=%d, B=%d)", len(leads), summary["tier_a"], summary["tier_b"])
 
-        # Cumulative territory breakdown (whole DB): leads per comunidad autónoma
-        # split by tier + a "ready" count (A/B with named heir AND a contact path).
-        # This is the "where can we already commercialize?" view — logged every run
-        # as standing market intel. Never break the run over a reporting line.
+        # Per-comunidad actionability scorecard (whole DB): the "where can we already
+        # commercialize?" funnel — total/TierA + %heir/%address/%RC/%ready per CCAA,
+        # logged every run as standing market intel. Never break the run over it.
         try:
-            from nadia_ai.utils.regions import ccaa_for
+            from nadia_ai.scorecard import log_scorecard
 
-            terr: dict[str, dict] = {}
-            # Positional select (tier, region, localidad, direccion, contact_phone,
-            # heir_name) — avoids depending on conn.row_factory being set here.
-            for tier, region, localidad, direccion, phone, heir in conn.execute(
-                "SELECT tier, region, localidad, direccion, contact_phone, heir_name FROM leads"
-            ):
-                c = ccaa_for(region, localidad, direccion)
-                d = terr.setdefault(c, {"A": 0, "B": 0, "C": 0, "ready": 0})
-                t = (tier or "?").upper()
-                if t in d:
-                    d[t] += 1
-                ready_contact = (direccion and any(ch.isdigit() for ch in direccion)) or bool(
-                    (phone or "").strip()
-                )
-                if t in ("A", "B") and (heir or "").strip() and ready_contact:
-                    d["ready"] += 1
-            for c in sorted(terr, key=lambda k: terr[k]["A"] + terr[k]["B"], reverse=True):
-                d = terr[c]
-                logger.info(
-                    "Territory %s: A=%d B=%d C=%d ready=%d", c, d["A"], d["B"], d["C"], d["ready"]
-                )
+            log_scorecard(conn)
         except Exception as e:
-            logger.warning("Territory breakdown failed (non-critical): %s", e)
+            logger.warning("Scorecard failed (non-critical): %s", e)
 
         deliver(leads, summary)
     except Exception as e:

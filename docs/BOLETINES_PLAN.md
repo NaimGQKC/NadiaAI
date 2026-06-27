@@ -61,8 +61,12 @@ entorno cloud porque su IP está bloqueada igual que la del pipeline):
   documentos en HTML. Por eso BOJA usa el modo `index_crawl` (no depende de adivinar
   parámetros de buscador → más fiable). También existe un portal CKAN
   (`juntadeandalucia.es/datosabiertos`) con datasets anuales de disposiciones.
-- **DOGC** — buscador + plataforma de dades obertes de Catalunya (API genérica), pero
-  sin endpoint de documento documentado → modo buscador.
+- **DOGC** — **SÍ tiene los datos** (sus secciones incluyen explícitamente
+  "Administració de Justícia … edictes, notificacions, anuncis"). Documentos en
+  `/ca/document-del-dogc/?document={id}` (HTML oficial desde 2013) + servicio de
+  Dades obertes. No pude confirmar el parámetro exacto del buscador desde el cloud
+  (gencat bloquea el proxy con 403) → **validar en PEDRO** (abrir el cercador, buscar
+  "herència jacent", copiar la URL de resultados a `search_url`). Modo buscador.
 - **DOGV** — buscador (`dogv.gva.es/es/resultats-dogv`) + alertas por email; sin API
   de documento documentada → modo buscador.
 - **BOCM** — **confirmado que SÍ tiene los datos**: Sección IV "Administración de
