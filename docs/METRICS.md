@@ -23,3 +23,31 @@ true DB state; per-run history is parsed from the pipeline's run summaries._
 | 2026-06-13 02:45 | 9 | 2376 | 142 | 0 | 0 | 498 | 481 | 3 |
 | 2026-06-14 00:16 | 380 | 2098 | 113 | 0 | 0 | 440 | 507 | 0 |
 | 2026-06-15 00:26 | 324 | 2277 | 10 | 0 | 0 | 584 | 460 | 0 |
+| 2026-06-26 21:09 | 1503 | — | 121 | 29 | 0¹ | ✓² | — | 0 |
+
+¹ Notaría-phone resolution disabled by client direction (`RESOLVE_NOTARY_PHONE=0`).
+² BOE reachable from the Spanish self-hosted IP (only `bop, ite, rememori` were zero).
+Numbers measured from the run log of the first run with all PR#9 fixes (self-hosted, DeepSeek).
+
+## Data-quality milestones — self-hosted + DeepSeek era (2026-06-26)
+
+First clean run on the persistent self-hosted DB with every fix in (run 28265359827,
+634s, 0 errors, email delivered):
+
+| Metric | Value | Note |
+|---|---|---|
+| Leads first-seen today (delta) | **1503** | A=29, B=1248, C=226, X=0 |
+| Total DB (approx, by max lead id) | **~3,200+** | persistent DB accumulating past the old 4,296 over time |
+| Heir extraction (DeepSeek) | **121 leads enriched** | replaces MiniMax M3 |
+| Heir yield on processed leads | **~59%** (48/82 sampled) | rest are judicial *herencia yacente* / obituaries with no named heir — correct |
+| `empty/garbled` LLM failures | **0** | the MiniMax reasoning-model failure mode is gone |
+| Heir = deceased/notary errors | **filtered** | new validation (regression-tested) |
+| Office (notaría/juzgado) backfill | **148/150** | from the edict text |
+| Street-level address extracted | **6 new + 77 street-level candidates** | the old parser dropped the house number → ~0; now flows |
+| Catastro RC resolved from address | **1/77** | callejero strictness — Phase 2 of `docs/ADDRESS_PRECISION_PLAN.md` |
+| Worklist email | **delivered** | DB-path bug fixed |
+
+**Read:** quality went from "trash" (MiniMax empty/garbled + fallecido-as-heir) to a
+clean ~59% heir yield with self-reference filtering, and addresses now flow (number
+preserved) — though Catastro *resolution* is the next lever. Volume is healthy and
+accumulating; "1503" is the daily delta, not the total.
