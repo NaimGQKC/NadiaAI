@@ -56,35 +56,37 @@ def test_scrape_boletin_never_raises_on_network_error():
         assert ba.scrape_boletin(ba.BOCM_CONFIG) == []
 
 
-def test_find_links_matches_boletin_pattern():
+def test_extract_numbers_most_recent_first():
     import re
     html = (
-        '<a href="/eboja/2026/12/index.html">BOJA 12</a>'
-        '<a href="/eboja/2026/13/index.html">BOJA 13</a>'
-        '<a href="/eboja/sobre-boja/info.html">Sobre BOJA</a>'
+        '<a href="/eboja/2026/12/index.html">12</a>'
+        '<a href="/eboja/2026/120/index.html">120</a>'
+        '<a href="/eboja/2026/12/index.html">12 dup</a>'
     )
-    links = ba._find_links(html, re.compile(r"/eboja/\d{4}/\d+/(?:index\.html)?$"),
-                           "https://www.juntadeandalucia.es")
-    assert "https://www.juntadeandalucia.es/eboja/2026/12/index.html" in links
-    assert len(links) == 2  # the "sobre-boja" link is excluded
+    nums = ba._extract_numbers(html, re.compile(r"/eboja/\d{4}/(\d+)/"))
+    assert nums == [120, 12]  # unique, descending
 
 
-def test_boja_index_crawl_mode(monkeypatch):
-    # Year index lists 2 boletines; each sumario has one inheritance edict.
+def test_boja_index_crawl_hits_section4(monkeypatch):
+    # Year index lists boletín numbers; each boletín's /s4 section has an edict.
     index_html = (
-        '<a href="/eboja/2026/12/index.html">BOJA 12</a>'
-        '<a href="/eboja/2026/13/index.html">BOJA 13</a>'
+        '<a href="/eboja/2026/120/index.html">BOJA 120</a>'
+        '<a href="/eboja/2026/119/index.html">BOJA 119</a>'
     )
-    sumario_html = (
-        '<a href="/eboja/2026/12/4.html">Edicto. Declaración de herederos '
+    s4_html = (
+        '<a href="/boja/2026/120/54.html">Edicto. Declaración de herederos '
         'abintestato de Don Pedro Ruiz Mora</a>'
     )
+    seen_urls = []
 
     def fake_get(url):
-        return index_html if url.endswith(".html") and "/eboja/2026.html" in url else sumario_html
+        seen_urls.append(url)
+        return index_html if "/eboja/2026.html" in url else s4_html
 
     monkeypatch.setattr(ba, "_get", fake_get)
     recs = ba.scrape_boja()
+    # It must request the section-4 URL, not the raw sumario index.
+    assert any("/boja/2026/120/s4" in u for u in seen_urls)
     assert recs and all(r.source == "boja" for r in recs)
     assert any(r.causante == "Pedro Ruiz Mora" for r in recs)
 

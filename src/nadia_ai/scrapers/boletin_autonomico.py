@@ -110,23 +110,6 @@ def _extract_edict_links(html: str, base_url: str) -> list[tuple[str, str]]:
     return out
 
 
-def _find_links(html: str, pattern: re.Pattern, base_url: str) -> list[str]:
-    """All hrefs (absolute) matching a regex — used to walk a year/sumario index."""
-    out, seen = [], set()
-    try:
-        soup = BeautifulSoup(html, "html.parser")
-    except Exception:
-        return out
-    for a in soup.find_all("a", href=True):
-        href = a["href"]
-        if pattern.search(href):
-            url = urljoin(base_url, href)
-            if url not in seen:
-                seen.add(url)
-                out.append(url)
-    return out
-
-
 def _record(source: str, link_url: str, title: str, seen: set[str]) -> EdictRecord | None:
     sid = hashlib.md5(f"{source}:{link_url}".encode()).hexdigest()[:12]
     if sid in seen:
@@ -170,25 +153,31 @@ def _scrape_search(cfg: dict, seen: set[str]) -> list[EdictRecord]:
     return records
 
 
-def _scrape_index_crawl(cfg: dict, seen: set[str]) -> list[EdictRecord]:
-    """Sumario-index mode (BOJA): year index → recent boletines → edict links.
+def _extract_numbers(html: str, pattern: re.Pattern) -> list[int]:
+    """Bulletin numbers captured by `pattern` (group 1), unique, most-recent first."""
+    nums = {int(m) for m in pattern.findall(html or "") if m.isdigit()}
+    return sorted(nums, reverse=True)
 
-    Uses the bulletin's stable URL structure instead of a guessed search param,
-    so it's more robust. `index_url` lists boletines; `boletin_link_re` matches a
-    sumario link; each sumario page is scanned for inheritance-edict anchors."""
+
+def _scrape_index_crawl(cfg: dict, seen: set[str]) -> list[EdictRecord]:
+    """Justice-section mode (BOJA): year index → recent boletín numbers → each
+    boletín's "Administración de justicia" section page → inheritance-edict links.
+
+    Uses BOJA's CONFIRMED stable structure (…/boja/{year}/{num}/s4 = section 4) so
+    we scan exactly the judicial section instead of guessing a search param."""
     records: list[EdictRecord] = []
     source = cfg["source"]
     year = datetime.now(UTC).year
     index_html = _get(cfg["index_url"].format(year=year))
     if not index_html:
         return records
-    boletines = _find_links(index_html, cfg["boletin_link_re"], cfg["base"])
-    logger.info("%s index: %d boletines found", source, len(boletines))
-    for b_url in boletines[: cfg.get("max_boletines", 8)]:
-        sumario = _get(b_url)
-        if not sumario:
+    numbers = _extract_numbers(index_html, cfg["num_re"])
+    logger.info("%s index: %d boletines found", source, len(numbers))
+    for num in numbers[: cfg.get("max_boletines", 8)]:
+        page = _get(cfg["section_url"].format(year=year, num=num))
+        if not page:
             continue
-        for link_url, title in _extract_edict_links(sumario, cfg["base"]):
+        for link_url, title in _extract_edict_links(page, cfg["base"]):
             rec = _record(source, link_url, title, seen)
             if rec:
                 records.append(rec)
@@ -233,14 +222,16 @@ DOGC_CONFIG = {
     "search_url": "https://dogc.gencat.cat/es/cercador-dogc/?accio=cerca&text={q}",
 }
 
-# BOJA uses its CONFIRMED, stable sumario structure (research, not a guessed search
-# param): year index → boletines at /eboja/{year}/{n}/index.html → edict links.
+# BOJA uses its CONFIRMED, stable structure (research, not a guessed search param):
+# year index lists boletín numbers → each boletín's section 4 (Administración de
+# justicia) at /boja/{year}/{num}/s4 → HTML edict links (/boja/{year}/{num}/{m}.html).
 BOJA_CONFIG = {
     "source": "boja",  # Boletín Oficial de la Junta de Andalucía
     "base": "https://www.juntadeandalucia.es",
     "mode": "index_crawl",
     "index_url": "https://www.juntadeandalucia.es/eboja/{year}.html",
-    "boletin_link_re": re.compile(r"/eboja/\d{4}/\d+/(?:index\.html)?$"),
+    "num_re": re.compile(r"/eboja/\d{4}/(\d+)/"),
+    "section_url": "https://www.juntadeandalucia.es/boja/{year}/{num}/s4",
     "max_boletines": 8,
 }
 

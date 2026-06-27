@@ -6,8 +6,6 @@ import os
 import time
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime
-from pathlib import Path
 
 from nadia_ai.scrapers.boe import extract_pdf_text
 from nadia_ai.utils.names import clean_name_list, is_valid_person_name
@@ -452,7 +450,6 @@ def run_heir_extraction(conn, limit: int = 200, extra_where: str = "", deadline:
     loop stops cleanly once past it, leaving the rest pending for the next run. This
     is what keeps a slow LLM from starving the worklist email at the end of the run.
     """
-    from nadia_ai.catastro import lookup_by_rc
     from nadia_ai.config import EXTRACTION_API_KEY
     conn.row_factory = sqlite3.Row
 
