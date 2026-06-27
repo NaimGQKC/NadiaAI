@@ -48,24 +48,49 @@ _VIA_SIGLA = {
     "pza": "PZ",
     "pza.": "PZ",
     "pl": "PZ",
+    "plza": "PZ",
     "paseo": "PS",
     "ps": "PS",
+    "po": "PS",
     "camino": "CM",
     "cmno": "CM",
+    "cº": "CM",
     "carretera": "CR",
     "ctra": "CR",
     "ctra.": "CR",
+    "cra": "CR",
     "ronda": "RD",
+    "rda": "RD",
+    "rda.": "RD",
     "travesia": "TR",
     "travesía": "TR",
+    "trav": "TR",
     "glorieta": "GL",
+    "gta": "GL",
+    "pasaje": "PJ",
+    "pje": "PJ",
+    "pje.": "PJ",
     "via": "CL",
+    "urbanizacion": "UR",
+    "urbanización": "UR",
+    "urb": "UR",
+    "urb.": "UR",
+    "poligono": "PG",
+    "polígono": "PG",
+    "pol": "PG",
+    "pol.": "PG",
+    "barrio": "BO",
+    "bo": "BO",
+    "rambla": "RB",
+    "callejon": "CJ",
+    "callejón": "CJ",
 }
 
-# Capture an optional via-type prefix, the street name, and a house number.
+# Capture an optional via-type prefix, the street name, and a house number. The
+# number prefix tolerates the full Spanish set ("número/núm./nº/n.º/n.").
 _ADDR_RE = re.compile(
     r"^\s*(?P<via>[A-Za-zÁÉÍÓÚÑáéíóúñ./]+)?\.?\s*"
-    r"(?P<name>.+?)[,\s]+(?:n[ºo.]*\s*)?(?P<num>\d+)",
+    r"(?P<name>.+?)[,\s]+(?:n[uú]m(?:ero)?\.?\s*|n[.ºo°]+\s*)?(?P<num>\d+)",
     re.IGNORECASE,
 )
 
@@ -301,30 +326,50 @@ def resolve_lead_addresses(conn: sqlite3.Connection, limit: int = 200) -> int:
     return resolved
 
 
-# Common Spanish capitals where province == city name.
+# City (accent-stripped, lowercase) → its PROVINCE. Catastro's DNPLOC needs the
+# real province, not the city — the old map used city==province, so every non-capital
+# town (Calatayud, Monzón, Alcañiz…) failed. Aragón is the operating territory, so
+# its municipalities are mapped to the right province; national capitals close the
+# rest of the common cases.
 _PROVINCIA_BY_CITY = {
-    "zaragoza": "ZARAGOZA",
-    "huesca": "HUESCA",
-    "teruel": "TERUEL",
-    "madrid": "MADRID",
-    "barcelona": "BARCELONA",
-    "valencia": "VALENCIA",
-    "sevilla": "SEVILLA",
-    "malaga": "MALAGA",
-    "granada": "GRANADA",
-    "salamanca": "SALAMANCA",
-    "cadiz": "CADIZ",
-    "tarragona": "TARRAGONA",
+    # ── Zaragoza province ──
+    "zaragoza": "ZARAGOZA", "calatayud": "ZARAGOZA", "utebo": "ZARAGOZA",
+    "ejea de los caballeros": "ZARAGOZA", "tarazona": "ZARAGOZA", "caspe": "ZARAGOZA",
+    "zuera": "ZARAGOZA", "cuarte de huerva": "ZARAGOZA", "alagon": "ZARAGOZA",
+    "la almunia de dona godina": "ZARAGOZA", "borja": "ZARAGOZA", "daroca": "ZARAGOZA",
+    "epila": "ZARAGOZA", "fuentes de ebro": "ZARAGOZA", "gallur": "ZARAGOZA",
+    "maria de huerva": "ZARAGOZA", "pinseque": "ZARAGOZA", "pedrola": "ZARAGOZA",
+    "villanueva de gallego": "ZARAGOZA", "carinena": "ZARAGOZA", "sadaba": "ZARAGOZA",
+    "tauste": "ZARAGOZA", "ricla": "ZARAGOZA",
+    # ── Huesca province ──
+    "huesca": "HUESCA", "monzon": "HUESCA", "barbastro": "HUESCA", "jaca": "HUESCA",
+    "fraga": "HUESCA", "sabinanigo": "HUESCA", "binefar": "HUESCA", "sarinena": "HUESCA",
+    "graus": "HUESCA", "ainsa": "HUESCA", "tamarite de litera": "HUESCA",
+    # ── Teruel province ──
+    "teruel": "TERUEL", "alcaniz": "TERUEL", "andorra": "TERUEL", "calamocha": "TERUEL",
+    "utrillas": "TERUEL", "alcorisa": "TERUEL", "mora de rubielos": "TERUEL",
+    "calanda": "TERUEL",
+    # ── National capitals (province == city) ──
+    "madrid": "MADRID", "barcelona": "BARCELONA", "valencia": "VALENCIA",
+    "sevilla": "SEVILLA", "malaga": "MALAGA", "granada": "GRANADA",
+    "salamanca": "SALAMANCA", "cadiz": "CADIZ", "tarragona": "TARRAGONA",
+    "bilbao": "BIZKAIA", "logrono": "LA RIOJA", "pamplona": "NAVARRA",
+    "lleida": "LLEIDA", "soria": "SORIA", "guadalajara": "GUADALAJARA",
 }
 
 
 def _city_from_address(direccion: str) -> str | None:
-    """Best-effort city extraction from the tail of an address string."""
+    """Best-effort city extraction from the tail of an address string.
+
+    Longest names first so "ejea de los caballeros" wins over a stray "ejea" and a
+    short token can't shadow a more specific multi-word municipality.
+    """
     if not direccion:
         return None
-    for city in _PROVINCIA_BY_CITY:
-        if city in strip_accents(direccion).lower():
-            return city.capitalize()
+    norm = strip_accents(direccion).lower()
+    for city in sorted(_PROVINCIA_BY_CITY, key=len, reverse=True):
+        if city in norm:
+            return city.title()
     return None
 
 

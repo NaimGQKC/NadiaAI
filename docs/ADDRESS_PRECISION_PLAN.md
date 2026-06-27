@@ -28,19 +28,22 @@ siempre que el edicto lo incluya. Medir en el primer run con estos cambios.
 
 ---
 
-## Fase 1 — Cobertura de parseo (1–2 semanas, coste 0, alto valor)
+## Fase 1 — Cobertura de parseo (coste 0, alto valor)
 
 El edicto es la mejor fuente (gratis, legal, ya descargado). Subir el % de
 extracción correcta:
 
-1. **Más marcadores y fuentes de domicilio.**
-   - Judicial (BOE-TEJU): el cuerpo a veces cita "finca sita en…", "inmueble en…",
-     "vivienda sita en…". Añadir un parser de *finca* análogo al de domicilio.
-   - Tablón/BOP: formatos municipales propios — añadir patrones por fuente.
-2. **Normalización de la vía** (sin coste): ampliar `_VIA_SIGLA` en `catastro.py`
-   (Cª, Ctra., Pza., Pje., Urb., Pol., Trav., Rda., Gta.…) y manejar
-   "número/núm./nº/n.º/s/n", pisos/puertas ("3º B", "bajo", "esc. 2").
-3. **Medir** `stats["address"]` por run y el ratio resuelto en Catastro
+1. ✅ **Finca en edictos judiciales (BOE-TEJU).** Era el mayor agujero: los
+   judiciales (herencia yacente, el pool MÁS grande) extraían **0 dirección**.
+   Ahora `_extract_finca()` mina "bien inmueble sito en…", "finca (registral nº)
+   sita en…", "inmueble/vivienda sita en…" y `backfill_edict_contacts` lo persiste
+   en `direccion` para los no-notariales. Esto ~duplica el pool de leads con
+   dirección postal.
+2. ✅ **Normalización de la vía** (`catastro.py`): `_VIA_SIGLA` ampliado (Cº, Ctra.,
+   Pza., Pje., Urb., Pol., Trav., Rda., Gta., Rambla, Callejón…) y el prefijo de
+   número tolera "número/núm./nº/n.º/n.".
+3. 🔜 Tablón/BOP: formatos municipales propios — añadir patrones por fuente.
+4. **Medir** `stats["address"]` por run y el ratio resuelto en Catastro
    (`resolve_lead_addresses`), para iterar con datos.
 
 **KPI:** % de leads notariales/judiciales con `direccion` a nivel calle+número, y
@@ -48,10 +51,15 @@ extracción correcta:
 
 ---
 
-## Fase 2 — Catastro como motor de normalización (1–2 semanas, coste 0)
+## Fase 2 — Catastro como motor de normalización (coste 0)
 
 Catastro es público y gratuito y resuelve dirección→RC→dirección normalizada.
 
+0. ✅ **Geografía arreglada (causa raíz del 1/77).** `_PROVINCIA_BY_CITY` usaba
+   ciudad==provincia, así que TODO pueblo no-capital (Calatayud, Monzón, Alcañiz…)
+   le pasaba a Catastro una provincia inexistente y fallaba siempre. Ahora hay un
+   mapa real municipio→provincia para Aragón + capitales nacionales. Medir el nuevo
+   ratio en el próximo run.
 1. **Reverse-fill desde Catastro.** Hoy resolvemos RC y paramos. Añadir: leer la
    dirección **normalizada** que devuelve Catastro (`ldt`) y escribirla de vuelta
    en `direccion` → direcciones limpias y consistentes para la carta.
