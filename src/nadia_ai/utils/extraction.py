@@ -61,14 +61,15 @@ Si un dato no aparece, usa null.
   "deceased_name": "Nombre completo del fallecido.",
   "date_of_death": "Fecha de fallecimiento (YYYY-MM-DD).",
   "list_of_heirs": ["Nombres completos de hijos, viudo/a, o herederos mencionados. Ignorar nombres de sobrinos o primos si hay hijos."],
-  "property_address": "Dirección de residencia del fallecido (calle, número, piso, ciudad). Si el texto dice 'vecino de [Ciudad]', pon la ciudad. No uses direcciones de Tanatorios.",
+  "property_address": "Dirección a nivel CALLE Y NÚMERO del inmueble relevante: el último domicilio/residencia del fallecido O la finca/inmueble objeto de la herencia (p.ej. 'finca sita en Calle Mayor 23', 'inmueble sito en Avenida de Goya 45'). Incluye SIEMPRE el número de la calle si aparece. Si solo se menciona la ciudad ('vecino de [Ciudad]'), pon la ciudad. NUNCA uses direcciones de tanatorios, notarías, juzgados ni registros.",
   "referencia_catastral": "Ref. Catastral si aparece (20 caracteres)."
 }}
 
 REGLAS CRÍTICAS:
 1. Si el texto es una esquela, busca los nombres de los hijos (ej: 'Sus hijos: Juan y María').
 2. Diferencia entre el lugar del fallecimiento (hospital/tanatorio) y el domicilio o vecindad (ej: 'vecino de Zaragoza').
-3. Responde SOLAMENTE el JSON.
+3. property_address: prioriza calle + número sobre solo la ciudad. En edictos judiciales de herencia yacente, ese inmueble suele ser la finca del caudal hereditario ("finca/inmueble/vivienda sita en…"), que es un dato válido.
+4. Responde SOLAMENTE el JSON.
 
 Texto a analizar:
 {text}"""
