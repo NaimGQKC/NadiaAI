@@ -24,9 +24,12 @@ true DB state; per-run history is parsed from the pipeline's run summaries._
 | 2026-06-14 00:16 | 380 | 2098 | 113 | 0 | 0 | 440 | 507 | 0 |
 | 2026-06-15 00:26 | 324 | 2277 | 10 | 0 | 0 | 584 | 460 | 0 |
 | 2026-06-26 21:09 | 1503 | — | 121 | 29 | 0¹ | ✓² | — | 0 |
+| 2026-06-27 01:06 | 28³ | — | 170 | 1 | 0¹ | ✓² | — | 0 |
 
 ¹ Notaría-phone resolution disabled by client direction (`RESOLVE_NOTARY_PHONE=0`).
 ² BOE reachable from the Spanish self-hosted IP (only `bop, ite, rememori` were zero).
+³ Same-day re-run → small daily delta (most of the day's leads were already captured
+at 21:09). This run validated the *address-precision* fixes, not volume — see below.
 Numbers measured from the run log of the first run with all PR#9 fixes (self-hosted, DeepSeek).
 
 ## Data-quality milestones — self-hosted + DeepSeek era (2026-06-26)
@@ -51,3 +54,25 @@ First clean run on the persistent self-hosted DB with every fix in (run 28265359
 clean ~59% heir yield with self-reference filtering, and addresses now flow (number
 preserved) — though Catastro *resolution* is the next lever. Volume is healthy and
 accumulating; "1503" is the daily delta, not the total.
+
+## Address-precision validation (2026-06-27, run 28273857593)
+
+Run on the branch with the address-precision fixes (judicial *finca* extraction +
+LLM prompt widened to the inherited property + Catastro geography map). Measured
+A→B against the prior run — the levers moved the needle:
+
+| Metric | Prior run (76c7918) | This run (1d34fad) | Δ |
+|---|---|---|---|
+| Address-bearing candidates (street + number) | 77 | **117** | +52% |
+| **Catastro RC resolved from address** | **1/77** | **4/117** | **×4** |
+| Heir extraction (DeepSeek) | 121 | **170** | +40% |
+| Errors | 0 | **0** | — |
+
+End-to-end proof of the judicial lever: **lead 4276 (Tier A, herencia yacente,
+heirs=0)** — exactly the class that used to extract no address — **resolved RC
+`1593301VK4719D` from its address**. Judicial leads now reach a parcel.
+
+Honest caveat: the *regex* finca backfill added 0 new addresses this run
+(`address: 0`); the gain came from the **LLM** (now asked for the finca) plus the
+**Catastro geography fix**. The regex stays as the deterministic fallback. Net: the
+LLM does the heavy lifting on free-text addresses, as expected.
