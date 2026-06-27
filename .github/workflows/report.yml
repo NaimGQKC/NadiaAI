@@ -1,0 +1,27 @@
+name: NadiaAI Territory Report (self-hosted)
+
+# On-demand market-intelligence report against the PERSISTENT self-hosted DB:
+# leads per comunidad autónoma × tier, plus a "ready to commercialize" count
+# (Tier A/B with a named heir AND a contact path). Read-only, ~1 min — much
+# faster than a full pipeline run. Trigger from the Actions tab (workflow_dispatch).
+
+on:
+  workflow_dispatch:
+
+jobs:
+  report:
+    runs-on: [self-hosted, nadia]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Territory report
+        shell: powershell
+        run: |
+          # Same persistent DB the pipeline writes to (outside the workspace).
+          $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
+          Write-Host "Reading persistent DB at $env:NADIA_DB_PATH"
+          python tools/territory_report.py

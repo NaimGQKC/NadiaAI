@@ -127,7 +127,7 @@ def parse_teju_edict(text: str) -> dict:
     t = _collapse(text)
     out: dict = {
         "court": "", "phone": "", "email": "", "procedure": "",
-        "plazo_days": None, "parties": [], "causante": "",
+        "plazo_days": None, "parties": [], "causante": "", "finca": "",
     }
     if not t:
         return out
@@ -160,6 +160,7 @@ def parse_teju_edict(text: str) -> dict:
         m = _HY_DE.search(block or t)
         if m and is_valid_person_name(m.group(1).strip().title()):
             out["causante"] = m.group(1).strip().title()
+    out["finca"] = _extract_finca(t)
     return out
 
 
@@ -186,17 +187,33 @@ _DOMICILE_MARKERS = (
     r"domiciliad[oa]\s+en",
     r"vecin[oa]\s+de",
 )
+# Judicial (BOE-TEJU) edicts carry no "domicilio" label, but a herencia-yacente
+# body often names the estate's real property — and for these leads that property
+# IS the postal target. Mine it with the same machinery, most-specific marker first.
+_FINCA_MARKERS = (
+    r"bien\s+inmueble\s+(?:sito|situado|ubicado)\s+en",
+    r"finca\s+(?:registral\s+)?(?:n[uú]mero\s+[0-9.]+\s+)?(?:sita|situada|ubicada)\s+en",
+    r"inmueble\s+(?:sito|sita|situado|ubicado)\s+en",
+    r"vivienda\s+(?:sita|situada|ubicada)\s+en",
+    r"finca\s+(?:sita|situada)\s+en",
+)
 # Where the address ends: sentence punctuation, a protocol/number reference, or a
-# boilerplate continuation ("a fin de que…", "de mi protocolo").
+# boilerplate continuation ("a fin de que…", "de mi protocolo", registry noise).
 _DOMICILE_STOP = re.compile(
     r"(?i)(?:[.;\n]|,\s*n[uú]mero\b|,\s*n[.º°]|\s+de\s+mi\s+protocolo\b|"
-    r"\s+a\s+fin\b|\s+al\s+objeto\b|\s+para\s+que\b|\s+y\s+a\s+los\b|\s+donde\b)"
+    r"\s+a\s+fin\b|\s+al\s+objeto\b|\s+para\s+que\b|\s+y\s+a\s+los\b|\s+donde\b|"
+    r"\s+inscrit[oa]\b|\s+que\s+forma\b|\s+propiedad\s+de\b|\s+registro\s+de\b|"
+    r"\s+de\s+esta\b)"
 )
 
 
-def _extract_domicile(t: str) -> str:
-    """Pull the street-level último domicilio from edict text, keeping the number."""
-    for marker in _DOMICILE_MARKERS:
+def _extract_after_markers(t: str, markers: tuple[str, ...]) -> str:
+    """Capture the street-level location after the first matching marker.
+
+    Shared by the notarial *domicilio* and the judicial *finca* extractors: same
+    char class (letters + digits + via punctuation), same stop set, same cleanup.
+    """
+    for marker in markers:
         m = re.search(
             r"(?i)" + marker + r"\s+([A-Za-zñÑáéíóúÁÉÍÓÚ0-9ºª°/.\-,\s]{4,80})", t
         )
@@ -210,6 +227,16 @@ def _extract_domicile(t: str) -> str:
         if chunk:
             return chunk
     return ""
+
+
+def _extract_domicile(t: str) -> str:
+    """Pull the street-level último domicilio from edict text, keeping the number."""
+    return _extract_after_markers(t, _DOMICILE_MARKERS)
+
+
+def _extract_finca(t: str) -> str:
+    """Pull the inherited property's street location from a judicial edict body."""
+    return _extract_after_markers(t, _FINCA_MARKERS)
 _NOT_OFFICE = re.compile(r"(?i)despacho\s+profesional\s+sito\s+en\s+(.+?)[,.](?:\s+a\s+fin|\s+de\s+[A-Z])")
 
 
@@ -287,10 +314,12 @@ def backfill_edict_contacts(conn: sqlite3.Connection, limit: int | None = None) 
         email = "" if is_notarial else parsed.get("email", "")
         procedure = parsed.get("protocol", "") if is_notarial else parsed.get("procedure", "")
 
-        # Último domicilio of the causante → the lead's street address (the postal
-        # target / Catastro key). Only persist a STREET-level value (contains a
-        # number); a city-only string can't be geocoded and just shadows localidad.
-        domicile = parsed.get("domicile", "") if is_notarial else ""
+        # Street address → the postal target / Catastro key. Notarial edicts carry
+        # the causante's *último domicilio*; judicial (herencia-yacente) edicts name
+        # the estate's *finca*. Either way we only persist a STREET-level value
+        # (contains a number); a city-only string can't be geocoded and just shadows
+        # localidad. This is the lever: judicial leads used to extract no address.
+        domicile = parsed.get("domicile", "") if is_notarial else parsed.get("finca", "")
         address_fill = domicile.strip() if re.search(r"\d", domicile or "") else ""
 
         # Named parties/heir: TEJU `parties`, BOE-N single `heir`.

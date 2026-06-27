@@ -7,7 +7,12 @@ in that the street + number survive and the trailing boilerplate is stripped.
 
 import re
 
-from nadia_ai.utils.edict_parse import _extract_domicile, parse_notaria_edict
+from nadia_ai.utils.edict_parse import (
+    _extract_domicile,
+    _extract_finca,
+    parse_notaria_edict,
+    parse_teju_edict,
+)
 
 
 def test_keeps_street_and_number_drops_protocol_noise():
@@ -45,3 +50,35 @@ def test_parse_notaria_edict_exposes_domicile():
          "Pérez García, con último domicilio en Calle Mayor 23, Zaragoza, número "
          "145 de mi protocolo.")
     assert parse_notaria_edict(t)["domicile"] == "Calle Mayor 23, Zaragoza"
+
+
+# ── Judicial (BOE-TEJU) finca extraction — the lever: these used to extract 0 ──
+
+
+def test_finca_sita_en_with_number():
+    t = ("Herencia yacente de don Antonio Gil. La finca sita en Calle Coso 14, "
+         "Zaragoza, inscrita en el Registro de la Propiedad número 3.")
+    assert _extract_finca(t) == "Calle Coso 14, Zaragoza"
+    assert re.search(r"\d", _extract_finca(t))
+
+
+def test_inmueble_sito_en():
+    t = "Se hace saber que el inmueble sito en Avenida de Goya 45, 2º, propiedad de la herencia."
+    assert _extract_finca(t) == "Avenida de Goya 45, 2º"
+
+
+def test_finca_registral_numbered():
+    t = ("Procedimiento contra la herencia yacente. La finca registral número "
+         "12345 sita en Calle San Miguel 8 de esta ciudad.")
+    assert _extract_finca(t) == "Calle San Miguel 8"
+
+
+def test_finca_returns_empty_when_absent():
+    t = "Edicto judicial de herencia yacente sin mención de inmueble alguno."
+    assert _extract_finca(t) == ""
+
+
+def test_parse_teju_edict_exposes_finca():
+    t = ("ÓRGANO JUDICIAL Tribunal de Instancia de Zaragoza Plaza n. La vivienda "
+         "sita en Paseo Independencia 12, Zaragoza, donde residía el causante.")
+    assert parse_teju_edict(t)["finca"] == "Paseo Independencia 12, Zaragoza"

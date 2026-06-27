@@ -23,3 +23,106 @@ true DB state; per-run history is parsed from the pipeline's run summaries._
 | 2026-06-13 02:45 | 9 | 2376 | 142 | 0 | 0 | 498 | 481 | 3 |
 | 2026-06-14 00:16 | 380 | 2098 | 113 | 0 | 0 | 440 | 507 | 0 |
 | 2026-06-15 00:26 | 324 | 2277 | 10 | 0 | 0 | 584 | 460 | 0 |
+| 2026-06-26 21:09 | 1503 | — | 121 | 29 | 0¹ | ✓² | — | 0 |
+| 2026-06-27 01:06 | 28³ | — | 170 | 1 | 0¹ | ✓² | — | 0 |
+
+¹ Notaría-phone resolution disabled by client direction (`RESOLVE_NOTARY_PHONE=0`).
+² BOE reachable from the Spanish self-hosted IP (only `bop, ite, rememori` were zero).
+³ Same-day re-run → small daily delta (most of the day's leads were already captured
+at 21:09). This run validated the *address-precision* fixes, not volume — see below.
+Numbers measured from the run log of the first run with all PR#9 fixes (self-hosted, DeepSeek).
+
+## Data-quality milestones — self-hosted + DeepSeek era (2026-06-26)
+
+First clean run on the persistent self-hosted DB with every fix in (run 28265359827,
+634s, 0 errors, email delivered):
+
+| Metric | Value | Note |
+|---|---|---|
+| Leads first-seen today (delta) | **1503** | A=29, B=1248, C=226, X=0 |
+| Total DB (approx, by max lead id) | **~3,200+** | persistent DB accumulating past the old 4,296 over time |
+| Heir extraction (DeepSeek) | **121 leads enriched** | replaces MiniMax M3 |
+| Heir yield on processed leads | **~59%** (48/82 sampled) | rest are judicial *herencia yacente* / obituaries with no named heir — correct |
+| `empty/garbled` LLM failures | **0** | the MiniMax reasoning-model failure mode is gone |
+| Heir = deceased/notary errors | **filtered** | new validation (regression-tested) |
+| Office (notaría/juzgado) backfill | **148/150** | from the edict text |
+| Street-level address extracted | **6 new + 77 street-level candidates** | the old parser dropped the house number → ~0; now flows |
+| Catastro RC resolved from address | **1/77** | callejero strictness — Phase 2 of `docs/ADDRESS_PRECISION_PLAN.md` |
+| Worklist email | **delivered** | DB-path bug fixed |
+
+**Read:** quality went from "trash" (MiniMax empty/garbled + fallecido-as-heir) to a
+clean ~59% heir yield with self-reference filtering, and addresses now flow (number
+preserved) — though Catastro *resolution* is the next lever. Volume is healthy and
+accumulating; "1503" is the daily delta, not the total.
+
+## Address-precision validation (2026-06-27, run 28273857593)
+
+Run on the branch with the address-precision fixes (judicial *finca* extraction +
+LLM prompt widened to the inherited property + Catastro geography map). Measured
+A→B against the prior run — the levers moved the needle:
+
+| Metric | Prior run (76c7918) | This run (1d34fad) | Δ |
+|---|---|---|---|
+| Address-bearing candidates (street + number) | 77 | **117** | +52% |
+| **Catastro RC resolved from address** | **1/77** | **4/117** | **×4** |
+| Heir extraction (DeepSeek) | 121 | **170** | +40% |
+| Errors | 0 | **0** | — |
+
+End-to-end proof of the judicial lever: **lead 4276 (Tier A, herencia yacente,
+heirs=0)** — exactly the class that used to extract no address — **resolved RC
+`1593301VK4719D` from its address**. Judicial leads now reach a parcel.
+
+Honest caveat: the *regex* finca backfill added 0 new addresses this run
+(`address: 0`); the gain came from the **LLM** (now asked for the finca) plus the
+**Catastro geography fix**. The regex stays as the deterministic fallback. Net: the
+LLM does the heavy lifting on free-text addresses, as expected.
+
+## Catastro failure analysis + territory (2026-06-27, run 28274715433)
+
+Instrumented the resolver to log *why* each address fails. Result on 155 candidates
+(4 resolved) — the bottleneck is now precisely known:
+
+| Failure mode | Count | Share | Fix |
+|---|---|---|---|
+| LA PROVINCIA NO EXISTE | 86 | 55% | **postal-code → canonical province** (done) |
+| LA VÍA NO EXISTE | 48 | 31% | callejero name mismatch — sample logging added to diagnose next |
+| EL NUMERO NO EXISTE | 5 | 3% | number not in callejero (genuine) |
+| unparseable | 8 | 5% | address has no clean street+number |
+| no inmueble / other | ~8 | 5% | genuine misses |
+
+Root cause of the 86: `region` is **inconsistent by source** — BOE leads store the
+*comunidad* ("Andalucía"), obituary leads store the *provincia* ("Zaragoza"), and we
+were sending the city as the province. Fixed with `utils/regions.catastro_province`
+(postal code → region → city → canonical Catastro name; skip if unknown).
+
+### Cumulative territory — leads per comunidad × tier (whole DB ≈ 4,295)
+
+The commercial map. `ready` = Tier A/B with a named heir AND a contact path
+(street address or phone) = sellable today.
+
+| Comunidad | A | B | C | ready |
+|---|---|---|---|---|
+| Otra/Desconocida | 83 | 1553 | 452 | 78 |
+| Andalucía | 19 | 353 | 29 | 20 |
+| Castilla y León | 24 | 309 | 64 | 11 |
+| **Aragón** (home) | 65 | 184 | 20 | 3 |
+| Cataluña | 14 | 180 | 38 | 3 |
+| Madrid | 13 | 151 | 45 | 9 |
+| Comunidad Valenciana | 14 | 114 | 39 | 13 |
+| Murcia | 5 | 65 | 4 | 4 |
+| Navarra | 1 | 58 | 1 | 0 |
+| País Vasco | 6 | 57 | 7 | 2 |
+| Cantabria | 3 | 55 | 10 | 1 |
+| La Rioja | 0 | 53 | 7 | 0 |
+| Galicia | 7 | 38 | 5 | 3 |
+| Castilla-La Mancha | 1 | 37 | 2 | 1 |
+| Canarias | 6 | 31 | 12 | 7 |
+| Asturias | 6 | 30 | 8 | 5 |
+| Extremadura | 0 | 11 | 2 | 0 |
+| Ceuta / Melilla | 0 | 2 | 2 | 0 |
+
+**Read:** "Otra/Desconocida" = ~49% of the DB — mostly BOE leads whose region wasn't
+extracted. The canonical-province fix (postal code) also feeds CCAA classification,
+so this should shrink next run. Aragón has the most Tier A (65) but few `ready` (3)
+— the home market is rich in candidates but thin on resolved contact paths, which is
+exactly what the Catastro/address work unlocks.
