@@ -4,12 +4,31 @@ import responses
 
 from nadia_ai.catastro import (
     _parse_address,
+    _parse_rc_from_loc,
     _city_from_address,
     _infer_neighborhood,
     _parse_response,
     _PROVINCIA_BY_CITY,
     lookup_by_rc,
 )
+
+
+class TestParseRcFromLoc:
+    def test_ok_returns_rc_and_reason(self):
+        xml = ("<consulta_dnploc><coordenadas><coord><pc><pc1>9872301</pc1>"
+               "<pc2>TF6697S</pc2></pc></coord></coordenadas></consulta_dnploc>")
+        assert _parse_rc_from_loc(xml) == ("9872301TF6697S", "ok")
+
+    def test_error_surfaces_catastro_message(self):
+        xml = ("<consulta_dnploc><control><cuerr>1</cuerr></control>"
+               "<lerr><err><cod>43</cod><des>LA VIA NO EXISTE</des></err></lerr>"
+               "</consulta_dnploc>")
+        rc, reason = _parse_rc_from_loc(xml)
+        assert rc is None
+        assert "VIA NO EXISTE" in reason
+
+    def test_malformed_xml(self):
+        assert _parse_rc_from_loc("not xml") == (None, "parse-error")
 
 
 class TestAddressParse:

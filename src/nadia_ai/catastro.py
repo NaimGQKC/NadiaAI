@@ -210,16 +210,19 @@ def _parse_address(direccion: str) -> tuple[str, str, str] | None:
 
 def lookup_rc_by_address(
     provincia: str, municipio: str, direccion: str
-) -> str | None:
+) -> tuple[str | None, str]:
     """Resolve a referencia catastral from a street address via Consulta_DNPLOC.
 
     Catastro's callejero is strict (exact via spelling, house number required),
-    so this resolves only a subset of well-formed urban addresses. Returns the
-    14-char parcel RC (pc1+pc2) or None.
+    so this resolves only a subset of well-formed urban addresses. Returns
+    ``(rc, reason)``: the 14-char parcel RC (pc1+pc2) with reason "ok", or
+    ``(None, reason)`` where reason is the *why* — "unparseable", "http", or the
+    Catastro error message ("LA VÍA O NÚMERO NO EXISTE"…) — so the caller can
+    aggregate failure modes and we optimise the real bottleneck, not a guess.
     """
     parsed = _parse_address(direccion)
     if not parsed or not provincia or not municipio:
-        return None
+        return None, "unparseable"
     sigla, calle, numero = parsed
 
     params = {
@@ -241,7 +244,7 @@ def lookup_rc_by_address(
                 if attempt < MAX_RETRIES - 1:
                     time.sleep(RETRY_BACKOFF[attempt])
                     continue
-                return None
+                return None, "http"
             resp.raise_for_status()
             return _parse_rc_from_loc(resp.text)
         except requests.RequestException as e:
@@ -249,21 +252,31 @@ def lookup_rc_by_address(
                 time.sleep(RETRY_BACKOFF[attempt])
                 continue
             logger.info("Catastro DNPLOC failed for '%s': %s", direccion[:50], e)
-            return None
-    return None
+            return None, "http"
+    return None, "http"
 
 
-def _parse_rc_from_loc(xml_text: str) -> str | None:
-    """Extract the first referencia catastral (pc1+pc2) from a DNPLOC response."""
+def _parse_rc_from_loc(xml_text: str) -> tuple[str | None, str]:
+    """Extract the first referencia catastral (pc1+pc2) from a DNPLOC response.
+
+    Returns ``(rc, "ok")`` on a hit, or ``(None, reason)`` where reason is the
+    Catastro error text (`<cuerr>`/`<des>`, e.g. "LA VÍA NO EXISTE"), "no-rc"
+    (clean response but no parcel), or "parse-error" (malformed XML)."""
     try:
         root = ET.fromstring(xml_text)
     except ET.ParseError:
-        return None
-    # Detect an explicit error response (<cuerr>N</cuerr>, e.g. "LA VÍA NO EXISTE").
+        return None, "parse-error"
+    # Detect an explicit error response (<cuerr>N</cuerr> + a <des> description).
+    err = False
+    desc = ""
     for el in root.iter():
         tag = el.tag.split("}")[-1]
         if tag == "cuerr" and (el.text or "").strip() not in ("", "0"):
-            return None
+            err = True
+        elif tag == "des" and not desc:
+            desc = (el.text or "").strip()
+    if err:
+        return None, (desc or "catastro-error").upper()[:60]
     pc1 = pc2 = None
     for el in root.iter():
         tag = el.tag.split("}")[-1]
@@ -274,8 +287,8 @@ def _parse_rc_from_loc(xml_text: str) -> str | None:
         if pc1 and pc2:
             break
     if pc1 and pc2:
-        return f"{pc1}{pc2}"
-    return None
+        return f"{pc1}{pc2}", "ok"
+    return None, "no-rc"
 
 
 def resolve_lead_addresses(conn: sqlite3.Connection, limit: int = 200) -> int:
@@ -299,6 +312,15 @@ def resolve_lead_addresses(conn: sqlite3.Connection, limit: int = 200) -> int:
     ).fetchall()
 
     resolved = 0
+    reverse_filled = 0
+    # Why the other N-resolved fail: aggregate so the next iteration optimises the
+    # real bottleneck (no municipio? vía not in callejero? número missing?) instead
+    # of guessing. Logged as a summary at the end.
+    reasons: dict[str, int] = {}
+
+    def _bump(reason: str) -> None:
+        reasons[reason] = reasons.get(reason, 0) + 1
+
     for row in rows:
         direccion = row["direccion"]
         # Prefer an explicit municipality; fall back to localidad, then default.
@@ -307,22 +329,40 @@ def resolve_lead_addresses(conn: sqlite3.Connection, limit: int = 200) -> int:
             # Try to read a city out of the address tail (e.g. "..., Zaragoza").
             municipio = _city_from_address(direccion) or ""
         if not municipio:
+            _bump("no-municipio")
             continue
         provincia = _PROVINCIA_BY_CITY.get(strip_accents(municipio).lower(), municipio)
 
-        rc = lookup_rc_by_address(provincia, municipio, direccion)
+        rc, reason = lookup_rc_by_address(provincia, municipio, direccion)
         if not rc:
+            _bump(reason)
             continue
+
+        # Reverse-fill: pull Catastro's normalised address (ldt) and write it back,
+        # so the letter goes out with a clean, consistent, deliverable address
+        # instead of the raw edict text. Best-effort — keep the raw on any miss.
+        norm_addr = None
+        parcel = lookup_by_rc(rc)
+        if parcel and parcel.address:
+            norm_addr = parcel.address
+
         conn.execute(
             "UPDATE leads SET referencia_catastral = ?, ref_catastral = ?, "
+            "direccion = COALESCE(NULLIF(?, ''), direccion), "
             "last_updated_at = datetime('now') WHERE id = ?",
-            (rc, rc, row["id"]),
+            (rc, rc, norm_addr or "", row["id"]),
         )
         resolved += 1
+        if norm_addr:
+            reverse_filled += 1
         logger.info("Resolved RC %s for lead %d from address", rc, row["id"])
 
     conn.commit()
-    logger.info("Catastro address resolution: %d/%d leads resolved", resolved, len(rows))
+    logger.info(
+        "Catastro address resolution: %d/%d leads resolved (%d reverse-filled). "
+        "Failure modes: %s",
+        resolved, len(rows), reverse_filled, reasons or "none",
+    )
     return resolved
 
 
