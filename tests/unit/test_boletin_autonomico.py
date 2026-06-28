@@ -119,12 +119,12 @@ def test_dogc_json_api_builds_records(monkeypatch):
     fake = {"numResults": 1, "results": [
         {"documentId": "987654", "titol": "EDICTE sobre l'herència jacent de Pere Soler"}
     ]}
-    monkeypatch.setattr(ba, "_post_json", lambda url, body: fake)
+    monkeypatch.setattr(ba, "_post_json", lambda url, body, headers=None: fake)
     recs = ba.scrape_dogc()
     assert recs and recs[0].source == "dogc"
     assert recs[0].source_url == "https://dogc.gencat.cat/ca/document-del-dogc/?documentId=987654"
 
 
 def test_dogc_json_api_fail_safe(monkeypatch):
-    monkeypatch.setattr(ba, "_post_json", lambda url, body: None)
+    monkeypatch.setattr(ba, "_post_json", lambda url, body, headers=None: None)
     assert ba.scrape_dogc() == []
