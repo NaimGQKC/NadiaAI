@@ -67,26 +67,27 @@ def test_extract_numbers_most_recent_first():
     assert nums == [120, 12]  # unique, descending
 
 
-def test_boja_index_crawl_hits_section4(monkeypatch):
-    # Year index lists boletín numbers; each boletín's /s4 section has an edict.
+def test_boja_index_crawl_hits_sumario(monkeypatch):
+    # Year index lists boletín numbers; each boletín's sumario (index.html) has the
+    # edict (the /boja/.../s4 histórico HTML only exists up to 2012 → 404 now).
     index_html = (
         '<a href="/eboja/2026/120/index.html">BOJA 120</a>'
         '<a href="/eboja/2026/119/index.html">BOJA 119</a>'
     )
-    s4_html = (
-        '<a href="/boja/2026/120/54.html">Edicto. Declaración de herederos '
+    sumario_html = (
+        '<a href="/eboja/2026/120/54.pdf">Edicto. Declaración de herederos '
         'abintestato de Don Pedro Ruiz Mora</a>'
     )
     seen_urls = []
 
     def fake_get(url):
         seen_urls.append(url)
-        return index_html if "/eboja/2026.html" in url else s4_html
+        return index_html if "/eboja/2026.html" in url else sumario_html
 
     monkeypatch.setattr(ba, "_get", fake_get)
     recs = ba.scrape_boja()
-    # It must request the section-4 URL, not the raw sumario index.
-    assert any("/boja/2026/120/s4" in u for u in seen_urls)
+    # It must request the boletín sumario, not the (now-404) /s4 histórico.
+    assert any("/eboja/2026/120/index.html" in u for u in seen_urls)
     assert recs and all(r.source == "boja" for r in recs)
     assert any(r.causante == "Pedro Ruiz Mora" for r in recs)
 

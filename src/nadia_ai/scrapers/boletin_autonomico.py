@@ -26,6 +26,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import re
+import time
 from datetime import UTC, datetime
 from urllib.parse import quote, urljoin
 
@@ -97,13 +98,20 @@ def _post_json(url: str, body: dict, extra_headers: dict | None = None) -> dict 
     headers = {"Accept": "application/json, text/javascript, */*; q=0.01"}
     if extra_headers:
         headers.update(extra_headers)
-    try:
-        resp = SESSION.post(url, json=body, timeout=TIMEOUT, headers=headers)
-        resp.raise_for_status()
-        return resp.json()
-    except (requests.RequestException, ValueError) as e:
-        logger.info("Boletín API POST failed %s: %s", url[:80], e)
-        return None
+    # Retry: gov APIs intermittently drop TLS (DOGC SSL EOF) or expire the session
+    # (DOGV 440) — a short backoff recovers most of these.
+    for attempt in range(3):
+        try:
+            resp = SESSION.post(url, json=body, timeout=TIMEOUT, headers=headers)
+            resp.raise_for_status()
+            return resp.json()
+        except (requests.RequestException, ValueError) as e:
+            if attempt < 2:
+                time.sleep(1.5 * (attempt + 1))
+                continue
+            logger.info("Boletín API POST failed %s: %s", url[:80], e)
+            return None
+    return None
 
 
 def _find_results_list(data, prefer_key: str | None = None) -> list[dict]:
@@ -347,16 +355,17 @@ DOGC_CONFIG = {
     "doc_url": "https://dogc.gencat.cat/ca/document-del-dogc/?documentId={id}",
 }
 
-# BOJA uses its CONFIRMED, stable structure (research, not a guessed search param):
-# year index lists boletín numbers → each boletín's section 4 (Administración de
-# justicia) at /boja/{year}/{num}/s4 → HTML edict links (/boja/{year}/{num}/{m}.html).
+# BOJA: the year index lists boletín numbers; each boletín's sumario lives at
+# /eboja/{year}/{num}/index.html (the /boja/{year}/{num}/s4 HTML histórico only
+# exists up to May 2012 — it 404s for current years). The sumario lists each
+# disposition's title, so the inheritance-edict anchors are extracted there.
 BOJA_CONFIG = {
     "source": "boja",  # Boletín Oficial de la Junta de Andalucía
     "base": "https://www.juntadeandalucia.es",
     "mode": "index_crawl",
     "index_url": "https://www.juntadeandalucia.es/eboja/{year}.html",
     "num_re": re.compile(r"/eboja/\d{4}/(\d+)/"),
-    "section_url": "https://www.juntadeandalucia.es/boja/{year}/{num}/s4",
+    "section_url": "https://www.juntadeandalucia.es/eboja/{year}/{num}/index.html",
     "max_boletines": 8,
 }
 
