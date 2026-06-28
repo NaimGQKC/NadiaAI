@@ -44,10 +44,10 @@ def test_scrape_boletin_builds_records_and_is_safe():
 def test_scrape_boletin_dedupes_across_queries():
     html = '<a href="/e/1">Declaración de herederos abintestato de Don Luis Marín</a>'
     with mock.patch.object(ba, "_get", return_value=html):
-        recs = ba.scrape_boletin(ba.DOGV_CONFIG)  # search mode
-    # Same link returned for every keyword query → deduped to one record.
+        recs = ba.scrape_boletin(ba.BOCM_CONFIG)  # search mode (seed + queries)
+    # Same link returned for every seed/query fetch → deduped to one record.
     assert len(recs) == 1
-    assert recs[0].source == "dogv"
+    assert recs[0].source == "bocm"
 
 
 def test_scrape_boletin_never_raises_on_network_error():
@@ -108,23 +108,49 @@ def test_find_results_list_unknown_shape():
     assert ba._find_results_list({"n": 0, "items": []}) == []
 
 
-def test_doc_url_from_id_and_url():
+def test_doc_url_from_id_url_and_field():
     cfg = {"doc_url": "https://x.es/doc/?documentId={id}"}
-    assert ba._doc_url_from({"documentId": "987"}, cfg) == "https://x.es/doc/?documentId=987"
-    assert ba._doc_url_from({"link": "https://x.es/a"}, cfg) == "https://x.es/a"
-    assert ba._doc_url_from({"nope": 1}, cfg) is None
+    base = "https://x.es"
+    assert ba._doc_url_from({"documentId": "987"}, cfg, base) == "https://x.es/doc/?documentId=987"
+    assert ba._doc_url_from({"link": "https://x.es/a"}, cfg, base) == "https://x.es/a"
+    assert ba._doc_url_from({"nope": 1}, cfg, base) is None
+    # url_field absolute → used directly
+    cfg2 = {"url_field": "linkDownloadPDF"}
+    assert ba._doc_url_from({"linkDownloadPDF": "https://p.es/x.pdf"}, cfg2, base) == "https://p.es/x.pdf"
+    # url_field relative → joined to url_base
+    cfg3 = {"url_field": "urlPdf", "url_base": "https://dogv.gva.es/datos"}
+    assert ba._doc_url_from({"urlPdf": "/2026/06/18/pdf/2026_20653_es.pdf"}, cfg3, base) == \
+        "https://dogv.gva.es/datos/2026/06/18/pdf/2026_20653_es.pdf"
 
 
-def test_dogc_json_api_builds_records(monkeypatch):
-    fake = {"numResults": 1, "results": [
-        {"documentId": "987654", "titol": "EDICTE sobre l'herència jacent de Pere Soler"}
+def test_dogc_json_api_uses_pdf_link(monkeypatch):
+    # Real DOGC shape: resultSearch[], idDocument, direct PDF link.
+    fake = {"numResultSearch": 1, "resultSearch": [
+        {"idDocument": "697086", "title": "EDICTE sobre herència jacent (exp. 245/2014).",
+         "linkDownloadPDF": "https://portaldogc.gencat.cat/utilsEADOP/AppJava/PdfProviderServlet?versionId=1432198&type=01"}
     ]}
     monkeypatch.setattr(ba, "_post_json", lambda url, body, headers=None: fake)
     recs = ba.scrape_dogc()
     assert recs and recs[0].source == "dogc"
-    assert recs[0].source_url == "https://dogc.gencat.cat/ca/document-del-dogc/?documentId=987654"
+    assert "PdfProviderServlet?versionId=1432198" in recs[0].source_url
 
 
-def test_dogc_json_api_fail_safe(monkeypatch):
+def test_dogv_json_api_builds_pdf_url(monkeypatch):
+    # Real DOGV shape: content[], id, relative urlPdf; warm-up GET must not break it.
+    fake = {"totalElements": 1, "content": [
+        {"id": 481940, "urlPdf": "/2026/06/18/pdf/2026_20653_es.pdf",
+         "titulo": "RESOLUCIÓN ... declaración de herencia intestada de Daniel Penella Bailach. ABI 135/2023."}
+    ]}
+    monkeypatch.setattr(ba, "_get", lambda url: "")  # warmup
+    monkeypatch.setattr(ba, "_post_json", lambda url, body, headers=None: fake)
+    recs = ba.scrape_dogv()
+    assert recs and recs[0].source == "dogv"
+    assert recs[0].source_url == "https://dogv.gva.es/datos/2026/06/18/pdf/2026_20653_es.pdf"
+    assert recs[0].causante == "Daniel Penella Bailach"  # extracted from "intestada de NAME"
+
+
+def test_json_api_fail_safe(monkeypatch):
     monkeypatch.setattr(ba, "_post_json", lambda url, body, headers=None: None)
+    monkeypatch.setattr(ba, "_get", lambda url: None)
     assert ba.scrape_dogc() == []
+    assert ba.scrape_dogv() == []

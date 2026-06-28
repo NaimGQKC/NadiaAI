@@ -69,7 +69,7 @@ _QUERIES = (
 # stays case-sensitive — a global (?i) would let the uppercase anchor grab the
 # lowercase "abintestato" itself.
 _CAUSANTE_RE = re.compile(
-    r"(?i:herencia\s+yacente|declaraci[oó]n\s+de\s+herederos|abintestato)\s+"
+    r"(?i:herencia\s+(?:yacente|intestada)|declaraci[oó]n\s+de\s+herederos|abintestato)\s+"
     r"(?i:de\s+)?(?i:D\.?[aª]?\s+|D[ñÑ]a\.?\s+|do[nñ]a?\s+)?"
     r"([A-ZÁÉÍÓÚÑ][a-zñáéíóúA-ZÁÉÍÓÚÑ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-zñáéíóúA-ZÁÉÍÓÚÑ]+){1,4})"
 )
@@ -106,13 +106,17 @@ def _post_json(url: str, body: dict, extra_headers: dict | None = None) -> dict 
         return None
 
 
-def _find_results_list(data) -> list[dict]:
+def _find_results_list(data, prefer_key: str | None = None) -> list[dict]:
     """Locate the list-of-dicts of documents in an unknown JSON response shape."""
+    if isinstance(data, dict) and prefer_key:
+        v = data.get(prefer_key)
+        if isinstance(v, list):
+            return [r for r in v if isinstance(r, dict)]
     if isinstance(data, list):
         return [r for r in data if isinstance(r, dict)]
     if isinstance(data, dict):
-        for key in ("results", "documents", "items", "data", "llistat", "registres",
-                    "list", "rows", "content", "resultats"):
+        for key in ("resultSearch", "content", "results", "resultados", "documents",
+                    "items", "data", "llistat", "registres", "list", "rows", "resultats"):
             v = data.get(key)
             if isinstance(v, list) and v and isinstance(v[0], dict):
                 return v
@@ -127,8 +131,17 @@ def _find_results_list(data) -> list[dict]:
     return []
 
 
-def _doc_url_from(result: dict, cfg: dict) -> str | None:
-    """Build the document URL from an id field (doc_url template), or any URL value."""
+def _doc_url_from(result: dict, cfg: dict, base: str) -> str | None:
+    """Build the document URL. Priority: a configured `url_field` (joined to
+    `url_base` if relative, e.g. DOGV's urlPdf, or used directly if absolute like
+    DOGC's linkDownloadPDF) → an id field through `doc_url` → any http value."""
+    uf = cfg.get("url_field")
+    if uf and result.get(uf):
+        val = str(result[uf])
+        if val.startswith("http"):
+            return val
+        ub = cfg.get("url_base", base)
+        return ub.rstrip("/") + "/" + val.lstrip("/")
     for k in ("documentId", "idDocument", "id", "docId", "document", "numId",
               "codi", "identificador", "numControl"):
         if result.get(k):
@@ -154,6 +167,9 @@ def _scrape_json_api(cfg: dict, seen: set[str]) -> list[EdictRecord]:
     records: list[EdictRecord] = []
     source = cfg["source"]
     qfield = cfg.get("query_field", "value")
+    # Warm up a session cookie if the API needs one (e.g. DOGV/Liferay JSESSIONID).
+    if cfg.get("warmup_url"):
+        _get(cfg["warmup_url"])
     logged_keys = False
     for kw in cfg.get("queries", _QUERIES):
         body = dict(cfg["body"])
@@ -161,13 +177,13 @@ def _scrape_json_api(cfg: dict, seen: set[str]) -> list[EdictRecord]:
         data = _post_json(cfg["api_url"], body, cfg.get("api_headers"))
         if not data:
             continue
-        results = _find_results_list(data)
+        results = _find_results_list(data, cfg.get("results_key"))
         if results and not logged_keys:
             logger.info("%s API sample result keys: %s", source, list(results[0].keys()))
             logged_keys = True
         logger.info("%s '%s': %d results", source, kw, len(results))
         for r in results:
-            url = _doc_url_from(r, cfg)
+            url = _doc_url_from(r, cfg, cfg["base"])
             if not url:
                 continue
             rec = _record(source, url, _title_from(r), seen)
@@ -324,6 +340,10 @@ DOGC_CONFIG = {
     "queries": ("herència jacent", "declaració d'hereus", "abintestat", "marmessor"),
     "body": _DOGC_BODY,
     "api_headers": {"Origin": "https://dogc.gencat.cat", "Referer": "https://dogc.gencat.cat/"},
+    # Confirmed from the live response: results in resultSearch[], the PDF is a direct
+    # absolute link → use it (the extraction step PDF-parses it).
+    "results_key": "resultSearch",
+    "url_field": "linkDownloadPDF",
     "doc_url": "https://dogc.gencat.cat/ca/document-del-dogc/?documentId={id}",
 }
 
@@ -340,10 +360,37 @@ BOJA_CONFIG = {
     "max_boletines": 8,
 }
 
+# DOGV also exposes a REST/JSON search API (captured live). Returns content[] with
+# the PDF at a relative urlPdf (joined to /datos). The intestate-succession
+# resolutions it surfaces ("declaración de herencia intestada de <NAME>") are exactly
+# the leads we want. May need a warm-up GET for the Liferay session cookie.
+_DOGV_BODY = {
+    "texto": "", "soloVigentes": False, "soloTitulo": False, "soloDerogadas": False,
+    "soloConsolidadas": False, "tiposDocumentosId": None, "seccionId": None,
+    "isSeccion": False, "organismosEmisoresId": None, "organismosPublicadoresId": None,
+    "fechaInicioPublicacion": None, "fechaFinPublicacion": None, "legislaturas": None,
+    "numeroDiarioOficial": None, "numeroDocumento": None, "fechaInicioDocumento": None,
+    "fechaFinDocumento": None, "descriptoresOrganismosId": None,
+    "descriptoresGeograficosId": None, "descriptoresTematicosId": None,
+    "isPortalLegislativo": False, "enVigor": False,
+}
 DOGV_CONFIG = {
     "source": "dogv",  # Diari Oficial de la Generalitat Valenciana
     "base": "https://dogv.gva.es",
-    "search_url": "https://dogv.gva.es/es/resultats-dogv?text={q}",
+    "mode": "json_api",
+    "api_url": "https://dogv.gva.es/dogv-portal/dogv/search?lang=es_es&page=0&size=30&sort=fechaDogvDesc",
+    "query_field": "texto",
+    "queries": ("herencia yacente", "herencia intestada", "declaración de herederos", "abintestato"),
+    "body": _DOGV_BODY,
+    "api_headers": {
+        "Origin": "https://dogv.gva.es",
+        "Referer": "https://dogv.gva.es/dogv-portal-frontend/es/resultats-dogv",
+        "Content-Type": "application/json; charset=UTF-8",
+    },
+    "warmup_url": "https://dogv.gva.es/",
+    "results_key": "content",
+    "url_field": "urlPdf",
+    "url_base": "https://dogv.gva.es/datos",
 }
 
 
