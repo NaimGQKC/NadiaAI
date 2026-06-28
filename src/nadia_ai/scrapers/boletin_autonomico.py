@@ -93,6 +93,89 @@ def _get(url: str) -> str | None:
         return None
 
 
+def _post_json(url: str, body: dict, extra_headers: dict | None = None) -> dict | list | None:
+    headers = {"Accept": "application/json, text/javascript, */*; q=0.01"}
+    if extra_headers:
+        headers.update(extra_headers)
+    try:
+        resp = SESSION.post(url, json=body, timeout=TIMEOUT, headers=headers)
+        resp.raise_for_status()
+        return resp.json()
+    except (requests.RequestException, ValueError) as e:
+        logger.info("Boletín API POST failed %s: %s", url[:80], e)
+        return None
+
+
+def _find_results_list(data) -> list[dict]:
+    """Locate the list-of-dicts of documents in an unknown JSON response shape."""
+    if isinstance(data, list):
+        return [r for r in data if isinstance(r, dict)]
+    if isinstance(data, dict):
+        for key in ("results", "documents", "items", "data", "llistat", "registres",
+                    "list", "rows", "content", "resultats"):
+            v = data.get(key)
+            if isinstance(v, list) and v and isinstance(v[0], dict):
+                return v
+        # Fallback: the first list-of-dicts value anywhere in the top level.
+        for v in data.values():
+            if isinstance(v, list) and v and isinstance(v[0], dict):
+                return v
+            if isinstance(v, dict):  # one level deeper (e.g. {"response": {...}})
+                inner = _find_results_list(v)
+                if inner:
+                    return inner
+    return []
+
+
+def _doc_url_from(result: dict, cfg: dict) -> str | None:
+    """Build the document URL from an id field (doc_url template), or any URL value."""
+    for k in ("documentId", "idDocument", "id", "docId", "document", "numId",
+              "codi", "identificador", "numControl"):
+        if result.get(k):
+            return cfg["doc_url"].format(id=result[k])
+    for v in result.values():
+        if isinstance(v, str) and v.startswith("http"):
+            return v
+    return None
+
+
+def _title_from(result: dict) -> str:
+    for k in ("title", "titol", "titulo", "name", "descripcio", "description",
+              "titolDocument", "tituloDocumento"):
+        if result.get(k):
+            return str(result[k])
+    return ""
+
+
+def _scrape_json_api(cfg: dict, seen: set[str]) -> list[EdictRecord]:
+    """JSON-API mode (DOGC EADOP): POST the search, parse the JSON results. Self-
+    documenting — logs the first result's keys so the field mapping (doc_url id /
+    title) can be confirmed against the live response on the runner."""
+    records: list[EdictRecord] = []
+    source = cfg["source"]
+    qfield = cfg.get("query_field", "value")
+    logged_keys = False
+    for kw in cfg.get("queries", _QUERIES):
+        body = dict(cfg["body"])
+        body[qfield] = kw
+        data = _post_json(cfg["api_url"], body, cfg.get("api_headers"))
+        if not data:
+            continue
+        results = _find_results_list(data)
+        if results and not logged_keys:
+            logger.info("%s API sample result keys: %s", source, list(results[0].keys()))
+            logged_keys = True
+        logger.info("%s '%s': %d results", source, kw, len(results))
+        for r in results:
+            url = _doc_url_from(r, cfg)
+            if not url:
+                continue
+            rec = _record(source, url, _title_from(r), seen)
+            if rec:
+                records.append(rec)
+    return records
+
+
 def _extract_edict_links(html: str, base_url: str) -> list[tuple[str, str]]:
     """Find (url, anchor-text) pairs whose text looks like an inheritance edict.
 
@@ -190,8 +273,11 @@ def scrape_boletin(cfg: dict, since: datetime | None = None) -> list[EdictRecord
     seen: set[str] = set()
     source = cfg["source"]
     try:
-        if cfg.get("mode") == "index_crawl":
+        mode = cfg.get("mode")
+        if mode == "index_crawl":
             records = _scrape_index_crawl(cfg, seen)
+        elif mode == "json_api":
+            records = _scrape_json_api(cfg, seen)
         else:
             records = _scrape_search(cfg, seen)
     except Exception as e:  # defensive: a bulletin must never break the run
@@ -216,16 +302,29 @@ BOCM_CONFIG = {
     "search_url": "https://www.bocm.es/buscador-boletin?palabra={q}",
 }
 
-# DOGC DOES carry the data: its sections explicitly include "Administració de
-# Justícia … edictes, notificacions, anuncis". Documents are addressable at
-# /ca/document-del-dogc/?document={id} (HTML is official since 2013) and there's a
-# Dades-obertes service. The exact buscador GET param isn't confirmable from the
-# cloud (gencat blocks the proxy) → validate on PEDRO (open the cercador, search
-# "herència jacent", copy the results URL into search_url).
+# DOGC exposes a real REST/JSON search API (EADOP) — captured from the live site:
+# POST eadop-rest/api/dogc/searchDOGC with a JSON body, returns the matching docs.
+# `value` is the free-text query (title:true scopes it to titles). The doc_url id
+# field and result keys are confirmed on the runner via the self-documenting log.
+_DOGC_BODY = {
+    "typeSearch": "1", "value": "", "title": True, "current": True, "range": [None],
+    "issuingAuthority": [None], "publicationDateInitial": "", "publicationDateFinal": "",
+    "dispositionDateInitial": "", "dispositionDateFinal": "", "sectionDOGC": [None],
+    "thematicDescriptor": [None], "organizationDescriptor": [None],
+    "geographicDescriptor": [None], "aranese": "", "expandSearchFullText": "",
+    "noCurrent": "", "orderBy": "6", "page": 1, "numResultsByPage": 30,
+    "advanced": False, "language": "ca",
+}
 DOGC_CONFIG = {
     "source": "dogc",  # Diari Oficial de la Generalitat de Catalunya
     "base": "https://dogc.gencat.cat",
-    "search_url": "https://dogc.gencat.cat/ca/cercador-dogc/?accio=cerca&text={q}",
+    "mode": "json_api",
+    "api_url": "https://portaldogc.gencat.cat/eadop-rest/api/dogc/searchDOGC",
+    "query_field": "value",
+    "queries": ("herència jacent", "declaració d'hereus", "abintestat", "marmessor"),
+    "body": _DOGC_BODY,
+    "api_headers": {"Origin": "https://dogc.gencat.cat", "Referer": "https://dogc.gencat.cat/"},
+    "doc_url": "https://dogc.gencat.cat/ca/document-del-dogc/?documentId={id}",
 }
 
 # BOJA uses its CONFIRMED, stable structure (research, not a guessed search param):

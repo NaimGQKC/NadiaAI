@@ -44,10 +44,10 @@ def test_scrape_boletin_builds_records_and_is_safe():
 def test_scrape_boletin_dedupes_across_queries():
     html = '<a href="/e/1">Declaración de herederos abintestato de Don Luis Marín</a>'
     with mock.patch.object(ba, "_get", return_value=html):
-        recs = ba.scrape_boletin(ba.DOGC_CONFIG)
+        recs = ba.scrape_boletin(ba.DOGV_CONFIG)  # search mode
     # Same link returned for every keyword query → deduped to one record.
     assert len(recs) == 1
-    assert recs[0].source == "dogc"
+    assert recs[0].source == "dogv"
 
 
 def test_scrape_boletin_never_raises_on_network_error():
@@ -97,3 +97,34 @@ def test_new_configs_registered():
     # scrape_dogv uses search mode and is fail-safe.
     with mock.patch.object(ba, "_get", return_value=None):
         assert ba.scrape_dogv() == []
+
+
+def test_find_results_list_unknown_shape():
+    assert ba._find_results_list({"results": [{"id": 1}]}) == [{"id": 1}]
+    # nested + alternative key
+    assert ba._find_results_list({"response": {"rows": [{"x": 2}]}}) == [{"x": 2}]
+    # first list-of-dicts fallback
+    assert ba._find_results_list({"foo": [{"a": 1}]}) == [{"a": 1}]
+    assert ba._find_results_list({"n": 0, "items": []}) == []
+
+
+def test_doc_url_from_id_and_url():
+    cfg = {"doc_url": "https://x.es/doc/?documentId={id}"}
+    assert ba._doc_url_from({"documentId": "987"}, cfg) == "https://x.es/doc/?documentId=987"
+    assert ba._doc_url_from({"link": "https://x.es/a"}, cfg) == "https://x.es/a"
+    assert ba._doc_url_from({"nope": 1}, cfg) is None
+
+
+def test_dogc_json_api_builds_records(monkeypatch):
+    fake = {"numResults": 1, "results": [
+        {"documentId": "987654", "titol": "EDICTE sobre l'herència jacent de Pere Soler"}
+    ]}
+    monkeypatch.setattr(ba, "_post_json", lambda url, body: fake)
+    recs = ba.scrape_dogc()
+    assert recs and recs[0].source == "dogc"
+    assert recs[0].source_url == "https://dogc.gencat.cat/ca/document-del-dogc/?documentId=987654"
+
+
+def test_dogc_json_api_fail_safe(monkeypatch):
+    monkeypatch.setattr(ba, "_post_json", lambda url, body: None)
+    assert ba.scrape_dogc() == []
