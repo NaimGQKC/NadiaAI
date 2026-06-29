@@ -48,9 +48,11 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           MAMA_EMAIL: ${{ secrets.MAMA_EMAIL }}
-          # Heir-phone via RocketReach. Add the ROCKETREACH_API_KEY secret to enable;
-          # the module no-ops if the key is absent, so this is safe to leave wired.
-          ROCKETREACH_API_KEY: ${{ secrets.ROCKETREACH_API_KEY }}
+          # Heir-phone via Searchbug (pay-as-you-go). Add the SEARCHBUG_API_KEY (and
+          # SEARCHBUG_CO_CODE) secrets to enable; the module no-ops if the key is
+          # absent, so this is safe to leave wired.
+          SEARCHBUG_API_KEY: ${{ secrets.SEARCHBUG_API_KEY }}
+          SEARCHBUG_CO_CODE: ${{ secrets.SEARCHBUG_CO_CODE }}
           RESOLVE_HEIR_PHONE: "1"
           # On a non-blocked Spanish IP you do NOT need a proxy. Left wired in case
           # you ever run the self-hosted box behind one.

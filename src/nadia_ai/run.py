@@ -272,15 +272,15 @@ def run_pipeline(days: int = 90) -> dict:
         logger.error("Office-phone resolution failed (non-critical): %s", e)
         summary["errors"].append(f"office_phones: {e}")
 
-    # Step 7b2d: Heir phone via RocketReach (opt-in: RESOLVE_HEIR_PHONE=1 +
-    # ROCKETREACH_API_KEY). Tries to find a named heir's phone. Low yield for private
+    # Step 7b2d: Heir phone via Searchbug (opt-in: RESOLVE_HEIR_PHONE=1 +
+    # SEARCHBUG_API_KEY). Tries to find a named heir's phone. Low yield for private
     # heirs + wrong-person risk → stored as low confidence. No-op when disabled.
     try:
-        from nadia_ai.enrich_rocketreach import resolve_heir_phones
+        from nadia_ai.enrich_searchbug import resolve_heir_phones
 
-        heir_phones = resolve_heir_phones(conn) if _budget_ok("heir phone (RocketReach)") else 0
+        heir_phones = resolve_heir_phones(conn) if _budget_ok("heir phone (Searchbug)") else 0
         summary["heir_phones"] = heir_phones
-        logger.info("RocketReach heir-phone: %d leads got a phone", heir_phones)
+        logger.info("Searchbug heir-phone: %d leads got a phone", heir_phones)
     except Exception as e:
         logger.error("Heir-phone resolution failed (non-critical): %s", e)
         summary["errors"].append(f"heir_phones: {e}")
