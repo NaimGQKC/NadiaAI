@@ -319,7 +319,26 @@ def extract_inheritance_data(text: str, causante_hint: str = None) -> dict:
         if _dead:
             heirs = [h for h in heirs if _norm_name(h) not in _dead]
 
-        # If LLM didn't find heirs but regex does, merge them
+        # Grounding guard (anti-hallucination) — the main lever for "the RIGHT heirs".
+        # An inheritance edict always names its real heirs verbatim, so keep only
+        # heirs whose name is actually present in the source document: require ≥2
+        # name tokens (or the whole name if it has 1–2 tokens) to appear in the
+        # accent-folded source. Drops plausible-but-invented names the LLM emits.
+        _src = _norm_name(text)
+        _stop = {"de", "del", "la", "las", "los", "y", "e", "da", "do", "san"}
+
+        def _grounded(name):
+            toks = [t for t in _norm_name(name).split() if len(t) >= 3 and t not in _stop]
+            if not toks:
+                return False
+            hits = sum(1 for t in toks if t in _src)
+            return hits >= (len(toks) if len(toks) <= 2 else 2)
+
+        if _src:
+            heirs = [h for h in heirs if _grounded(h)]
+
+        # If LLM didn't find heirs but regex does, merge them (regex pulls names
+        # straight from the text, so they're grounded by construction).
         if not heirs:
             heirs = extract_heirs_regex(text)
 
