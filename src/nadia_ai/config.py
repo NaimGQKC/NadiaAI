@@ -113,6 +113,17 @@ CONTACT_ENRICH_MAX_PER_RUN = int(os.getenv("CONTACT_ENRICH_MAX_PER_RUN", "0"))
 # to re-enable (it is still the only legal warm channel for the notarial cohort).
 RESOLVE_NOTARY_PHONE = os.getenv("RESOLVE_NOTARY_PHONE", "0") == "1"
 
+# Resolve the HEIR's phone via RocketReach (commercial B2B contact-data API). OFF
+# by default; needs ROCKETREACH_API_KEY + RESOLVE_HEIR_PHONE=1. Honest yield is low
+# for private heirs (RocketReach is professional/LinkedIn-oriented) and name+city
+# alone risks wrong-person matches — treated as low-confidence. Storing EU personal
+# phone data requires a lawful basis under GDPR before any outreach.
+ROCKETREACH_API_KEY = os.getenv("ROCKETREACH_API_KEY", "")
+RESOLVE_HEIR_PHONE = os.getenv("RESOLVE_HEIR_PHONE", "0") == "1"
+ROCKETREACH_API_URL = os.getenv(
+    "ROCKETREACH_API_URL", "https://api.rocketreach.co/api/v2/person/lookup"
+)
+
 # ── Outreach generation (lead → ready-to-send Spanish call script / WhatsApp /
 # letter) ──────────────────────────────────────────────────────────────────────
 # Reuses the provider-neutral OpenAI-compatible endpoint by default. Override
