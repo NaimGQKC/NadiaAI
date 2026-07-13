@@ -47,26 +47,35 @@ def _split_name(full: str) -> tuple[str, str]:
     return parts[0], " ".join(parts[1:])
 
 
-def _classify_pdl(data: dict) -> tuple[str, str]:
-    """Return (result, value). result ∈ {number, flag_only, no_match}."""
+def _classify_field(data: dict, keys: tuple[str, ...], pattern: re.Pattern) -> str:
+    """Classify a contact field across candidate keys → value|flag|none.
+      value = an actual usable string is present (free-tier win!)
+      flag  = provider HAS it but masks the value to a boolean `true` (paid PII)
+      none  = provider has nothing (False / absent / 404)."""
     if not isinstance(data, dict):
-        return "no_match", ""
-    for key in ("phone_numbers", "mobile_phone"):
+        return "none"
+    saw_flag = False
+    for key in keys:
         v = data.get(key)
         if isinstance(v, list) and v:
-            real = [x for x in v if isinstance(x, str) and _PHONE_RE.search(x)]
-            if real:
-                return "number", real[0]
-            return "flag_only", "(list, no digits)"
-        if isinstance(v, str) and _PHONE_RE.search(v):
-            return "number", v
-        if v is True:
-            return "flag_only", "true (masked — paid PII required)"
-    return "no_match", ""
+            if any(isinstance(x, str) and pattern.search(x) for x in v):
+                return "value"
+            saw_flag = True
+        elif isinstance(v, str) and pattern.search(v):
+            return "value"
+        elif v is True:
+            saw_flag = True
+    return "flag" if saw_flag else "none"
+
+
+_EMAIL_RE = re.compile(r"[\w.+-]+@[\w.-]+\.\w+")
+_PHONE_KEYS = ("phone_numbers", "mobile_phone", "phone")
+_EMAIL_KEYS = ("emails", "personal_emails", "recommended_personal_email", "work_email")
 
 
 def _lookup_pdl(name: str, locality: str, region: str) -> tuple[str, str, int]:
-    """Returns (result, value, likelihood)."""
+    """Returns (phone_class, email_class, likelihood). Each class ∈ value|flag|none.
+    One enrich call yields both, so measuring email coverage costs no extra credits."""
     fname, lname = _split_name(name)
     params = {
         "first_name": fname,
@@ -86,21 +95,24 @@ def _lookup_pdl(name: str, locality: str, region: str) -> tuple[str, str, int]:
                 params=params, headers=headers, timeout=25,
             )
             if r.status_code == 200:
-                body = r.json()
-                res, val = _classify_pdl(body.get("data", {}))
-                return res, val, body.get("likelihood", 0)
+                data = r.json().get("data", {}) or {}
+                return (
+                    _classify_field(data, _PHONE_KEYS, _PHONE_RE),
+                    _classify_field(data, _EMAIL_KEYS, _EMAIL_RE),
+                    r.json().get("likelihood", 0),
+                )
             if r.status_code == 404:
-                return "no_match", "", 0  # PDL: no matching person, 0 credits
+                return "none", "none", 0  # no matching person, 0 credits
             if r.status_code == 429:
                 time.sleep(2 * (attempt + 1))
                 continue
-            return f"http_{r.status_code}", (r.text[:120]), 0
+            return f"http_{r.status_code}", "none", 0
         except (requests.RequestException, ValueError) as e:
             if attempt < 2:
                 time.sleep(1.5 * (attempt + 1))
                 continue
-            return "error", str(e)[:120], 0
-    return "no_match", "", 0
+            return "error", "none", 0
+    return "none", "none", 0
 
 
 def main() -> int:
@@ -135,28 +147,36 @@ def main() -> int:
         print("No heirs in DB to test.")
         return 0
 
-    print(f"=== Heir-phone coverage test | provider={PROVIDER} | sample={len(rows)} | country={COUNTRY} ===\n")
-    counts = {"number": 0, "flag_only": 0, "no_match": 0, "other": 0}
+    print(f"=== Heir contact coverage test | provider={PROVIDER} | sample={len(rows)} | country={COUNTRY} ===")
+    print("    (value=usable string on THIS key | flag=has it, masked behind paid PII | none=nothing)\n")
+    ph = {"value": 0, "flag": 0, "none": 0, "other": 0}
+    em = {"value": 0, "flag": 0, "none": 0, "other": 0}
+    matched = 0
     for i, row in enumerate(rows, 1):
         name = row["heir_name"]
         loc = (row["localidad"] or "").strip()
         reg = (row["region"] or "").strip()
-        res, val, lk = _lookup_pdl(name, loc, reg)
-        bucket = res if res in counts else "other"
-        counts[bucket] += 1
-        print(f"{i:>3}. {name[:34]:34} | {loc[:18]:18} | lk={lk} | {res:10} | {val[:40]}")
+        p_res, e_res, lk = _lookup_pdl(name, loc, reg)
+        ph[p_res if p_res in ph else "other"] += 1
+        em[e_res if e_res in em else "other"] += 1
+        if lk:
+            matched += 1
+        print(f"{i:>3}. {name[:32]:32} | {loc[:16]:16} | lk={lk} | phone:{p_res:6} | email:{e_res:6}")
 
     n = len(rows)
-    have = counts["number"] + counts["flag_only"]  # provider HAS a phone (ceiling)
+    ph_ceiling = ph["value"] + ph["flag"]
+    em_ceiling = em["value"] + em["flag"]
+    pct = lambda x: f"{100*x//n if n else 0}%"
     print("\n=== SUMMARY ===")
-    print(f"  provider HAS a phone (ceiling): {have}/{n}  ({100*have//n if n else 0}%)")
-    print(f"    - real number returned:       {counts['number']}/{n}")
-    print(f"    - masked flag only (paid):    {counts['flag_only']}/{n}")
-    print(f"  no match at all:                {counts['no_match']}/{n}")
-    if counts["other"]:
-        print(f"  errors/other:                   {counts['other']}/{n}")
-    print("\nInterpretation: 'ceiling' = what a PAID PII key could return. If the ceiling is")
-    print("near 0, paying is pointless for this cohort. If it's high, a paid key is worth it.")
+    print(f"  person matched at all:          {matched}/{n}  ({pct(matched)})")
+    print(f"  EMAIL ceiling (has an email):   {em_ceiling}/{n}  ({pct(em_ceiling)})")
+    print(f"    - usable on this free key:    {em['value']}/{n}")
+    print(f"    - masked, needs paid PII:     {em['flag']}/{n}")
+    print(f"  PHONE ceiling (has a phone):    {ph_ceiling}/{n}  ({pct(ph_ceiling)})")
+    print(f"    - usable on this free key:    {ph['value']}/{n}")
+    print(f"    - masked, needs paid PII:     {ph['flag']}/{n}")
+    print("\nInterpretation: 'ceiling' = what a PAID PII key could return for this cohort.")
+    print("Near 0 → paying is pointless. High → a paid key is worth it (email vs phone separately).")
     return 0
 
 
