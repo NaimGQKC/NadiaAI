@@ -104,6 +104,11 @@ def _lookup_pdl(name: str, locality: str, region: str) -> tuple[str, str, int]:
 
 
 def main() -> int:
+    # Windows consoles default to cp1252 and choke on non-ASCII names/box chars.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
     if not API_KEY:
         print("ERROR: set HEIR_TEST_KEY", file=sys.stderr)
         return 2
@@ -145,8 +150,8 @@ def main() -> int:
     have = counts["number"] + counts["flag_only"]  # provider HAS a phone (ceiling)
     print("\n=== SUMMARY ===")
     print(f"  provider HAS a phone (ceiling): {have}/{n}  ({100*have//n if n else 0}%)")
-    print(f"    ├─ real number returned:      {counts['number']}/{n}")
-    print(f"    └─ masked flag only (paid):   {counts['flag_only']}/{n}")
+    print(f"    - real number returned:       {counts['number']}/{n}")
+    print(f"    - masked flag only (paid):    {counts['flag_only']}/{n}")
     print(f"  no match at all:                {counts['no_match']}/{n}")
     if counts["other"]:
         print(f"  errors/other:                   {counts['other']}/{n}")
