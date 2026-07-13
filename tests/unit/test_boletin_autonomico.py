@@ -44,10 +44,10 @@ def test_scrape_boletin_builds_records_and_is_safe():
 def test_scrape_boletin_dedupes_across_queries():
     html = '<a href="/e/1">Declaración de herederos abintestato de Don Luis Marín</a>'
     with mock.patch.object(ba, "_get", return_value=html):
-        recs = ba.scrape_boletin(ba.DOGC_CONFIG)
-    # Same link returned for every keyword query → deduped to one record.
+        recs = ba.scrape_boletin(ba.BOCM_CONFIG)  # search mode (seed + queries)
+    # Same link returned for every seed/query fetch → deduped to one record.
     assert len(recs) == 1
-    assert recs[0].source == "dogc"
+    assert recs[0].source == "bocm"
 
 
 def test_scrape_boletin_never_raises_on_network_error():
@@ -67,26 +67,27 @@ def test_extract_numbers_most_recent_first():
     assert nums == [120, 12]  # unique, descending
 
 
-def test_boja_index_crawl_hits_section4(monkeypatch):
-    # Year index lists boletín numbers; each boletín's /s4 section has an edict.
+def test_boja_index_crawl_hits_sumario(monkeypatch):
+    # Year index lists boletín numbers; each boletín's sumario (index.html) has the
+    # edict (the /boja/.../s4 histórico HTML only exists up to 2012 → 404 now).
     index_html = (
         '<a href="/eboja/2026/120/index.html">BOJA 120</a>'
         '<a href="/eboja/2026/119/index.html">BOJA 119</a>'
     )
-    s4_html = (
-        '<a href="/boja/2026/120/54.html">Edicto. Declaración de herederos '
+    sumario_html = (
+        '<a href="/eboja/2026/120/54.pdf">Edicto. Declaración de herederos '
         'abintestato de Don Pedro Ruiz Mora</a>'
     )
     seen_urls = []
 
     def fake_get(url):
         seen_urls.append(url)
-        return index_html if "/eboja/2026.html" in url else s4_html
+        return index_html if "/eboja/2026.html" in url else sumario_html
 
     monkeypatch.setattr(ba, "_get", fake_get)
     recs = ba.scrape_boja()
-    # It must request the section-4 URL, not the raw sumario index.
-    assert any("/boja/2026/120/s4" in u for u in seen_urls)
+    # It must request the boletín sumario, not the (now-404) /s4 histórico.
+    assert any("/eboja/2026/120/index.html" in u for u in seen_urls)
     assert recs and all(r.source == "boja" for r in recs)
     assert any(r.causante == "Pedro Ruiz Mora" for r in recs)
 
@@ -97,3 +98,60 @@ def test_new_configs_registered():
     # scrape_dogv uses search mode and is fail-safe.
     with mock.patch.object(ba, "_get", return_value=None):
         assert ba.scrape_dogv() == []
+
+
+def test_find_results_list_unknown_shape():
+    assert ba._find_results_list({"results": [{"id": 1}]}) == [{"id": 1}]
+    # nested + alternative key
+    assert ba._find_results_list({"response": {"rows": [{"x": 2}]}}) == [{"x": 2}]
+    # first list-of-dicts fallback
+    assert ba._find_results_list({"foo": [{"a": 1}]}) == [{"a": 1}]
+    assert ba._find_results_list({"n": 0, "items": []}) == []
+
+
+def test_doc_url_from_id_url_and_field():
+    cfg = {"doc_url": "https://x.es/doc/?documentId={id}"}
+    base = "https://x.es"
+    assert ba._doc_url_from({"documentId": "987"}, cfg, base) == "https://x.es/doc/?documentId=987"
+    assert ba._doc_url_from({"link": "https://x.es/a"}, cfg, base) == "https://x.es/a"
+    assert ba._doc_url_from({"nope": 1}, cfg, base) is None
+    # url_field absolute → used directly
+    cfg2 = {"url_field": "linkDownloadPDF"}
+    assert ba._doc_url_from({"linkDownloadPDF": "https://p.es/x.pdf"}, cfg2, base) == "https://p.es/x.pdf"
+    # url_field relative → joined to url_base
+    cfg3 = {"url_field": "urlPdf", "url_base": "https://dogv.gva.es/datos"}
+    assert ba._doc_url_from({"urlPdf": "/2026/06/18/pdf/2026_20653_es.pdf"}, cfg3, base) == \
+        "https://dogv.gva.es/datos/2026/06/18/pdf/2026_20653_es.pdf"
+
+
+def test_dogc_json_api_uses_pdf_link(monkeypatch):
+    # Real DOGC shape: resultSearch[], idDocument, direct PDF link.
+    fake = {"numResultSearch": 1, "resultSearch": [
+        {"idDocument": "697086", "title": "EDICTE sobre herència jacent (exp. 245/2014).",
+         "linkDownloadPDF": "https://portaldogc.gencat.cat/utilsEADOP/AppJava/PdfProviderServlet?versionId=1432198&type=01"}
+    ]}
+    monkeypatch.setattr(ba, "_post_json", lambda url, body, headers=None: fake)
+    recs = ba.scrape_dogc()
+    assert recs and recs[0].source == "dogc"
+    assert "PdfProviderServlet?versionId=1432198" in recs[0].source_url
+
+
+def test_dogv_json_api_builds_pdf_url(monkeypatch):
+    # Real DOGV shape: content[], id, relative urlPdf; warm-up GET must not break it.
+    fake = {"totalElements": 1, "content": [
+        {"id": 481940, "urlPdf": "/2026/06/18/pdf/2026_20653_es.pdf",
+         "titulo": "RESOLUCIÓN ... declaración de herencia intestada de Daniel Penella Bailach. ABI 135/2023."}
+    ]}
+    monkeypatch.setattr(ba, "_get", lambda url: "")  # warmup
+    monkeypatch.setattr(ba, "_post_json", lambda url, body, headers=None: fake)
+    recs = ba.scrape_dogv()
+    assert recs and recs[0].source == "dogv"
+    assert recs[0].source_url == "https://dogv.gva.es/datos/2026/06/18/pdf/2026_20653_es.pdf"
+    assert recs[0].causante == "Daniel Penella Bailach"  # extracted from "intestada de NAME"
+
+
+def test_json_api_fail_safe(monkeypatch):
+    monkeypatch.setattr(ba, "_post_json", lambda url, body, headers=None: None)
+    monkeypatch.setattr(ba, "_get", lambda url: None)
+    assert ba.scrape_dogc() == []
+    assert ba.scrape_dogv() == []

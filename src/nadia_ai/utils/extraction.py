@@ -319,7 +319,26 @@ def extract_inheritance_data(text: str, causante_hint: str = None) -> dict:
         if _dead:
             heirs = [h for h in heirs if _norm_name(h) not in _dead]
 
-        # If LLM didn't find heirs but regex does, merge them
+        # Grounding guard (anti-hallucination) — the main lever for "the RIGHT heirs".
+        # An inheritance edict always names its real heirs verbatim, so keep only
+        # heirs whose name is actually present in the source document: require ≥2
+        # name tokens (or the whole name if it has 1–2 tokens) to appear in the
+        # accent-folded source. Drops plausible-but-invented names the LLM emits.
+        _src = _norm_name(text)
+        _stop = {"de", "del", "la", "las", "los", "y", "e", "da", "do", "san"}
+
+        def _grounded(name):
+            toks = [t for t in _norm_name(name).split() if len(t) >= 3 and t not in _stop]
+            if not toks:
+                return False
+            hits = sum(1 for t in toks if t in _src)
+            return hits >= (len(toks) if len(toks) <= 2 else 2)
+
+        if _src:
+            heirs = [h for h in heirs if _grounded(h)]
+
+        # If LLM didn't find heirs but regex does, merge them (regex pulls names
+        # straight from the text, so they're grounded by construction).
         if not heirs:
             heirs = extract_heirs_regex(text)
 
@@ -341,6 +360,20 @@ def extract_inheritance_data(text: str, causante_hint: str = None) -> dict:
     except Exception as e:
         logger.warning("Extraction failed entirely: %s", e)
         return {}
+
+def _is_pdf_url(url: str) -> bool:
+    """Whether a source URL should be parsed as a PDF rather than scraped as HTML.
+
+    Covers BOE plus the autonomous bulletins' PDF endpoints (DOGC's EADOP
+    PdfProviderServlet, DOGV's /pdf/…es.pdf, BOCM's …BOCM-*.PDF)."""
+    u = (url or "").lower()
+    return (
+        "boe.es" in u
+        or u.endswith(".pdf")
+        or "pdfproviderservlet" in u
+        or "/pdf/" in u
+    )
+
 
 def _extract_lead_payload(lead: dict) -> tuple:
     """Network-only worker for one lead — NO database access, so it is safe to run
@@ -370,7 +403,7 @@ def _extract_lead_payload(lead: dict) -> tuple:
         fetch_url = url
         if "zaragoza.es/sede/servicio/tablon-edicto/" in url and not url.endswith("/document"):
             fetch_url = url + "/document"
-        if "boe.es" in fetch_url:
+        if _is_pdf_url(fetch_url):
             full_text = extract_pdf_text(fetch_url)
         else:
             try:

@@ -113,6 +113,18 @@ CONTACT_ENRICH_MAX_PER_RUN = int(os.getenv("CONTACT_ENRICH_MAX_PER_RUN", "0"))
 # to re-enable (it is still the only legal warm channel for the notarial cohort).
 RESOLVE_NOTARY_PHONE = os.getenv("RESOLVE_NOTARY_PHONE", "0") == "1"
 
+# Resolve the HEIR's phone via Searchbug (pay-as-you-go people-search / phone-append).
+# OFF by default; needs SEARCHBUG_API_KEY (+ SEARCHBUG_CO_CODE) + RESOLVE_HEIR_PHONE=1.
+# Pay-per-lookup, so cheaper than a subscription — but Searchbug's data is US-centric,
+# so yield for a Spanish heir (name + city) is very low; results are low-confidence and
+# name+city alone risks wrong-person matches. Storing EU personal phone data requires a
+# lawful basis under GDPR before any outreach.
+SEARCHBUG_API_KEY = os.getenv("SEARCHBUG_API_KEY", "")
+SEARCHBUG_CO_CODE = os.getenv("SEARCHBUG_CO_CODE", "")
+RESOLVE_HEIR_PHONE = os.getenv("RESOLVE_HEIR_PHONE", "0") == "1"
+SEARCHBUG_API_URL = os.getenv("SEARCHBUG_API_URL", "https://www.searchbug.com/api/search.aspx")
+SEARCHBUG_TYPE = os.getenv("SEARCHBUG_TYPE", "ppl")  # people search; confirm per your plan
+
 # ── Outreach generation (lead → ready-to-send Spanish call script / WhatsApp /
 # letter) ──────────────────────────────────────────────────────────────────────
 # Reuses the provider-neutral OpenAI-compatible endpoint by default. Override

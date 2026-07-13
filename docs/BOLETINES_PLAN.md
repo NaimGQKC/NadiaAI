@@ -61,14 +61,19 @@ entorno cloud porque su IP está bloqueada igual que la del pipeline):
   documentos en HTML. Por eso BOJA usa el modo `index_crawl` (no depende de adivinar
   parámetros de buscador → más fiable). También existe un portal CKAN
   (`juntadeandalucia.es/datosabiertos`) con datasets anuales de disposiciones.
-- **DOGC** — **SÍ tiene los datos** (sus secciones incluyen explícitamente
-  "Administració de Justícia … edictes, notificacions, anuncis"). Documentos en
-  `/ca/document-del-dogc/?document={id}` (HTML oficial desde 2013) + servicio de
-  Dades obertes. No pude confirmar el parámetro exacto del buscador desde el cloud
-  (gencat bloquea el proxy con 403) → **validar en PEDRO** (abrir el cercador, buscar
-  "herència jacent", copiar la URL de resultados a `search_url`). Modo buscador.
-- **DOGV** — buscador (`dogv.gva.es/es/resultats-dogv`) + alertas por email; sin API
-  de documento documentada → modo buscador.
+- **DOGC** — ✅ **API REST/JSON confirmada** (EADOP, capturada en vivo):
+  `POST portaldogc.gencat.cat/eadop-rest/api/dogc/searchDOGC` con cuerpo
+  `{"value": <query>, "title": true, …}` → `resultSearch[]` con `idDocument` y el PDF
+  directo en `linkDownloadPDF`. Integrado en modo `json_api`.
+- **BOJA** — ⚠️ el buscador (`/boja/buscador/search.do?q=…`) está tras un **WAF
+  anti-bot** (devuelve CSS ofuscado a clientes no-navegador). Por eso NO se usa el
+  buscador: se mantiene el crawl de la estructura de sumario `/eboja` → `/s4`, que no
+  está protegida. Verificar en PEDRO que esas URLs cargan.
+- **DOGV** — ✅ **API REST/JSON confirmada** (capturada en vivo):
+  `POST dogv.gva.es/dogv-portal/dogv/search` con cuerpo `{"texto": <query>, …}` →
+  `content[]` con `urlPdf` (relativo a `/datos`). Surfacea las resoluciones de
+  *herencia intestada a favor de la Generalitat* (con nombre del causante). Integrado
+  en modo `json_api` (con warm-up de cookie Liferay).
 - **BOCM** — **confirmado que SÍ tiene los datos**: Sección IV "Administración de
   Justicia" publica edictos de *herencia yacente* y *declaración de herederos*
   (https://www.bocm.es/seccion-iv-administracion-de-justicia). Documentos en PDF con

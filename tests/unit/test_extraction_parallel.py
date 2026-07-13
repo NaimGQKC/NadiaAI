@@ -33,7 +33,8 @@ def test_parallel_extraction_enriches_leads(db_conn, monkeypatch):
     }
     with mock.patch.object(ex, "extract_pdf_text", return_value=(
         "Declaración de herederos abintestato del causante Juan Pérez García, "
-        "fallecido, con último domicilio en Calle Mayor 5, Madrid.")), \
+        "fallecido, con último domicilio en Calle Mayor 5, Madrid. Comparece su hija "
+        "y heredera María Pérez López.")), \
          mock.patch.object(ex, "_extract_via_llm", return_value=fake_llm):
         enriched = ex.run_heir_extraction(db_conn, limit=10)
 

@@ -272,6 +272,19 @@ def run_pipeline(days: int = 90) -> dict:
         logger.error("Office-phone resolution failed (non-critical): %s", e)
         summary["errors"].append(f"office_phones: {e}")
 
+    # Step 7b2d: Heir phone via Searchbug (opt-in: RESOLVE_HEIR_PHONE=1 +
+    # SEARCHBUG_API_KEY). Tries to find a named heir's phone. Low yield for private
+    # heirs + wrong-person risk → stored as low confidence. No-op when disabled.
+    try:
+        from nadia_ai.enrich_searchbug import resolve_heir_phones
+
+        heir_phones = resolve_heir_phones(conn) if _budget_ok("heir phone (Searchbug)") else 0
+        summary["heir_phones"] = heir_phones
+        logger.info("Searchbug heir-phone: %d leads got a phone", heir_phones)
+    except Exception as e:
+        logger.error("Heir-phone resolution failed (non-critical): %s", e)
+        summary["errors"].append(f"heir_phones: {e}")
+
     # Step 7b3: Contact discovery — search-native LLM (Perplexity Sonar) turns an
     # heir/causante name + city into a personal contact path. OFF by default
     # (CONTACT_ENRICH_MAX_PER_RUN=0): measured ~0% for citizen heirs in Spain, so it
