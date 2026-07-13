@@ -73,9 +73,10 @@ _PHONE_KEYS = ("phone_numbers", "mobile_phone", "phone")
 _EMAIL_KEYS = ("emails", "personal_emails", "recommended_personal_email", "work_email")
 
 
-def _lookup_pdl(name: str, locality: str, region: str) -> tuple[str, str, int]:
-    """Returns (phone_class, email_class, likelihood). Each class ∈ value|flag|none.
-    One enrich call yields both, so measuring email coverage costs no extra credits."""
+def _lookup_pdl(name: str, locality: str, region: str, street: str = "") -> tuple[str, str, int, str]:
+    """Returns (phone_class, email_class, likelihood, matched_name). class ∈ value|flag|none.
+    One enrich call yields phone+email, so email coverage costs no extra credits. Passing
+    the street address sharpens the match and cuts homonyms (name+city alone is weak)."""
     fname, lname = _split_name(name)
     params = {
         "first_name": fname,
@@ -87,6 +88,8 @@ def _lookup_pdl(name: str, locality: str, region: str) -> tuple[str, str, int]:
         params["locality"] = locality
     if region:
         params["region"] = region
+    if street:
+        params["street_address"] = street  # disambiguates same-name people
     headers = {"X-Api-Key": API_KEY}
     for attempt in range(3):
         try:
@@ -95,24 +98,26 @@ def _lookup_pdl(name: str, locality: str, region: str) -> tuple[str, str, int]:
                 params=params, headers=headers, timeout=25,
             )
             if r.status_code == 200:
-                data = r.json().get("data", {}) or {}
+                body = r.json()
+                data = body.get("data", {}) or {}
                 return (
                     _classify_field(data, _PHONE_KEYS, _PHONE_RE),
                     _classify_field(data, _EMAIL_KEYS, _EMAIL_RE),
-                    r.json().get("likelihood", 0),
+                    body.get("likelihood", 0),
+                    (data.get("full_name") or "")[:28],
                 )
             if r.status_code == 404:
-                return "none", "none", 0  # no matching person, 0 credits
+                return "none", "none", 0, ""  # no matching person, 0 credits
             if r.status_code == 429:
                 time.sleep(2 * (attempt + 1))
                 continue
-            return f"http_{r.status_code}", "none", 0
+            return f"http_{r.status_code}", "none", 0, ""
         except (requests.RequestException, ValueError) as e:
             if attempt < 2:
                 time.sleep(1.5 * (attempt + 1))
                 continue
-            return "error", "none", 0
-    return "none", "none", 0
+            return "error", "none", 0, ""
+    return "none", "none", 0, ""
 
 
 def main() -> int:
@@ -156,12 +161,14 @@ def main() -> int:
         name = row["heir_name"]
         loc = (row["localidad"] or "").strip()
         reg = (row["region"] or "").strip()
-        p_res, e_res, lk = _lookup_pdl(name, loc, reg)
+        street = (row["direccion"] or "").strip()
+        p_res, e_res, lk, matched_name = _lookup_pdl(name, loc, reg, street)
         ph[p_res if p_res in ph else "other"] += 1
         em[e_res if e_res in em else "other"] += 1
         if lk:
             matched += 1
-        print(f"{i:>3}. {name[:32]:32} | {loc[:16]:16} | lk={lk} | phone:{p_res:6} | email:{e_res:6}")
+        # Show the MATCHED name so homonyms are visible at a glance (heir vs match).
+        print(f"{i:>3}. {name[:30]:30} | {loc[:14]:14} | lk={lk} | ph:{p_res:5} | em:{e_res:5} | -> {matched_name}")
 
     n = len(rows)
     ph_ceiling = ph["value"] + ph["flag"]
