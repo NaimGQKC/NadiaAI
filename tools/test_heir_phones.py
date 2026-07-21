@@ -73,10 +73,28 @@ _PHONE_KEYS = ("phone_numbers", "mobile_phone", "phone")
 _EMAIL_KEYS = ("emails", "personal_emails", "recommended_personal_email", "work_email")
 
 
-def _lookup_pdl(name: str, locality: str, region: str, street: str = "") -> tuple[str, str, int, str]:
-    """Returns (phone_class, email_class, likelihood, matched_name). class ∈ value|flag|none.
-    One enrich call yields phone+email, so email coverage costs no extra credits. Passing
-    the street address sharpens the match and cuts homonyms (name+city alone is weak)."""
+def _extract_value(data: dict, keys: tuple[str, ...], pattern: re.Pattern) -> str:
+    """Return the first actual usable string across candidate keys (paid key), else ''."""
+    if not isinstance(data, dict):
+        return ""
+    for key in keys:
+        v = data.get(key)
+        if isinstance(v, list):
+            for x in v:
+                if isinstance(x, str) and pattern.search(x):
+                    return x
+                if isinstance(x, dict):
+                    for kk in ("address", "email", "value", "number"):
+                        if isinstance(x.get(kk), str) and pattern.search(x[kk]):
+                            return x[kk]
+        elif isinstance(v, str) and pattern.search(v):
+            return v
+    return ""
+
+
+def _lookup_pdl(name: str, locality: str, region: str, street: str = "") -> dict:
+    """Returns a dict with phone/email class, actual email/phone VALUES (paid key),
+    linkedin, matched_name, likelihood, and whether the call was a billable match."""
     fname, lname = _split_name(name)
     params = {
         "first_name": fname,
@@ -100,24 +118,39 @@ def _lookup_pdl(name: str, locality: str, region: str, street: str = "") -> tupl
             if r.status_code == 200:
                 body = r.json()
                 data = body.get("data", {}) or {}
-                return (
-                    _classify_field(data, _PHONE_KEYS, _PHONE_RE),
-                    _classify_field(data, _EMAIL_KEYS, _EMAIL_RE),
-                    body.get("likelihood", 0),
-                    (data.get("full_name") or "")[:28],
-                )
+                return {
+                    "phone": _classify_field(data, _PHONE_KEYS, _PHONE_RE),
+                    "email": _classify_field(data, _EMAIL_KEYS, _EMAIL_RE),
+                    "email_value": _extract_value(data, _EMAIL_KEYS, _EMAIL_RE),
+                    "phone_value": _extract_value(data, _PHONE_KEYS, _PHONE_RE),
+                    "linkedin": data.get("linkedin_url") or "",
+                    "matched": (data.get("full_name") or "")[:28],
+                    "lk": body.get("likelihood", 0),
+                    "billable": True,  # a 200 match consumes 1 PDL credit
+                }
             if r.status_code == 404:
-                return "none", "none", 0, ""  # no matching person, 0 credits
+                return {"phone": "none", "email": "none", "email_value": "", "phone_value": "",
+                        "linkedin": "", "matched": "", "lk": 0, "billable": False}
             if r.status_code == 429:
                 time.sleep(2 * (attempt + 1))
                 continue
-            return f"http_{r.status_code}", "none", 0, ""
-        except (requests.RequestException, ValueError) as e:
+            return {"phone": f"http_{r.status_code}", "email": "none", "email_value": "",
+                    "phone_value": "", "linkedin": "", "matched": "", "lk": 0, "billable": False}
+        except (requests.RequestException, ValueError):
             if attempt < 2:
                 time.sleep(1.5 * (attempt + 1))
                 continue
-            return "error", "none", 0, ""
-    return "none", "none", 0, ""
+            return {"phone": "error", "email": "none", "email_value": "", "phone_value": "",
+                    "linkedin": "", "matched": "", "lk": 0, "billable": False}
+    return {"phone": "none", "email": "none", "email_value": "", "phone_value": "",
+            "linkedin": "", "matched": "", "lk": 0, "billable": False}
+
+
+def _ensure_email_column(conn: sqlite3.Connection) -> None:
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(leads)")]
+    if "contact_email" not in cols:
+        conn.execute("ALTER TABLE leads ADD COLUMN contact_email TEXT")
+        conn.commit()
 
 
 def main() -> int:
@@ -152,38 +185,60 @@ def main() -> int:
         print("No heirs in DB to test.")
         return 0
 
-    print(f"=== Heir contact coverage test | provider={PROVIDER} | sample={len(rows)} | country={COUNTRY} ===")
-    print("    (value=usable string on THIS key | flag=has it, masked behind paid PII | none=nothing)\n")
+    _ensure_email_column(conn)
+    max_matches = int(os.getenv("HEIR_MAX_MATCHES", "330"))  # credit safety cap (<350)
+
+    print(f"=== Heir contact enrichment | provider={PROVIDER} | sample={len(rows)} | country={COUNTRY} ===")
+    print(f"    credit cap: stop after {max_matches} matches | writes real emails to DB when found\n")
     ph = {"value": 0, "flag": 0, "none": 0, "other": 0}
     em = {"value": 0, "flag": 0, "none": 0, "other": 0}
     matched = 0
+    written = 0
+    found_emails: list[tuple] = []
     for i, row in enumerate(rows, 1):
+        if matched >= max_matches:
+            print(f"\n[credit cap reached: {matched} matches ~= credits — stopping]")
+            break
         name = row["heir_name"]
         loc = (row["localidad"] or "").strip()
         reg = (row["region"] or "").strip()
         street = (row["direccion"] or "").strip()
-        p_res, e_res, lk, matched_name = _lookup_pdl(name, loc, reg, street)
-        ph[p_res if p_res in ph else "other"] += 1
-        em[e_res if e_res in em else "other"] += 1
-        if lk:
+        r = _lookup_pdl(name, loc, reg, street)
+        ph[r["phone"] if r["phone"] in ph else "other"] += 1
+        em[r["email"] if r["email"] in em else "other"] += 1
+        if r["billable"]:
             matched += 1
-        # Show the MATCHED name so homonyms are visible at a glance (heir vs match).
-        print(f"{i:>3}. {name[:30]:30} | {loc[:14]:14} | lk={lk} | ph:{p_res:5} | em:{e_res:5} | -> {matched_name}")
+        # Write any REAL email value (paid key) to the DB — low confidence, keep LinkedIn for verify.
+        if r["email_value"]:
+            conn.execute(
+                """UPDATE leads SET
+                     contact_email = ?,
+                     contact_source = 'pdl',
+                     contact_confidence = 'heir-pdl (low)',
+                     contact_enriched_at = datetime('now'),
+                     last_updated_at = CURRENT_TIMESTAMP
+                   WHERE id = ?""",
+                (r["email_value"], row["id"]),
+            )
+            conn.commit()
+            written += 1
+            found_emails.append((name, r["email_value"], r["linkedin"], r["matched"]))
+        print(f"{i:>3}. {name[:28]:28} | {loc[:12]:12} | lk={r['lk']} | em:{r['email']:5} "
+              f"| {r['email_value'][:30]:30} | -> {r['matched']}")
 
-    n = len(rows)
-    ph_ceiling = ph["value"] + ph["flag"]
+    n = i
     em_ceiling = em["value"] + em["flag"]
     pct = lambda x: f"{100*x//n if n else 0}%"
     print("\n=== SUMMARY ===")
+    print(f"  heirs processed:                {n}")
+    print(f"  billable matches (credits used):{matched}")
     print(f"  person matched at all:          {matched}/{n}  ({pct(matched)})")
     print(f"  EMAIL ceiling (has an email):   {em_ceiling}/{n}  ({pct(em_ceiling)})")
-    print(f"    - usable on this free key:    {em['value']}/{n}")
-    print(f"    - masked, needs paid PII:     {em['flag']}/{n}")
-    print(f"  PHONE ceiling (has a phone):    {ph_ceiling}/{n}  ({pct(ph_ceiling)})")
-    print(f"    - usable on this free key:    {ph['value']}/{n}")
-    print(f"    - masked, needs paid PII:     {ph['flag']}/{n}")
-    print("\nInterpretation: 'ceiling' = what a PAID PII key could return for this cohort.")
-    print("Near 0 → paying is pointless. High → a paid key is worth it (email vs phone separately).")
+    print(f"  >>> REAL EMAILS WRITTEN TO DB:  {written}/{n}  ({pct(written)}) <<<")
+    if found_emails:
+        print("\n=== EMAILS FOUND (spot-check identity via matched name / LinkedIn) ===")
+        for nm, mail, li, mtc in found_emails:
+            print(f"  {nm[:34]:34} -> {mail}  | match={mtc} | {li}")
     return 0
 
 
