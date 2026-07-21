@@ -35,6 +35,7 @@ from bs4 import BeautifulSoup
 
 from nadia_ai.models import EdictRecord
 from nadia_ai.utils.names import is_valid_person_name
+from nadia_ai.utils.text import robust_text
 
 logger = logging.getLogger("nadia_ai.scrapers.boletin")
 
@@ -88,7 +89,7 @@ def _get(url: str) -> str | None:
     try:
         resp = SESSION.get(url, timeout=TIMEOUT)
         resp.raise_for_status()
-        return resp.text
+        return robust_text(resp)  # charset-detected decode (avoids accent corruption)
     except requests.RequestException as e:
         logger.info("Boletín fetch failed %s: %s", url[:80], e)
         return None

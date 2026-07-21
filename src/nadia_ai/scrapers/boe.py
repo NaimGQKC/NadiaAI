@@ -20,6 +20,7 @@ import pdfplumber
 from bs4 import BeautifulSoup
 
 from nadia_ai.models import EdictRecord
+from nadia_ai.utils.text import robust_text
 
 logger = logging.getLogger("nadia_ai.scrapers.boe")
 
@@ -249,7 +250,7 @@ def extract_pdf_text(pdf_url: str) -> str:
         # menus and blows the downstream truncation budget. Extract just the body.
         ctype = response.headers.get("Content-Type", "").lower()
         if "txt.php" in pdf_url or ("html" in ctype) or ("text" in ctype and "pdf" not in ctype):
-            soup = BeautifulSoup(response.text, "html.parser")
+            soup = BeautifulSoup(robust_text(response), "html.parser")
             body = soup.select_one("#textoxslt") or soup.select_one("div.documento")
             if body:
                 return body.get_text(" ", strip=True)
