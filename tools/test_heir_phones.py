@@ -61,6 +61,27 @@ _STOP = {"de", "del", "la", "el", "los", "las", "y", "e", "san", "santa",
 _BOILERPLATE = {"pudiendo", "acompanados", "acompanado", "herederos", "heredero",
                 "herencia", "yacente", "ignorados", "desconocidos", "causante",
                 "finca", "abintestato", "interesados", "cuantos", "demas", "otros"}
+# Institutions/entities that get named as "heir" (e.g. the State when there are no
+# relatives) — never a real person.
+_ENTITY = {"comunidad", "autonoma", "ayuntamiento", "diputacion", "generalitat",
+           "gobierno", "junta", "consejo", "ministerio", "tesoreria", "agencia",
+           "hacienda", "estado", "fundacion", "asociacion", "sociedad", "cooperativa",
+           "banco", "caja", "iglesia", "parroquia", "universidad", "instituto",
+           "colegio", "hospital", "generalidad", "consorcio", "patronato"}
+# Common Spanish given names — used to reject 2-token names that are a compound FIRST
+# name with no surname captured ("Juan José", "María Pilar").
+_GIVEN = {
+    "juan", "jose", "maria", "pilar", "carmen", "ana", "luis", "pedro", "angel",
+    "jesus", "antonio", "francisco", "manuel", "javier", "miguel", "jorge", "carlos",
+    "david", "daniel", "pablo", "sergio", "alberto", "alejandro", "fernando", "ramon",
+    "rafael", "vicente", "ignacio", "andres", "alfonso", "enrique", "emilio", "tomas",
+    "ruben", "oscar", "mario", "adrian", "marcos", "ivan", "victor", "diego", "raul",
+    "isabel", "dolores", "josefa", "teresa", "rosa", "francisca", "antonia", "cristina",
+    "laura", "marta", "elena", "sara", "paula", "lucia", "sofia", "nuria", "raquel",
+    "beatriz", "rocio", "montserrat", "silvia", "patricia", "susana", "monica",
+    "angeles", "mercedes", "concepcion", "manuela", "encarnacion", "julia", "eva",
+    "irene", "alba", "clara", "juana", "amparo", "consuelo", "gloria", "esther",
+}
 
 
 def _norm(s: str) -> str:
@@ -69,15 +90,28 @@ def _norm(s: str) -> str:
 
 
 def _good_heir_name(name: str) -> bool:
-    """True only for a plausible real full name: >=2 real name tokens, no boilerplate,
-    no digits, not just initials/titles. Keeps credits on genuine heirs."""
+    """True only for a demo-quality real full name. Rejects: digits, edict boilerplate,
+    institutions, initials/truncations, and compound-first-name-only (no surname)."""
     if not name or any(ch.isdigit() for ch in str(name)):
         return False
     toks = [t for t in re.split(r"[^a-z]+", _norm(name)) if t]
-    if any(t in _BOILERPLATE for t in toks):
+    if any(t in _BOILERPLATE or t in _ENTITY for t in toks):
         return False
     core = [t for t in toks if t not in _STOP and len(t) >= 3]
-    return len(core) >= 2  # first name + at least one surname
+    if len(core) < 2:                       # need first name + a real surname token
+        return False
+    if all(t in _GIVEN for t in core):      # e.g. "Juan José" / "María Pilar" — no surname
+        return False
+    # Accent-corruption guard: real name tokens are capitalized; a stripped accent
+    # leaves a lowercase-initial fragment ("ngel" <- "Ángel"). Reject those.
+    for tk in re.split(r"\s+", str(name).strip()):
+        low = _norm(tk)
+        if not low or low in _STOP:
+            continue
+        first_alpha = next((c for c in tk if c.isalpha()), "")
+        if first_alpha and first_alpha.islower():
+            return False
+    return True
 
 
 def _in_ccaa(region: str, localidad: str, target: str) -> bool:
