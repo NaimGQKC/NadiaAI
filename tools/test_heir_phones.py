@@ -27,15 +27,49 @@ import time
 
 import requests
 
+import unicodedata
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from nadia_ai.config import DB_PATH  # noqa: E402
 
-PROVIDER = os.getenv("HEIR_TEST_PROVIDER", "pdl").lower()
+try:
+    from nadia_ai.utils.regions import ccaa_for  # noqa: E402
+except Exception:  # pragma: no cover - fallback if module path differs
+    ccaa_for = None
+
+# HEIR_TEST_PROVIDER can carry an optional CCAA filter as "pdl:aragon" so we only
+# spend credits on one region (no workflow change needed — reuses the provider input).
+_prov_raw = os.getenv("HEIR_TEST_PROVIDER", "pdl").lower()
+PROVIDER, _, CCAA_FILTER = _prov_raw.partition(":")
 API_KEY = os.getenv("HEIR_TEST_KEY", "")
 SAMPLE = int(os.getenv("HEIR_TEST_SAMPLE", "50"))
 COUNTRY = os.getenv("HEIR_TEST_COUNTRY", "Spain")
 
 _PHONE_RE = re.compile(r"\+?\d[\d\s().-]{6,}\d")
+# Aragón provinces — used to filter/detect region without relying only on ccaa_for.
+_ARAGON = {"zaragoza", "huesca", "teruel", "aragon"}
+
+
+def _norm(s: str) -> str:
+    s = unicodedata.normalize("NFKD", str(s or "")).encode("ascii", "ignore").decode()
+    return s.strip().lower()
+
+
+def _in_ccaa(region: str, localidad: str, target: str) -> bool:
+    """True if this lead belongs to the target CCAA (accent-insensitive)."""
+    if not target:
+        return True
+    t = _norm(target)
+    if t in ("aragon", "aragón"):
+        blob = f"{_norm(region)} {_norm(localidad)}"
+        if any(p in blob.split() or p in blob for p in _ARAGON):
+            return True
+    if ccaa_for is not None:
+        try:
+            return _norm(ccaa_for(region, localidad)) == t
+        except Exception:
+            return False
+    return False
 
 
 def _split_name(full: str) -> tuple[str, str]:
@@ -168,24 +202,29 @@ def main() -> int:
 
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
-    # Prefer heirs WITH a street address (better match input), Tier A/B, newest first.
-    rows = conn.execute(
+    _ensure_email_column(conn)
+    # Fetch a broad candidate set (Tier A/B, address-first, no email yet), then filter
+    # by CCAA in Python so credits are only ever spent on the target region. Only PDL
+    # calls cost — this DB scan is free.
+    candidates = conn.execute(
         """
         SELECT id, heir_name, localidad, region, direccion FROM leads
         WHERE heir_name IS NOT NULL AND heir_name != ''
           AND tier IN ('A','B')
+          AND (contact_email IS NULL OR contact_email = '')
         ORDER BY (CASE WHEN direccion IS NOT NULL AND direccion != '' THEN 0 ELSE 1 END),
                  first_seen_at DESC
-        LIMIT ?
-        """,
-        (SAMPLE,),
+        """
     ).fetchall()
 
-    if not rows:
-        print("No heirs in DB to test.")
-        return 0
+    rows = [r for r in candidates if _in_ccaa(r["region"], r["localidad"], CCAA_FILTER)][:SAMPLE]
 
-    _ensure_email_column(conn)
+    if not rows:
+        scope = f" for CCAA={CCAA_FILTER!r}" if CCAA_FILTER else ""
+        print(f"No heirs in DB to test{scope}.")
+        return 0
+    if CCAA_FILTER:
+        print(f"[CCAA filter: {CCAA_FILTER} -> {len(rows)} heirs selected (of {len(candidates)} total)]")
     max_matches = int(os.getenv("HEIR_MAX_MATCHES", "330"))  # credit safety cap (<350)
 
     print(f"=== Heir contact enrichment | provider={PROVIDER} | sample={len(rows)} | country={COUNTRY} ===")
