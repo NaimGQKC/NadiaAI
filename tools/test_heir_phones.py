@@ -37,10 +37,16 @@ try:
 except Exception:  # pragma: no cover - fallback if module path differs
     ccaa_for = None
 
-# HEIR_TEST_PROVIDER can carry an optional CCAA filter as "pdl:aragon" so we only
-# spend credits on one region (no workflow change needed — reuses the provider input).
-_prov_raw = os.getenv("HEIR_TEST_PROVIDER", "pdl").lower()
-PROVIDER, _, CCAA_FILTER = _prov_raw.partition(":")
+# HEIR_TEST_PROVIDER carries colon-separated flags so we can scope a run without any
+# workflow change (reuses the provider input). Examples:
+#   "pdl:aragon"      -> region filter Aragón
+#   "pdl:aragon:a"    -> region Aragón + Tier A only
+#   "pdl:aragon:a:dry"-> same, but DRY RUN (list selected heirs, 0 credits, no writes)
+_segs = os.getenv("HEIR_TEST_PROVIDER", "pdl").lower().split(":")
+PROVIDER = _segs[0]
+DRY_RUN = "dry" in _segs[1:]
+TIER_FILTER = next((s.upper() for s in _segs[1:] if s in ("a", "b", "c")), "")
+CCAA_FILTER = next((s for s in _segs[1:] if s not in ("dry", "a", "b", "c")), "")
 API_KEY = os.getenv("HEIR_TEST_KEY", "")
 SAMPLE = int(os.getenv("HEIR_TEST_SAMPLE", "50"))
 COUNTRY = os.getenv("HEIR_TEST_COUNTRY", "Spain")
@@ -48,11 +54,30 @@ COUNTRY = os.getenv("HEIR_TEST_COUNTRY", "Spain")
 _PHONE_RE = re.compile(r"\+?\d[\d\s().-]{6,}\d")
 # Aragón provinces — used to filter/detect region without relying only on ccaa_for.
 _ARAGON = {"zaragoza", "huesca", "teruel", "aragon"}
+# Name connectors/honorifics that don't count as a real name token.
+_STOP = {"de", "del", "la", "el", "los", "las", "y", "e", "san", "santa",
+         "don", "dona", "sr", "sra", "d", "da", "vda", "viuda"}
+# Edict boilerplate that leaks into heir_name when extraction is noisy — never enrich these.
+_BOILERPLATE = {"pudiendo", "acompanados", "acompanado", "herederos", "heredero",
+                "herencia", "yacente", "ignorados", "desconocidos", "causante",
+                "finca", "abintestato", "interesados", "cuantos", "demas", "otros"}
 
 
 def _norm(s: str) -> str:
     s = unicodedata.normalize("NFKD", str(s or "")).encode("ascii", "ignore").decode()
     return s.strip().lower()
+
+
+def _good_heir_name(name: str) -> bool:
+    """True only for a plausible real full name: >=2 real name tokens, no boilerplate,
+    no digits, not just initials/titles. Keeps credits on genuine heirs."""
+    if not name or any(ch.isdigit() for ch in str(name)):
+        return False
+    toks = [t for t in re.split(r"[^a-z]+", _norm(name)) if t]
+    if any(t in _BOILERPLATE for t in toks):
+        return False
+    core = [t for t in toks if t not in _STOP and len(t) >= 3]
+    return len(core) >= 2  # first name + at least one surname
 
 
 def _in_ccaa(region: str, localidad: str, target: str) -> bool:
@@ -203,28 +228,44 @@ def main() -> int:
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     _ensure_email_column(conn)
-    # Fetch a broad candidate set (Tier A/B, address-first, no email yet), then filter
-    # by CCAA in Python so credits are only ever spent on the target region. Only PDL
-    # calls cost — this DB scan is free.
+    # Fetch a broad candidate set (address-first, no email yet), then filter by tier /
+    # CCAA / name-quality in Python so credits are only ever spent on genuine target
+    # heirs. Only PDL calls cost — this DB scan is free.
+    tier_sql = "tier = ?" if TIER_FILTER else "tier IN ('A','B')"
+    params = (TIER_FILTER,) if TIER_FILTER else ()
     candidates = conn.execute(
-        """
-        SELECT id, heir_name, localidad, region, direccion FROM leads
+        f"""
+        SELECT id, heir_name, localidad, region, direccion, tier FROM leads
         WHERE heir_name IS NOT NULL AND heir_name != ''
-          AND tier IN ('A','B')
+          AND {tier_sql}
           AND (contact_email IS NULL OR contact_email = '')
         ORDER BY (CASE WHEN direccion IS NOT NULL AND direccion != '' THEN 0 ELSE 1 END),
                  first_seen_at DESC
-        """
+        """,
+        params,
     ).fetchall()
 
-    rows = [r for r in candidates if _in_ccaa(r["region"], r["localidad"], CCAA_FILTER)][:SAMPLE]
+    # Region + name-quality filters (heir_name is the HEIR, never causante/notary).
+    rows = [
+        r for r in candidates
+        if _in_ccaa(r["region"], r["localidad"], CCAA_FILTER) and _good_heir_name(r["heir_name"])
+    ][:SAMPLE]
 
     if not rows:
-        scope = f" for CCAA={CCAA_FILTER!r}" if CCAA_FILTER else ""
-        print(f"No heirs in DB to test{scope}.")
+        scope = f" (tier={TIER_FILTER or 'A/B'}, ccaa={CCAA_FILTER or 'all'})"
+        print(f"No qualifying heirs in DB{scope}.")
         return 0
-    if CCAA_FILTER:
-        print(f"[CCAA filter: {CCAA_FILTER} -> {len(rows)} heirs selected (of {len(candidates)} total)]")
+    print(f"[filters: tier={TIER_FILTER or 'A/B'} | ccaa={CCAA_FILTER or 'all'} | good-name -> "
+          f"{len(rows)} heirs selected (of {len(candidates)} candidates)]")
+
+    if DRY_RUN:
+        print("\n=== DRY RUN — heirs that WOULD be queried (0 credits, no PDL calls) ===")
+        for i, row in enumerate(rows, 1):
+            print(f"{i:>3}. [{row['tier']}] {row['heir_name'][:38]:38} | "
+                  f"{(row['localidad'] or '')[:16]:16} | {(row['direccion'] or '')[:34]}")
+        print(f"\nTotal: {len(rows)} heirs. Re-run without ':dry' to enrich (~{len(rows)} credits max).")
+        return 0
+
     max_matches = int(os.getenv("HEIR_MAX_MATCHES", "330"))  # credit safety cap (<350)
 
     print(f"=== Heir contact enrichment | provider={PROVIDER} | sample={len(rows)} | country={COUNTRY} ===")
