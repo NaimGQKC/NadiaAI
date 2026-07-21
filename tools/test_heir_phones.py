@@ -302,8 +302,16 @@ def main() -> int:
 
     max_matches = int(os.getenv("HEIR_MAX_MATCHES", "330"))  # credit safety cap (<350)
 
-    print(f"=== Heir contact enrichment | provider={PROVIDER} | sample={len(rows)} | country={COUNTRY} ===")
-    print(f"    credit cap: stop after {max_matches} matches | writes real emails to DB when found\n")
+    region = (CCAA_FILTER or COUNTRY).title()
+    bar = "═" * 66
+    print(bar)
+    print(f"  NadiaAI · Heir Contact Enrichment · {region}")
+    print(bar)
+    print(f"  {len(rows)} heirs with a quality name, extracted from Spanish inheritance")
+    print("  records (BOE / autonomous bulletins / esquelas).")
+    print("  Resolving personal emails via People Data Labs…")
+    print(f"  Budget guard: stop after {max_matches} credits.\n")
+
     ph = {"value": 0, "flag": 0, "none": 0, "other": 0}
     em = {"value": 0, "flag": 0, "none": 0, "other": 0}
     matched = 0
@@ -311,7 +319,7 @@ def main() -> int:
     found_emails: list[tuple] = []
     for i, row in enumerate(rows, 1):
         if matched >= max_matches:
-            print(f"\n[credit cap reached: {matched} matches ~= credits — stopping]")
+            print(f"\n  [budget guard: {matched} credits spent — stopping]")
             break
         name = row["heir_name"]
         loc = (row["localidad"] or "").strip()
@@ -337,22 +345,24 @@ def main() -> int:
             conn.commit()
             written += 1
             found_emails.append((name, r["email_value"], r["linkedin"], r["matched"]))
-        print(f"{i:>3}. {name[:28]:28} | {loc[:12]:12} | lk={r['lk']} | em:{r['email']:5} "
-              f"| {r['email_value'][:30]:30} | -> {r['matched']}")
+            print(f"  ✓ {name[:34]:34} {loc[:12]:12} →  {r['email_value']}")
+        else:
+            tag = "no email on file" if r["lk"] else "no match"
+            print(f"  · {name[:34]:34} {loc[:12]:12} →  ({tag})")
 
     n = i
-    em_ceiling = em["value"] + em["flag"]
-    pct = lambda x: f"{100*x//n if n else 0}%"
-    print("\n=== SUMMARY ===")
-    print(f"  heirs processed:                {n}")
-    print(f"  billable matches (credits used):{matched}")
-    print(f"  person matched at all:          {matched}/{n}  ({pct(matched)})")
-    print(f"  EMAIL ceiling (has an email):   {em_ceiling}/{n}  ({pct(em_ceiling)})")
-    print(f"  >>> REAL EMAILS WRITTEN TO DB:  {written}/{n}  ({pct(written)}) <<<")
+    pct = lambda x: f"{100 * x // n if n else 0}%"
+    print("\n" + bar)
+    print("  RESULTS")
+    print(bar)
+    print(f"  Heirs processed ........ {n}")
+    print(f"  Credits used ........... {matched}")
+    print(f"  ✅ Emails found ......... {written}/{n}  ({pct(written)})")
     if found_emails:
-        print("\n=== EMAILS FOUND (spot-check identity via matched name / LinkedIn) ===")
+        print("\n  Contactable heirs (spot-check identity via LinkedIn):")
         for nm, mail, li, mtc in found_emails:
-            print(f"  {nm[:34]:34} -> {mail}  | match={mtc} | {li}")
+            extra = f"   [{li}]" if li else ""
+            print(f"    • {nm[:32]:32}  {mail}{extra}")
     return 0
 
 
