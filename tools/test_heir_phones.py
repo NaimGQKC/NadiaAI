@@ -18,6 +18,7 @@ included for when that key is available.
 
 from __future__ import annotations
 
+import collections
 import json
 import os
 import re
@@ -45,8 +46,9 @@ except Exception:  # pragma: no cover - fallback if module path differs
 _segs = os.getenv("HEIR_TEST_PROVIDER", "pdl").lower().split(":")
 PROVIDER = _segs[0]
 DRY_RUN = "dry" in _segs[1:]
+AUDIT = "audit" in _segs[1:]
 TIER_FILTER = next((s.upper() for s in _segs[1:] if s in ("a", "b", "c")), "")
-CCAA_FILTER = next((s for s in _segs[1:] if s not in ("dry", "a", "b", "c")), "")
+CCAA_FILTER = next((s for s in _segs[1:] if s not in ("dry", "audit", "a", "b", "c")), "")
 API_KEY = os.getenv("HEIR_TEST_KEY", "")
 SAMPLE = int(os.getenv("HEIR_TEST_SAMPLE", "50"))
 COUNTRY = os.getenv("HEIR_TEST_COUNTRY", "Spain")
@@ -112,6 +114,48 @@ def _good_heir_name(name: str) -> bool:
         if first_alpha and first_alpha.islower():
             return False
     return True
+
+
+def _reject_reason(name: str) -> str:
+    """Why _good_heir_name would reject this name — for the data-quality audit.
+    Returns '' when the name passes."""
+    if not name or not str(name).strip():
+        return "empty"
+    if any(ch.isdigit() for ch in str(name)):
+        return "contains digits"
+    toks = [t for t in re.split(r"[^a-z]+", _norm(name)) if t]
+    if any(t in _ENTITY for t in toks):
+        return "institution (not a person)"
+    if any(t in _BOILERPLATE for t in toks):
+        return "edict boilerplate"
+    core = [t for t in toks if t not in _STOP and len(t) >= 3]
+    if len(core) < 2:
+        return "initials / single token"
+    if all(t in _GIVEN for t in core):
+        return "first name only (no surname)"
+    for tk in re.split(r"\s+", str(name).strip()):
+        low = _norm(tk)
+        if not low or low in _STOP:
+            continue
+        fa = next((c for c in tk if c.isalpha()), "")
+        if fa and fa.islower():
+            return "accent-corrupted token"
+    return ""
+
+
+def _quality_flags(name: str, localidad: str, direccion: str, seen: dict) -> list[str]:
+    """Soft concerns for a name that PASSED — surfaced in the audit, not rejected."""
+    flags = []
+    n = _norm(name)
+    if n in seen and seen[n] > 1:
+        flags.append("duplicate")
+    if "�" in name or "Ã" in name or "Â" in name:
+        flags.append("mojibake")
+    if not (direccion or "").strip() or _norm(direccion) == _norm(localidad):
+        flags.append("no street address")
+    if not (localidad or "").strip():
+        flags.append("no localidad")
+    return flags
 
 
 def _in_ccaa(region: str, localidad: str, target: str) -> bool:
@@ -246,13 +290,86 @@ def _ensure_email_column(conn: sqlite3.Connection) -> None:
         conn.commit()
 
 
+def _run_audit(conn: sqlite3.Connection) -> int:
+    """0-credit data-quality report for the target region: how many heirs are
+    genuinely enrichable vs trash, why the trash fails, and soft concerns on the
+    survivors. Run before spending credits to size the real run."""
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute(
+        """
+        SELECT heir_name, localidad, region, direccion, tier, contact_email
+        FROM leads WHERE heir_name IS NOT NULL AND heir_name != ''
+        """
+    ).fetchall()
+    rows = [r for r in rows if _in_ccaa(r["region"], r["localidad"], CCAA_FILTER)]
+
+    region = (CCAA_FILTER or COUNTRY).title()
+    counts = collections.Counter()  # occurrences for duplicate detection
+    for r in rows:
+        counts[_norm(r["heir_name"])] += 1
+
+    passed, rejected = [], collections.Counter()
+    reject_samples: dict[str, list] = {}
+    already = 0
+    for r in rows:
+        reason = _reject_reason(r["heir_name"])
+        if reason:
+            rejected[reason] += 1
+            reject_samples.setdefault(reason, [])
+            if len(reject_samples[reason]) < 4:
+                reject_samples[reason].append(r["heir_name"])
+            continue
+        if (r["contact_email"] or "").strip():
+            already += 1
+            continue
+        passed.append(r)
+
+    total = len(rows)
+    bar = "═" * 68
+    print(bar)
+    print(f"  DATA-QUALITY AUDIT · {region} · heir_name column · 0 credits")
+    print(bar)
+    print(f"  Total heirs in region .............. {total}")
+    print(f"  ✅ Enrichable (quality name, no email) {len(passed)}   ({100*len(passed)//total if total else 0}%)")
+    print(f"  Already have an email .............. {already}")
+    print(f"  ❌ Rejected as trash ............... {sum(rejected.values())}   "
+          f"({100*sum(rejected.values())//total if total else 0}%)")
+
+    if rejected:
+        print("\n  WHY REJECTED (the trash we're NOT spending on):")
+        for reason, c in rejected.most_common():
+            ex = ", ".join(repr(x) for x in reject_samples.get(reason, [])[:3])
+            print(f"    {c:>3}  {reason:<28} e.g. {ex}")
+
+    # Soft concerns on the survivors.
+    concerns = collections.Counter()
+    flagged = []
+    for r in passed:
+        fl = _quality_flags(r["heir_name"], r["localidad"], r["direccion"], counts)
+        for f in fl:
+            concerns[f] += 1
+        if fl:
+            flagged.append((r["heir_name"], ", ".join(fl)))
+    with_addr = sum(1 for r in passed if (r["direccion"] or "").strip()
+                    and _norm(r["direccion"]) != _norm(r["localidad"]))
+    print(f"\n  On the {len(passed)} enrichable heirs:")
+    print(f"    with a real street address ........ {with_addr}")
+    for c, n in concerns.most_common():
+        print(f"    flag: {c:<24} {n}")
+
+    print(f"\n  Realistic yield: ~{len(passed)} credits, ~{max(1, len(passed)*22//100)}–"
+          f"{max(1, len(passed)*30//100)} emails (PDL email ceiling was ~22%).")
+    print(bar)
+    return 0
+
+
 def main() -> int:
     # Windows consoles default to cp1252 and choke on non-ASCII names/box chars.
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     except Exception:
         pass
-    if not API_KEY:
+    if not API_KEY and not (DRY_RUN or AUDIT):
         print("ERROR: set HEIR_TEST_KEY", file=sys.stderr)
         return 2
     if PROVIDER != "pdl":
@@ -262,6 +379,9 @@ def main() -> int:
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     _ensure_email_column(conn)
+
+    if AUDIT:
+        return _run_audit(conn)
     # Fetch a broad candidate set (address-first, no email yet), then filter by tier /
     # CCAA / name-quality in Python so credits are only ever spent on genuine target
     # heirs. Only PDL calls cost — this DB scan is free.
