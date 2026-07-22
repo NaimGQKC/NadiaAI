@@ -47,8 +47,10 @@ _segs = os.getenv("HEIR_TEST_PROVIDER", "pdl").lower().split(":")
 PROVIDER = _segs[0]
 DRY_RUN = "dry" in _segs[1:]
 AUDIT = "audit" in _segs[1:]
+RECLEAR = "reclear" in _segs[1:]  # clear existing pdl emails in scope, then re-enrich
+_FLAGS = ("dry", "audit", "reclear", "a", "b", "c")
 TIER_FILTER = next((s.upper() for s in _segs[1:] if s in ("a", "b", "c")), "")
-CCAA_FILTER = next((s for s in _segs[1:] if s not in ("dry", "audit", "a", "b", "c")), "")
+CCAA_FILTER = next((s for s in _segs[1:] if s not in _FLAGS), "")
 API_KEY = os.getenv("HEIR_TEST_KEY", "")
 SAMPLE = int(os.getenv("HEIR_TEST_SAMPLE", "50"))
 COUNTRY = os.getenv("HEIR_TEST_COUNTRY", "Spain")
@@ -114,6 +116,33 @@ def _good_heir_name(name: str) -> bool:
         if first_alpha and first_alpha.islower():
             return False
     return True
+
+
+def _surnames(name: str) -> set:
+    """Surname tokens of a name: alphabetic tokens ≥3 chars that are NOT connectors
+    or common given names. 'María Concepción Adiego Gracia' -> {adiego, gracia}."""
+    return {t for t in re.split(r"[^a-z]+", _norm(name))
+            if len(t) >= 3 and t not in _STOP and t not in _GIVEN}
+
+
+def _first_surname(name: str) -> str:
+    """The heir's FIRST (paternal) surname — the first token that isn't a given name
+    or connector. It's the discriminating one; a shared common 2nd surname (Pérez,
+    García) is weak evidence. 'Francisco Royo Pérez' -> 'royo'."""
+    for t in re.split(r"[^a-z]+", _norm(name)):
+        if len(t) >= 3 and t not in _STOP and t not in _GIVEN:
+            return t
+    return ""
+
+
+def _name_matches(heir: str, matched: str) -> bool:
+    """True only if PDL's matched person carries the heir's FIRST surname — the guard
+    against homonyms (heir 'Raquel Guillén' vs match 'Raquel Rubio'; or 'Royo Pérez'
+    vs 'Ruiz Pérez' which share only the common 2nd surname)."""
+    if not matched:
+        return False
+    fs = _first_surname(heir)
+    return bool(fs) and fs in _surnames(matched)
 
 
 def _reject_reason(name: str) -> str:
@@ -382,6 +411,19 @@ def main() -> int:
 
     if AUDIT:
         return _run_audit(conn)
+
+    if RECLEAR:
+        # Clear existing PDL emails in scope so they get re-queried + re-verified
+        # (used after tightening the identity guard). Only affects contact_source='pdl'.
+        _all = conn.execute(
+            "SELECT id, region, localidad FROM leads WHERE contact_source = 'pdl'"
+        ).fetchall()
+        _clr = [r["id"] for r in _all if _in_ccaa(r["region"], r["localidad"], CCAA_FILTER)]
+        if _clr:
+            conn.execute(f"UPDATE leads SET contact_email = '' WHERE id IN ({','.join(map(str, _clr))})")
+            conn.commit()
+        print(f"[reclear: cleared {len(_clr)} existing PDL emails in scope for re-verification]")
+
     # Fetch a broad candidate set (address-first, no email yet), then filter by tier /
     # CCAA / name-quality in Python so credits are only ever spent on genuine target
     # heirs. Only PDL calls cost — this DB scan is free.
@@ -450,13 +492,14 @@ def main() -> int:
         em[r["email"] if r["email"] in em else "other"] += 1
         if r["billable"]:
             matched += 1
-        # Write any REAL email value (paid key) to the DB — low confidence, keep LinkedIn for verify.
-        if r["email_value"]:
+        # Only KEEP an email when PDL's matched person shares the heir's surname —
+        # the identity guard against homonyms/wrong-person emails.
+        if r["email_value"] and _name_matches(name, r["matched"]):
             conn.execute(
                 """UPDATE leads SET
                      contact_email = ?,
                      contact_source = 'pdl',
-                     contact_confidence = 'heir-pdl (low)',
+                     contact_confidence = 'heir-pdl (surname-verified)',
                      contact_enriched_at = datetime('now'),
                      last_updated_at = CURRENT_TIMESTAMP
                    WHERE id = ?""",
@@ -466,6 +509,9 @@ def main() -> int:
             written += 1
             found_emails.append((name, r["email_value"], r["linkedin"], r["matched"]))
             print(f"  ✓ {name[:34]:34} {loc[:12]:12} →  {r['email_value']}")
+        elif r["email_value"]:
+            # PDL returned an email but for a different person (surname mismatch).
+            print(f"  ✗ {name[:34]:34} {loc[:12]:12} →  wrong person ({r['matched']}) — skipped")
         else:
             tag = "no email on file" if r["lk"] else "no match"
             print(f"  · {name[:34]:34} {loc[:12]:12} →  ({tag})")
