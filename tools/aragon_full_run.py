@@ -30,9 +30,29 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import test_heir_phones as tp  # noqa: E402
 from nadia_ai.config import DB_PATH  # noqa: E402
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s  %(message)s", datefmt="%H:%M:%S", stream=sys.stdout
-)
+def _setup_logging() -> None:
+    """Force a clean, timestamped, line-buffered stream for EVERY logger (ours and
+    nadia_ai's) so the whole re-extraction narrates itself in real time. force=True
+    defeats the project's JSON logging config if it has already grabbed the root."""
+    try:
+        sys.stdout.reconfigure(line_buffering=True)  # flush each line as it prints
+    except Exception:
+        pass
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(message)s",
+        datefmt="%H:%M:%S",
+        stream=sys.stdout,
+        force=True,
+    )
+    # Make the extraction's own INFO logs stream through our handler with timestamps.
+    for name in ("nadia_ai", "nadia_ai.utils.extraction", "nadia_ai.catastro"):
+        lg = logging.getLogger(name)
+        lg.setLevel(logging.INFO)
+        lg.propagate = True
+
+
+_setup_logging()
 log = logging.getLogger("aragon")
 
 DRY = os.getenv("ARAGON_DRY") == "1"
@@ -87,6 +107,8 @@ def main() -> int:
     try:
         from nadia_ai.utils.extraction import run_heir_extraction
 
+        _setup_logging()  # re-assert clean timestamps in case the import reconfigured logging
+        log.info("Phase 2 · LLM reachable check + processing starting now…")
         n = run_heir_extraction(conn, limit=len(ids), extra_where=f"id IN ({idlist})")
         log.info("Phase 2 · DONE — %d leads re-extracted in %.0fs", n, time.monotonic() - t0)
     except Exception as e:
