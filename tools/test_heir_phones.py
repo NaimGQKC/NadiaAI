@@ -161,30 +161,47 @@ def _location_matches(heir_loc: str, heir_region: str, match_loc: str) -> bool:
     return False
 
 
-def _verify_identity(heir: str, heir_loc: str, heir_region: str, r: dict) -> tuple[bool, str]:
-    """Rigorous wrong-person guard. Returns (keep, confidence).
+def _location_status(heir_loc: str, heir_region: str, match_loc: str) -> str:
+    """'match' | 'mismatch' | 'unknown' — whether PDL's location corroborates."""
+    if not (match_loc or "").strip():
+        return "unknown"
+    return "match" if _location_matches(heir_loc, heir_region, match_loc) else "mismatch"
 
-    Two independent gates, neither relying on a (never-complete) given-name list:
-      1. Surname subset — EVERY name token the heir carries (bar connectors) must
-         appear in PDL's matched person. Kills 'Royo Pérez'≠'Ruiz Pérez',
-         'Adiego Gracia'≠'Gracia', 'Guillén'≠'Rubio'.
-      2. Corroboration — even with matching names, require the matched person's
-         LOCATION to match the heir's town/province, OR PDL's likelihood to be high.
-         A same-name person in another province with low likelihood is rejected.
+
+def _verify_identity(heir: str, heir_loc: str, heir_region: str, r: dict) -> tuple[bool, str]:
+    """Wrong-person guard. Returns (keep, confidence: high|medium|low|none).
+
+    Gate 1 — surname subset: EVERY name token the heir carries must appear in PDL's
+    matched person (kills 'Royo Pérez'≠'Ruiz Pérez', 'Adiego Gracia'≠'Gracia').
+    Gate 2 — corroboration:
+      HIGH   = subset + matched person's LOCATION is the heir's town/province.
+      MEDIUM = subset + strong name evidence (exact surname-set match, two surnames,
+               or PDL likelihood ≥6) with no location contradiction — a "verify in
+               ~10s via LinkedIn" tier.
+      else rejected (lone common surname, or location contradiction with a weak name).
     """
     matched = r.get("matched_full") or r.get("matched") or ""
     if not matched:
         return False, "none"
     h = _surnames(heir)
-    if not h or not (h <= _surnames(matched)):    # gate 1: name-token subset
+    m = _surnames(matched)
+    if not h or not (h <= m):                      # gate 1: name-token subset
         return False, "none"
-    loc_ok = _location_matches(heir_loc, heir_region, r.get("match_loc", ""))
+    loc = _location_status(heir_loc, heir_region, r.get("match_loc", ""))
     lk = r.get("lk", 0) or 0
-    if loc_ok:                                     # name match + same place = strong
+    exact = h == m                                 # heir's surname set == match's
+    two = len(h) >= 2                              # two matching surname tokens
+    common_only = h <= _COMMON_SURNAMES            # e.g. a lone 'García'
+    if loc == "match":
         return True, "high"
-    if lk >= 6:                                    # name match + PDL confident
+    strong_name = exact or two or lk >= 6
+    if loc == "mismatch":
+        # PDL places them elsewhere — only a strong, specific (non-common) name holds.
+        return (strong_name and not common_only, "medium" if (strong_name and not common_only) else "low")
+    # location unknown:
+    if strong_name and not common_only:
         return True, "medium"
-    return False, "low"                            # name match but no corroboration
+    return False, "low"
 
 
 def _reject_reason(name: str) -> str:
