@@ -127,22 +127,64 @@ def _surnames(name: str) -> set:
 
 def _first_surname(name: str) -> str:
     """The heir's FIRST (paternal) surname — the first token that isn't a given name
-    or connector. It's the discriminating one; a shared common 2nd surname (Pérez,
-    García) is weak evidence. 'Francisco Royo Pérez' -> 'royo'."""
+    or connector. 'Francisco Royo Pérez' -> 'royo'."""
     for t in re.split(r"[^a-z]+", _norm(name)):
         if len(t) >= 3 and t not in _STOP and t not in _GIVEN:
             return t
     return ""
 
 
-def _name_matches(heir: str, matched: str) -> bool:
-    """True only if PDL's matched person carries the heir's FIRST surname — the guard
-    against homonyms (heir 'Raquel Guillén' vs match 'Raquel Rubio'; or 'Royo Pérez'
-    vs 'Ruiz Pérez' which share only the common 2nd surname)."""
-    if not matched:
+# Very common Spanish surnames — a match on one of these ALONE is weak; require
+# corroboration (location or a second surname) before trusting the identity.
+_COMMON_SURNAMES = {
+    "garcia", "gonzalez", "rodriguez", "fernandez", "lopez", "martinez", "sanchez",
+    "perez", "gomez", "martin", "jimenez", "ruiz", "hernandez", "diaz", "moreno",
+    "alvarez", "romero", "gutierrez", "navarro", "torres", "dominguez", "gil",
+    "vazquez", "serrano", "ramos", "blanco", "molina", "morales", "ortega", "marin",
+}
+
+
+def _location_matches(heir_loc: str, heir_region: str, match_loc: str) -> bool:
+    """True if PDL's matched person is located in the heir's town/province/CCAA —
+    strong corroboration that it's the same person, not a homonym elsewhere."""
+    if not match_loc:
         return False
-    fs = _first_surname(heir)
-    return bool(fs) and fs in _surnames(matched)
+    m = _norm(match_loc)
+    for cand in (heir_loc, heir_region):
+        c = _norm(cand)
+        if c and len(c) >= 4 and c in m:
+            return True
+    # Aragón province/CCAA corroboration
+    if any(p in m for p in _ARAGON) and (
+        _in_ccaa(heir_region, heir_loc, "aragon")):
+        return True
+    return False
+
+
+def _verify_identity(heir: str, heir_loc: str, heir_region: str, r: dict) -> tuple[bool, str]:
+    """Rigorous wrong-person guard. Returns (keep, confidence).
+
+    Two independent gates, neither relying on a (never-complete) given-name list:
+      1. Surname subset — EVERY name token the heir carries (bar connectors) must
+         appear in PDL's matched person. Kills 'Royo Pérez'≠'Ruiz Pérez',
+         'Adiego Gracia'≠'Gracia', 'Guillén'≠'Rubio'.
+      2. Corroboration — even with matching names, require the matched person's
+         LOCATION to match the heir's town/province, OR PDL's likelihood to be high.
+         A same-name person in another province with low likelihood is rejected.
+    """
+    matched = r.get("matched_full") or r.get("matched") or ""
+    if not matched:
+        return False, "none"
+    h = _surnames(heir)
+    if not h or not (h <= _surnames(matched)):    # gate 1: name-token subset
+        return False, "none"
+    loc_ok = _location_matches(heir_loc, heir_region, r.get("match_loc", ""))
+    lk = r.get("lk", 0) or 0
+    if loc_ok:                                     # name match + same place = strong
+        return True, "high"
+    if lk >= 6:                                    # name match + PDL confident
+        return True, "medium"
+    return False, "low"                            # name match but no corroboration
 
 
 def _reject_reason(name: str) -> str:
@@ -291,6 +333,10 @@ def _lookup_pdl(name: str, locality: str, region: str, street: str = "") -> dict
                     "phone_value": _extract_value(data, _PHONE_KEYS, _PHONE_RE),
                     "linkedin": data.get("linkedin_url") or "",
                     "matched": (data.get("full_name") or "")[:28],
+                    "matched_full": data.get("full_name") or "",
+                    "match_loc": " ".join(str(x) for x in (
+                        data.get("location_name"), data.get("location_locality"),
+                        data.get("location_region")) if x),
                     "lk": body.get("likelihood", 0),
                     "billable": True,  # a 200 match consumes 1 PDL credit
                 }
@@ -492,43 +538,45 @@ def main() -> int:
         em[r["email"] if r["email"] in em else "other"] += 1
         if r["billable"]:
             matched += 1
-        # Only KEEP an email when PDL's matched person shares the heir's surname —
-        # the identity guard against homonyms/wrong-person emails.
-        if r["email_value"] and _name_matches(name, r["matched"]):
+        # Rigorous identity verification (surname-set containment + location + lk).
+        keep, conf = _verify_identity(name, loc, reg, r) if r["email_value"] else (False, "none")
+        if r["email_value"] and keep:
             conn.execute(
                 """UPDATE leads SET
                      contact_email = ?,
                      contact_source = 'pdl',
-                     contact_confidence = 'heir-pdl (surname-verified)',
+                     contact_confidence = ?,
                      contact_enriched_at = datetime('now'),
                      last_updated_at = CURRENT_TIMESTAMP
                    WHERE id = ?""",
-                (r["email_value"], row["id"]),
+                (r["email_value"], f"heir-pdl ({conf})", row["id"]),
             )
             conn.commit()
             written += 1
-            found_emails.append((name, r["email_value"], r["linkedin"], r["matched"]))
-            print(f"  ✓ {name[:34]:34} {loc[:12]:12} →  {r['email_value']}")
+            found_emails.append((name, r["email_value"], r["linkedin"], r["matched"], conf))
+            print(f"  ✓[{conf:6}] {name[:32]:32} {loc[:12]:12} →  {r['email_value']}")
         elif r["email_value"]:
-            # PDL returned an email but for a different person (surname mismatch).
-            print(f"  ✗ {name[:34]:34} {loc[:12]:12} →  wrong person ({r['matched']}) — skipped")
+            # PDL returned an email but for a different / unverifiable person.
+            print(f"  ✗ {name[:32]:32} {loc[:12]:12} →  unverified ({r['matched']}) — skipped")
         else:
             tag = "no email on file" if r["lk"] else "no match"
-            print(f"  · {name[:34]:34} {loc[:12]:12} →  ({tag})")
+            print(f"  · {name[:32]:32} {loc[:12]:12} →  ({tag})")
 
     n = i
     pct = lambda x: f"{100 * x // n if n else 0}%"
     print("\n" + bar)
     print("  RESULTS")
     print(bar)
+    n_high = sum(1 for e in found_emails if e[4] == "high")
     print(f"  Heirs processed ........ {n}")
     print(f"  Credits used ........... {matched}")
-    print(f"  ✅ Emails found ......... {written}/{n}  ({pct(written)})")
+    print(f"  ✅ Verified emails ...... {written}/{n}  ({pct(written)})   "
+          f"[{n_high} high-confidence, {written - n_high} medium]")
     if found_emails:
-        print("\n  Contactable heirs (spot-check identity via LinkedIn):")
-        for nm, mail, li, mtc in found_emails:
+        print("\n  Verified contactable heirs (surname+location matched):")
+        for nm, mail, li, mtc, conf in found_emails:
             extra = f"   [{li}]" if li else ""
-            print(f"    • {nm[:32]:32}  {mail}{extra}")
+            print(f"    • [{conf:6}] {nm[:30]:30}  {mail}{extra}")
     return 0
 
 
