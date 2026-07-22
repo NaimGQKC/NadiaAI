@@ -20,7 +20,7 @@ import pdfplumber
 from bs4 import BeautifulSoup
 
 from nadia_ai.models import EdictRecord
-from nadia_ai.utils.text import robust_text
+from nadia_ai.utils.text import normalize_text, robust_text
 
 logger = logging.getLogger("nadia_ai.scrapers.boe")
 
@@ -266,8 +266,8 @@ def extract_pdf_text(pdf_url: str) -> str:
                 if page_text:
                     text_parts.append(page_text)
         
-        full_text = "\n".join(text_parts)
-        return full_text
+        # NFC-normalize so decomposed accents survive downstream name regex/validation.
+        return normalize_text("\n".join(text_parts))
     except Exception as e:
         logger.error("Failed to extract text from PDF %s: %s", pdf_url, e)
         return ""

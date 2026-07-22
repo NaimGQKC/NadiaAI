@@ -23,9 +23,17 @@ import unicodedata
 from nadia_ai.utils.names import _GIVEN_NAMES, _NAME_PARTICLES, _strip_accents
 
 
+def normalize_text(s: str) -> str:
+    """NFC-normalize so decomposed accents (A + combining acute) become precomposed
+    (Á) — otherwise a later `[A-Za-z]`-style regex or ascii-fold silently drops the
+    combining mark and, with it, the accented letter."""
+    return unicodedata.normalize("NFC", s) if s else s
+
+
 def robust_text(resp) -> str:
     """Decode a requests.Response to str, using real charset detection instead of the
-    ISO-8859-1 fallback requests applies when the server omits a charset header."""
+    ISO-8859-1 fallback requests applies when the server omits a charset header, then
+    NFC-normalize. Fixes accent corruption in scraped Spanish text."""
     declared = ""
     ctype = resp.headers.get("Content-Type", "").lower()
     if "charset=" in ctype:
@@ -36,9 +44,9 @@ def robust_text(resp) -> str:
         # requests defaults to ISO-8859-1 with no header — prefer detection.
         enc = (resp.apparent_encoding or "utf-8")
     try:
-        return resp.content.decode(enc, errors="replace")
+        return normalize_text(resp.content.decode(enc, errors="replace"))
     except (LookupError, UnicodeDecodeError):
-        return resp.content.decode("utf-8", errors="replace")
+        return normalize_text(resp.content.decode("utf-8", errors="replace"))
 
 
 def _surname_tokens(deceased_name: str | None) -> list[str]:

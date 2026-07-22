@@ -7,6 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from nadia_ai.models import EdictRecord
+from nadia_ai.utils.text import robust_text
 from nadia_ai.utils.names import is_valid_person_name
 
 logger = logging.getLogger("nadia_ai.scrapers.rememori")
@@ -66,7 +67,7 @@ def fetch_page(province: str, page: int = 1) -> list[dict]:
         logger.error("Rememori province %s page %d fetch failed: %s", province, page, e)
         return []
 
-    soup = BeautifulSoup(resp.text, "html.parser")
+    soup = BeautifulSoup(robust_text(resp), "html.parser")
     table = soup.find("table")
     if not table:
         return []

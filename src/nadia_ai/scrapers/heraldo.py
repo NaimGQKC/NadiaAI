@@ -31,6 +31,7 @@ from datetime import UTC, datetime, timedelta
 import requests
 
 from nadia_ai.models import EdictRecord
+from nadia_ai.utils.text import robust_text
 from nadia_ai.utils.names import (
     clean_name_list,
     is_valid_person_name,
@@ -290,7 +291,7 @@ def scrape_heraldo(since: datetime | None = None) -> list[EdictRecord]:
             logger.warning("Heraldo listing fetch failed (%s): %s", params or "default", e)
             continue
         fetched_any = True
-        for path in _detail_links(resp.text):
+        for path in _detail_links(robust_text(resp)):
             if path not in seen_links:
                 seen_links.add(path)
                 links.append(path)
@@ -310,7 +311,7 @@ def scrape_heraldo(since: datetime | None = None) -> list[EdictRecord]:
             logger.warning("Heraldo detail fetch failed for %s: %s", slug, e)
             continue
 
-        parsed = _parse_detail(d.text, slug)
+        parsed = _parse_detail(robust_text(d), slug)
         if not parsed:
             continue
         dod = parsed["dod"]
@@ -377,7 +378,7 @@ def backfill_heraldo_heirs(conn: sqlite3.Connection, limit: int | None = None) -
             continue
         stats["scanned"] += 1
 
-        heirs = parse_family_heirs(resp.text)
+        heirs = parse_family_heirs(robust_text(resp))
         if not heirs:
             continue
 
