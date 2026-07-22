@@ -28,6 +28,14 @@ _BLACKLIST_SUBSTRINGS = [
     "a quienes", "quienes se crean", "con derecho", "la herencia",
     "herencia yacente", "delegacion", "ministerio", "ayuntamiento",
     "secretaria", "tanatorio", "cementerio", "funeraria",
+    # Institutions named as heir (the State/CCAA inherits when there are no
+    # relatives) — never a person.
+    "comunidad autonoma", "autonoma de", "generalitat", "generalidad",
+    "diputacion", "gobierno de", "junta de", "estado", "tesoreria", "hacienda",
+    "agencia tributaria", "fundacion", "asociacion", "sociedad", "cooperativa",
+    "consorcio", "patronato", "universidad", "instituto", "parroquia", "iglesia",
+    # Edict phrasing that reads like a title-cased name
+    "pudiendo", "acompanad", "cuantos se crean", "ignorados",
 ]
 
 # Kinship/role words. A real person name never contains these as a standalone
@@ -55,6 +63,29 @@ _BAD_FIRST_WORDS = {
 
 # À-ÖØ-öø-ÿ covers Spanish, Catalan, and Galician accented letters (à è ò ï ç…)
 _WORD_RE = re.compile(r"^[A-Za-zÀ-ÖØ-öø-ÿ'\-]+\.?$")
+
+# Common Spanish given names — a 2-token name that is ALL given names is a compound
+# first name with no surname captured ("Juan José", "María Pilar"); reject it.
+_GIVEN_NAMES = {
+    "juan", "jose", "maria", "pilar", "carmen", "ana", "luis", "pedro", "angel",
+    "jesus", "antonio", "francisco", "manuel", "javier", "miguel", "jorge", "carlos",
+    "david", "daniel", "pablo", "sergio", "alberto", "alejandro", "fernando", "ramon",
+    "rafael", "vicente", "ignacio", "andres", "alfonso", "enrique", "emilio", "tomas",
+    "ruben", "oscar", "mario", "adrian", "marcos", "ivan", "victor", "diego", "raul",
+    "isabel", "dolores", "josefa", "teresa", "rosa", "francisca", "antonia", "cristina",
+    "laura", "marta", "elena", "sara", "paula", "lucia", "sofia", "nuria", "raquel",
+    "beatriz", "rocio", "montserrat", "silvia", "patricia", "susana", "monica",
+    "angeles", "mercedes", "concepcion", "manuela", "encarnacion", "julia", "eva",
+    "irene", "alba", "clara", "juana", "amparo", "consuelo", "gloria", "esther",
+}
+
+# Lowercase-legit particles/honorifics — excluded from the accent-corruption check
+# (a real name token is capitalized; a stripped accent leaves a lowercase fragment).
+_NAME_PARTICLES = {
+    "de", "del", "la", "el", "los", "las", "y", "e", "o", "u", "a", "al", "san",
+    "santa", "da", "do", "dos", "das", "di", "van", "von", "der", "den", "le",
+    "don", "dona", "dna", "sr", "sra", "srta", "vda", "viuda",
+}
 
 # Leading courtesy titles that prefix a name in prose/headlines but are not part
 # of it ("Doña Carmen Alejandre" → "Carmen Alejandre"). Sources whose name regex
@@ -112,7 +143,24 @@ def is_valid_person_name(name: str | None) -> bool:
     substantive = [
         w for w in words if len(w) >= 2 and _strip_accents(w).lower() not in _BAD_FIRST_WORDS
     ]
-    return len(substantive) >= 2
+    if len(substantive) < 2:
+        return False
+    # Accent-corruption guard: a real name token is capitalized; a stripped accent
+    # leaves a lowercase-initial fragment ("ngel" <- "Ángel"). Reject those (but not
+    # legit lowercase particles/honorifics like "de la" / "don").
+    for w in substantive:
+        if _strip_accents(w).lower() in _NAME_PARTICLES:
+            continue
+        first_alpha = next((c for c in w if c.isalpha()), "")
+        if first_alpha and first_alpha.islower():
+            return False
+    # Compound-first-name-only guard: if every substantive token is a common given
+    # name, no surname was captured ("Juan José", "María Pilar") — not enrichable.
+    core = [_strip_accents(w).lower() for w in substantive
+            if _strip_accents(w).lower() not in _NAME_PARTICLES and len(w) >= 3]
+    if len(core) >= 2 and all(t in _GIVEN_NAMES for t in core):
+        return False
+    return True
 
 
 def clean_name_list(names: list | None) -> list[str]:

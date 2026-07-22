@@ -14,6 +14,7 @@ from datetime import UTC, datetime, timedelta
 import requests
 
 from nadia_ai.models import EdictRecord
+from nadia_ai.utils.text import robust_text
 
 logger = logging.getLogger("nadia_ai.scrapers.defunciones")
 
@@ -61,7 +62,7 @@ def fetch_page(province: str, page: int = 1) -> list[dict]:
         return []
 
     entries = []
-    for municipality_slug, name_slug in ENTRY_PATTERN.findall(resp.text):
+    for municipality_slug, name_slug in ENTRY_PATTERN.findall(robust_text(resp)):
         if municipality_slug in SKIP_SLUGS:
             continue
         entries.append({

@@ -18,6 +18,7 @@ from datetime import UTC, datetime, timedelta
 import requests
 
 from nadia_ai.models import EdictRecord
+from nadia_ai.utils.text import robust_text
 
 logger = logging.getLogger("nadia_ai.scrapers.iesquelas")
 
@@ -90,11 +91,11 @@ def fetch_page() -> list[dict]:
         return []
 
     # Extract tbody content to skip header row
-    tbody_match = TBODY_PATTERN.search(resp.text)
+    tbody_match = TBODY_PATTERN.search(robust_text(resp))
     if not tbody_match:
         logger.warning("iEsquelas: could not find <tbody> in response")
         # Fallback: try matching rows in the full page
-        html = resp.text
+        html = robust_text(resp)
     else:
         html = tbody_match.group(1)
 

@@ -58,13 +58,13 @@ Si un dato no aparece, usa null.
 {{
   "deceased_name": "Nombre completo del fallecido.",
   "date_of_death": "Fecha de fallecimiento (YYYY-MM-DD).",
-  "list_of_heirs": ["Nombres completos de hijos, viudo/a, o herederos mencionados. Ignorar nombres de sobrinos o primos si hay hijos."],
+  "list_of_heirs": ["Nombre Y APELLIDOS completos de cada hijo/a, viudo/a o heredero. Incluye SIEMPRE los apellidos si aparecen. Ignorar sobrinos/primos si hay hijos. NUNCA incluyas instituciones (Comunidad Autónoma, Ayuntamiento, Estado) ni frases del edicto."],
   "property_address": "Dirección a nivel CALLE Y NÚMERO del inmueble relevante: el último domicilio/residencia del fallecido O la finca/inmueble objeto de la herencia (p.ej. 'finca sita en Calle Mayor 23', 'inmueble sito en Avenida de Goya 45'). Incluye SIEMPRE el número de la calle si aparece. Si solo se menciona la ciudad ('vecino de [Ciudad]'), pon la ciudad. NUNCA uses direcciones de tanatorios, notarías, juzgados ni registros.",
   "referencia_catastral": "Ref. Catastral si aparece (20 caracteres)."
 }}
 
 REGLAS CRÍTICAS:
-1. Si el texto es una esquela, busca los nombres de los hijos (ej: 'Sus hijos: Juan y María').
+1. Si el texto es una esquela, busca los hijos (ej: 'Sus hijos: Juan y María'). Si solo se dan nombres de pila, añade el PRIMER apellido del fallecido (los hijos suelen compartirlo): 'Juan' + fallecido 'Ángel García López' -> 'Juan García'.
 2. Diferencia entre el lugar del fallecimiento (hospital/tanatorio) y el domicilio o vecindad (ej: 'vecino de Zaragoza').
 3. property_address: prioriza calle + número sobre solo la ciudad. En edictos judiciales de herencia yacente, ese inmueble suele ser la finca del caudal hereditario ("finca/inmueble/vivienda sita en…"), que es un dato válido.
 4. Responde SOLAMENTE el JSON.
@@ -302,6 +302,13 @@ def extract_inheritance_data(text: str, causante_hint: str = None) -> dict:
         if isinstance(heirs, str):
             heirs = [h.strip() for h in heirs.split(",") if h.strip()]
         heirs = [h for h in heirs if sanitize(h)]
+        # Esquelas list children by first name only ("Sus hijos: Juan y María") —
+        # the surname is implied (the deceased's). Reconstruct it so a bare first
+        # name becomes an enrichable full name instead of being discarded.
+        from nadia_ai.utils.text import reconstruct_surname
+
+        _deceased = result.get("deceased_name") or causante_hint
+        heirs = [reconstruct_surname(h, _deceased) for h in heirs]
         # Drop LLM placeholder echoes ("Nombres completos no proporcionados
         # en el texto") and any other non-name strings.
         heirs = clean_name_list(heirs)

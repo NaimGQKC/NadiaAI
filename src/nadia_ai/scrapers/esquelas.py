@@ -19,6 +19,7 @@ from datetime import UTC, datetime, timedelta
 import requests
 
 from nadia_ai.models import EdictRecord
+from nadia_ai.utils.text import robust_text
 
 logger = logging.getLogger("nadia_ai.scrapers.esquelas")
 
@@ -81,7 +82,7 @@ def fetch_page(city: str, page: int = 0) -> list[dict]:
         logger.error("Memora city %s page %d fetch failed: %s", city, page, e)
         return []
 
-    cards = CARD_PATTERN.findall(resp.text)
+    cards = CARD_PATTERN.findall(robust_text(resp))
     results = []
     for url_path, name_html, info_html in cards:
         results.append({
