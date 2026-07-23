@@ -134,6 +134,24 @@ def _first_surname(name: str) -> str:
     return ""
 
 
+def _family_surnames(heir: str, coheirs) -> set:
+    """The family's attested surname signature — surnames carried by the heir's
+    SIBLINGS, i.e. co-heirs who share the heir's paternal (first) surname. Full
+    siblings share BOTH apellidos, so this recovers a second, rarer surname the heir's
+    own extracted name may be missing, and independently attests the paternal surname
+    itself. Returns an empty set when there are no co-heirs or none shares the paternal
+    surname. Uses the co-heir cluster we already extracted (heir_names_json) — 0 cost."""
+    first = _first_surname(heir)
+    if not first:
+        return set()
+    fam: set = set()
+    for c in coheirs or []:
+        cs = _surnames(c)
+        if first in cs:                 # shares the paternal surname => (likely) a sibling
+            fam |= cs
+    return fam
+
+
 # Very common Spanish surnames — a match on one of these ALONE is weak; require
 # corroboration (location or a second surname) before trusting the identity.
 _COMMON_SURNAMES = {
@@ -168,17 +186,24 @@ def _location_status(heir_loc: str, heir_region: str, match_loc: str) -> str:
     return "match" if _location_matches(heir_loc, heir_region, match_loc) else "mismatch"
 
 
-def _verify_identity(heir: str, heir_loc: str, heir_region: str, r: dict) -> tuple[bool, str]:
+def _verify_identity(heir: str, heir_loc: str, heir_region: str, r: dict,
+                     coheirs=None) -> tuple[bool, str]:
     """Wrong-person guard. Returns (keep, confidence: high|medium|low|none).
 
     Gate 1 — surname subset: EVERY name token the heir carries must appear in PDL's
     matched person (kills 'Royo Pérez'≠'Ruiz Pérez', 'Adiego Gracia'≠'Gracia').
-    Gate 2 — corroboration:
-      HIGH   = subset + matched person's LOCATION is the heir's town/province.
-      MEDIUM = subset + strong name evidence (exact surname-set match, two surnames,
-               or PDL likelihood ≥6) with no location contradiction — a "verify in
-               ~10s via LinkedIn" tier.
-      else rejected (lone common surname, or location contradiction with a weak name).
+    Gate 2 — corroboration (any ONE lifts the match out of the homonym pile):
+      · LOCATION   — PDL places the match in the heir's town/province.
+      · FAMILY     — PDL's match also carries a RARE surname the heir's siblings
+                     (co-heirs sharing the paternal surname) carry. A random same-name
+                     person in the town would not also share the family's specific
+                     surname, so this is independent evidence, not name coincidence.
+      · NAME       — exact surname-set match / two surnames / PDL likelihood ≥6.
+      HIGH   = location match, OR family-surname corroboration.
+      MEDIUM = strong specific (non-common) name, no location contradiction — a
+               "verify in ~10s via LinkedIn" tier.
+      else rejected (lone common surname with no corroboration, or a location
+      contradiction with only a weak name).
     """
     matched = r.get("matched_full") or r.get("matched") or ""
     if not matched:
@@ -192,15 +217,27 @@ def _verify_identity(heir: str, heir_loc: str, heir_region: str, r: dict) -> tup
     exact = h == m                                 # heir's surname set == match's
     two = len(h) >= 2                              # two matching surname tokens
     common_only = h <= _COMMON_SURNAMES            # e.g. a lone 'García'
+    # Family-graph corroboration: does PDL's match carry a rare surname the heir's
+    # sibling cluster also attests? (Empty/common family signatures never trigger it.)
+    fam = _family_surnames(heir, coheirs)
+    family_specific = bool((fam - _COMMON_SURNAMES) & m)
+
     if loc == "match":
         return True, "high"
     strong_name = exact or two or lk >= 6
     if loc == "mismatch":
-        # PDL places them elsewhere — only a strong, specific (non-common) name holds.
-        return (strong_name and not common_only, "medium" if (strong_name and not common_only) else "low")
+        # PDL places them elsewhere — need a strong specific name OR family corroboration
+        # (which can hold even for a lone-common heir name); family does NOT upgrade to
+        # high against a location contradiction, only rescues to medium.
+        ok = (strong_name and not common_only) or family_specific
+        return (ok, "medium" if ok else "low")
     # location unknown:
+    if family_specific:
+        # Independent family-surname corroboration substitutes for the missing location.
+        return True, "high"
     if strong_name and not common_only:
         return True, "medium"
+    # Lone common surname, no corroboration: almost certainly a homonym — reject.
     return False, "low"
 
 
@@ -494,7 +531,7 @@ def main() -> int:
     params = (TIER_FILTER,) if TIER_FILTER else ()
     candidates = conn.execute(
         f"""
-        SELECT id, heir_name, localidad, region, direccion, tier FROM leads
+        SELECT id, heir_name, heir_names_json, localidad, region, direccion, tier FROM leads
         WHERE heir_name IS NOT NULL AND heir_name != ''
           AND {tier_sql}
           AND (contact_email IS NULL OR contact_email = '')
@@ -555,8 +592,15 @@ def main() -> int:
         em[r["email"] if r["email"] in em else "other"] += 1
         if r["billable"]:
             matched += 1
-        # Rigorous identity verification (surname-set containment + location + lk).
-        keep, conf = _verify_identity(name, loc, reg, r) if r["email_value"] else (False, "none")
+        # Co-heir cluster (everyone in the estate except this heir) — feeds the
+        # family-surname corroboration in _verify_identity.
+        try:
+            _cluster = json.loads(row["heir_names_json"] or "[]")
+        except (TypeError, ValueError):
+            _cluster = []
+        coheirs = [c for c in _cluster if _norm(c) != _norm(name)]
+        # Rigorous identity verification (surname-set containment + location + co-heir + lk).
+        keep, conf = _verify_identity(name, loc, reg, r, coheirs) if r["email_value"] else (False, "none")
         if r["email_value"] and keep:
             conn.execute(
                 """UPDATE leads SET

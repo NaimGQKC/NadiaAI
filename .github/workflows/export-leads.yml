@@ -1,0 +1,46 @@
+name: Export enriched leads (CSV for client)
+
+# Dumps the enriched heir leads (those carrying a verified PDL email) to a clean CSV
+# and uploads it as a downloadable artifact. Self-hosted (needs the persistent DB).
+# Read-only: never mutates the DB or spends any credits.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ccaa:
+        description: 'Restrict to a CCAA (e.g. "aragon"); blank = all'
+        required: false
+        default: "aragon"
+      conf:
+        description: '"high" = only high-confidence rows; blank = high+medium'
+        required: false
+        default: ""
+
+jobs:
+  export:
+    runs-on: [self-hosted, nadia]
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Export leads to CSV
+        shell: powershell
+        env:
+          HEIR_EXPORT_CCAA: ${{ inputs.ccaa }}
+          HEIR_EXPORT_CONF: ${{ inputs.conf }}
+        run: |
+          $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
+          $env:HEIR_EXPORT_OUT = "$env:GITHUB_WORKSPACE\nadia_leads_export.csv"
+          Write-Host "Using persistent DB at $env:NADIA_DB_PATH"
+          python tools/export_leads.py
+
+      - name: Upload CSV artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nadia-leads-csv
+          path: nadia_leads_export.csv
+          if-no-files-found: error
