@@ -47,8 +47,10 @@ _segs = os.getenv("HEIR_TEST_PROVIDER", "pdl").lower().split(":")
 PROVIDER = _segs[0]
 DRY_RUN = "dry" in _segs[1:]
 AUDIT = "audit" in _segs[1:]
+RECLEAR = "reclear" in _segs[1:]  # clear existing pdl emails in scope, then re-enrich
+_FLAGS = ("dry", "audit", "reclear", "a", "b", "c")
 TIER_FILTER = next((s.upper() for s in _segs[1:] if s in ("a", "b", "c")), "")
-CCAA_FILTER = next((s for s in _segs[1:] if s not in ("dry", "audit", "a", "b", "c")), "")
+CCAA_FILTER = next((s for s in _segs[1:] if s not in _FLAGS), "")
 API_KEY = os.getenv("HEIR_TEST_KEY", "")
 SAMPLE = int(os.getenv("HEIR_TEST_SAMPLE", "50"))
 COUNTRY = os.getenv("HEIR_TEST_COUNTRY", "Spain")
@@ -114,6 +116,129 @@ def _good_heir_name(name: str) -> bool:
         if first_alpha and first_alpha.islower():
             return False
     return True
+
+
+def _surnames(name: str) -> set:
+    """Surname tokens of a name: alphabetic tokens ≥3 chars that are NOT connectors
+    or common given names. 'María Concepción Adiego Gracia' -> {adiego, gracia}."""
+    return {t for t in re.split(r"[^a-z]+", _norm(name))
+            if len(t) >= 3 and t not in _STOP and t not in _GIVEN}
+
+
+def _first_surname(name: str) -> str:
+    """The heir's FIRST (paternal) surname — the first token that isn't a given name
+    or connector. 'Francisco Royo Pérez' -> 'royo'."""
+    for t in re.split(r"[^a-z]+", _norm(name)):
+        if len(t) >= 3 and t not in _STOP and t not in _GIVEN:
+            return t
+    return ""
+
+
+def _family_surnames(heir: str, coheirs) -> set:
+    """The family's attested surname signature — surnames carried by the heir's
+    SIBLINGS, i.e. co-heirs who share the heir's paternal (first) surname. Full
+    siblings share BOTH apellidos, so this recovers a second, rarer surname the heir's
+    own extracted name may be missing, and independently attests the paternal surname
+    itself. Returns an empty set when there are no co-heirs or none shares the paternal
+    surname. Uses the co-heir cluster we already extracted (heir_names_json) — 0 cost."""
+    first = _first_surname(heir)
+    if not first:
+        return set()
+    fam: set = set()
+    for c in coheirs or []:
+        cs = _surnames(c)
+        if first in cs:                 # shares the paternal surname => (likely) a sibling
+            fam |= cs
+    return fam
+
+
+# Very common Spanish surnames — a match on one of these ALONE is weak; require
+# corroboration (location or a second surname) before trusting the identity.
+_COMMON_SURNAMES = {
+    "garcia", "gonzalez", "rodriguez", "fernandez", "lopez", "martinez", "sanchez",
+    "perez", "gomez", "martin", "jimenez", "ruiz", "hernandez", "diaz", "moreno",
+    "alvarez", "romero", "gutierrez", "navarro", "torres", "dominguez", "gil",
+    "vazquez", "serrano", "ramos", "blanco", "molina", "morales", "ortega", "marin",
+}
+
+
+def _location_matches(heir_loc: str, heir_region: str, match_loc: str) -> bool:
+    """True if PDL's matched person is located in the heir's town/province/CCAA —
+    strong corroboration that it's the same person, not a homonym elsewhere."""
+    if not match_loc:
+        return False
+    m = _norm(match_loc)
+    for cand in (heir_loc, heir_region):
+        c = _norm(cand)
+        if c and len(c) >= 4 and c in m:
+            return True
+    # Aragón province/CCAA corroboration
+    if any(p in m for p in _ARAGON) and (
+        _in_ccaa(heir_region, heir_loc, "aragon")):
+        return True
+    return False
+
+
+def _location_status(heir_loc: str, heir_region: str, match_loc: str) -> str:
+    """'match' | 'mismatch' | 'unknown' — whether PDL's location corroborates."""
+    if not (match_loc or "").strip():
+        return "unknown"
+    return "match" if _location_matches(heir_loc, heir_region, match_loc) else "mismatch"
+
+
+def _verify_identity(heir: str, heir_loc: str, heir_region: str, r: dict,
+                     coheirs=None) -> tuple[bool, str]:
+    """Wrong-person guard. Returns (keep, confidence: high|medium|low|none).
+
+    Gate 1 — surname subset: EVERY name token the heir carries must appear in PDL's
+    matched person (kills 'Royo Pérez'≠'Ruiz Pérez', 'Adiego Gracia'≠'Gracia').
+    Gate 2 — corroboration (any ONE lifts the match out of the homonym pile):
+      · LOCATION   — PDL places the match in the heir's town/province.
+      · FAMILY     — PDL's match also carries a RARE surname the heir's siblings
+                     (co-heirs sharing the paternal surname) carry. A random same-name
+                     person in the town would not also share the family's specific
+                     surname, so this is independent evidence, not name coincidence.
+      · NAME       — exact surname-set match / two surnames / PDL likelihood ≥6.
+      HIGH   = location match, OR family-surname corroboration.
+      MEDIUM = strong specific (non-common) name, no location contradiction — a
+               "verify in ~10s via LinkedIn" tier.
+      else rejected (lone common surname with no corroboration, or a location
+      contradiction with only a weak name).
+    """
+    matched = r.get("matched_full") or r.get("matched") or ""
+    if not matched:
+        return False, "none"
+    h = _surnames(heir)
+    m = _surnames(matched)
+    if not h or not (h <= m):                      # gate 1: name-token subset
+        return False, "none"
+    loc = _location_status(heir_loc, heir_region, r.get("match_loc", ""))
+    lk = r.get("lk", 0) or 0
+    exact = h == m                                 # heir's surname set == match's
+    two = len(h) >= 2                              # two matching surname tokens
+    common_only = h <= _COMMON_SURNAMES            # e.g. a lone 'García'
+    # Family-graph corroboration: does PDL's match carry a rare surname the heir's
+    # sibling cluster also attests? (Empty/common family signatures never trigger it.)
+    fam = _family_surnames(heir, coheirs)
+    family_specific = bool((fam - _COMMON_SURNAMES) & m)
+
+    if loc == "match":
+        return True, "high"
+    strong_name = exact or two or lk >= 6
+    if loc == "mismatch":
+        # PDL places them elsewhere — need a strong specific name OR family corroboration
+        # (which can hold even for a lone-common heir name); family does NOT upgrade to
+        # high against a location contradiction, only rescues to medium.
+        ok = (strong_name and not common_only) or family_specific
+        return (ok, "medium" if ok else "low")
+    # location unknown:
+    if family_specific:
+        # Independent family-surname corroboration substitutes for the missing location.
+        return True, "high"
+    if strong_name and not common_only:
+        return True, "medium"
+    # Lone common surname, no corroboration: almost certainly a homonym — reject.
+    return False, "low"
 
 
 def _reject_reason(name: str) -> str:
@@ -262,6 +387,10 @@ def _lookup_pdl(name: str, locality: str, region: str, street: str = "") -> dict
                     "phone_value": _extract_value(data, _PHONE_KEYS, _PHONE_RE),
                     "linkedin": data.get("linkedin_url") or "",
                     "matched": (data.get("full_name") or "")[:28],
+                    "matched_full": data.get("full_name") or "",
+                    "match_loc": " ".join(str(x) for x in (
+                        data.get("location_name"), data.get("location_locality"),
+                        data.get("location_region")) if x),
                     "lk": body.get("likelihood", 0),
                     "billable": True,  # a 200 match consumes 1 PDL credit
                 }
@@ -382,6 +511,19 @@ def main() -> int:
 
     if AUDIT:
         return _run_audit(conn)
+
+    if RECLEAR:
+        # Clear existing PDL emails in scope so they get re-queried + re-verified
+        # (used after tightening the identity guard). Only affects contact_source='pdl'.
+        _all = conn.execute(
+            "SELECT id, region, localidad FROM leads WHERE contact_source = 'pdl'"
+        ).fetchall()
+        _clr = [r["id"] for r in _all if _in_ccaa(r["region"], r["localidad"], CCAA_FILTER)]
+        if _clr:
+            conn.execute(f"UPDATE leads SET contact_email = '' WHERE id IN ({','.join(map(str, _clr))})")
+            conn.commit()
+        print(f"[reclear: cleared {len(_clr)} existing PDL emails in scope for re-verification]")
+
     # Fetch a broad candidate set (address-first, no email yet), then filter by tier /
     # CCAA / name-quality in Python so credits are only ever spent on genuine target
     # heirs. Only PDL calls cost — this DB scan is free.
@@ -389,7 +531,7 @@ def main() -> int:
     params = (TIER_FILTER,) if TIER_FILTER else ()
     candidates = conn.execute(
         f"""
-        SELECT id, heir_name, localidad, region, direccion, tier FROM leads
+        SELECT id, heir_name, heir_names_json, localidad, region, direccion, tier FROM leads
         WHERE heir_name IS NOT NULL AND heir_name != ''
           AND {tier_sql}
           AND (contact_email IS NULL OR contact_email = '')
@@ -450,39 +592,52 @@ def main() -> int:
         em[r["email"] if r["email"] in em else "other"] += 1
         if r["billable"]:
             matched += 1
-        # Write any REAL email value (paid key) to the DB — low confidence, keep LinkedIn for verify.
-        if r["email_value"]:
+        # Co-heir cluster (everyone in the estate except this heir) — feeds the
+        # family-surname corroboration in _verify_identity.
+        try:
+            _cluster = json.loads(row["heir_names_json"] or "[]")
+        except (TypeError, ValueError):
+            _cluster = []
+        coheirs = [c for c in _cluster if _norm(c) != _norm(name)]
+        # Rigorous identity verification (surname-set containment + location + co-heir + lk).
+        keep, conf = _verify_identity(name, loc, reg, r, coheirs) if r["email_value"] else (False, "none")
+        if r["email_value"] and keep:
             conn.execute(
                 """UPDATE leads SET
                      contact_email = ?,
                      contact_source = 'pdl',
-                     contact_confidence = 'heir-pdl (low)',
+                     contact_confidence = ?,
                      contact_enriched_at = datetime('now'),
                      last_updated_at = CURRENT_TIMESTAMP
                    WHERE id = ?""",
-                (r["email_value"], row["id"]),
+                (r["email_value"], f"heir-pdl ({conf})", row["id"]),
             )
             conn.commit()
             written += 1
-            found_emails.append((name, r["email_value"], r["linkedin"], r["matched"]))
-            print(f"  ✓ {name[:34]:34} {loc[:12]:12} →  {r['email_value']}")
+            found_emails.append((name, r["email_value"], r["linkedin"], r["matched"], conf))
+            print(f"  ✓[{conf:6}] {name[:32]:32} {loc[:12]:12} →  {r['email_value']}")
+        elif r["email_value"]:
+            # PDL returned an email but for a different / unverifiable person.
+            print(f"  ✗ {name[:32]:32} {loc[:12]:12} →  unverified ({r['matched']}) — skipped")
         else:
             tag = "no email on file" if r["lk"] else "no match"
-            print(f"  · {name[:34]:34} {loc[:12]:12} →  ({tag})")
+            print(f"  · {name[:32]:32} {loc[:12]:12} →  ({tag})")
 
     n = i
     pct = lambda x: f"{100 * x // n if n else 0}%"
     print("\n" + bar)
     print("  RESULTS")
     print(bar)
+    n_high = sum(1 for e in found_emails if e[4] == "high")
     print(f"  Heirs processed ........ {n}")
     print(f"  Credits used ........... {matched}")
-    print(f"  ✅ Emails found ......... {written}/{n}  ({pct(written)})")
+    print(f"  ✅ Verified emails ...... {written}/{n}  ({pct(written)})   "
+          f"[{n_high} high-confidence, {written - n_high} medium]")
     if found_emails:
-        print("\n  Contactable heirs (spot-check identity via LinkedIn):")
-        for nm, mail, li, mtc in found_emails:
+        print("\n  Verified contactable heirs (surname+location matched):")
+        for nm, mail, li, mtc, conf in found_emails:
             extra = f"   [{li}]" if li else ""
-            print(f"    • {nm[:32]:32}  {mail}{extra}")
+            print(f"    • [{conf:6}] {nm[:30]:30}  {mail}{extra}")
     return 0
 
 
