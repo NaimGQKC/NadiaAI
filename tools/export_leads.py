@@ -64,6 +64,20 @@ def _cols(conn: sqlite3.Connection) -> list:
     return [(c, label) for c, label in _WANT if c in have]
 
 
+def _cell(r, col: str):
+    """Value for one output cell. For the property-address column, only surface a
+    REAL street-level address (one with a house number). A bare city/region name
+    ("Zaragoza") is not an address — showing it there misleads the client into
+    thinking we have a street, so blank it. The street itself, when the public
+    source never published one, has to come from a postal-append provider (Deyde)."""
+    v = r[col]
+    if col == "direccion":
+        s = (v or "").strip()
+        if not s or not any(ch.isdigit() for ch in s):
+            return ""
+    return v
+
+
 def _fetch(conn: sqlite3.Connection, cols: list) -> list:
     select = ", ".join(c for c, _ in cols)
     tier_ph = ",".join("?" for _ in TIERS)
@@ -134,7 +148,7 @@ def _write_xlsx(path: str, cols: list, rows: list) -> bool:
     conf_idx = next((i for i, (c, _) in enumerate(cols) if c == "contact_confidence"), None)
 
     for r in rows:
-        ws.append([r[c] for c, _ in cols])
+        ws.append([_cell(r, c) for c, _ in cols])
         if conf_idx is not None:
             conf = (r["contact_confidence"] or "").lower()
             fill = hi_fill if "high" in conf else (med_fill if "medium" in conf else None)
@@ -145,7 +159,7 @@ def _write_xlsx(path: str, cols: list, rows: list) -> bool:
     ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}{ws.max_row}"
     # Size columns to their content (capped) so the client can read it as-is.
     for i, (c, label) in enumerate(cols, 1):
-        longest = max([len(label)] + [len(str(r[c] or "")) for r in rows] or [0])
+        longest = max([len(label)] + [len(str(_cell(r, c) or "")) for r in rows] or [0])
         ws.column_dimensions[get_column_letter(i)].width = min(max(longest + 2, 10), 48)
 
     wb.save(path)
@@ -157,7 +171,7 @@ def _write_csv(path: str, cols: list, rows: list) -> None:
         w = csv.writer(f)
         w.writerow([label for _, label in cols])
         for r in rows:
-            w.writerow([r[c] for c, _ in cols])
+            w.writerow([_cell(r, c) for c, _ in cols])
 
 
 def main() -> int:

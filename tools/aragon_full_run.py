@@ -56,6 +56,11 @@ _setup_logging()
 log = logging.getLogger("aragon")
 
 DRY = os.getenv("ARAGON_DRY") == "1"
+# Phase 3 (PDL email enrichment) is the ONLY step that spends paid credits. Set
+# ARAGON_ENRICH=0 to run re-extraction ONLY — apply all the data-quality fixes
+# (accents, surnames, co-heir) and recover any in-source street addresses without
+# spending a single PDL credit. Emails already in the DB are untouched either way.
+ENRICH = os.getenv("ARAGON_ENRICH", "1") != "0"
 MAX_RESET = int(os.getenv("ARAGON_MAX_RESET", "800"))  # safety cap on how many we reset
 
 
@@ -115,6 +120,12 @@ def main() -> int:
         log.error("Phase 2 FAILED (%s). Skipping to enrichment on whatever data exists.", e)
 
     # ── Phase 3: PDL email enrichment on Aragón (delegates, reusing the demo output) ─
+    if not ENRICH:
+        log.info("Phase 3 · SKIPPED (ARAGON_ENRICH=0) — re-extraction only, 0 PDL credits spent.")
+        print(bar)
+        log.info("EXTRACT-ONLY DONE in %.0fs. Fixes applied; addresses recovered where in-source.", time.monotonic() - t0)
+        print(bar)
+        return 0
     log.info("Phase 3 · enriching Aragón emails via PDL…")
     env = {
         **os.environ,
