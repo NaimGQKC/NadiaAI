@@ -51,7 +51,22 @@ RECLEAR = "reclear" in _segs[1:]  # clear existing pdl emails in scope, then re-
 _FLAGS = ("dry", "audit", "reclear", "a", "b", "c")
 TIER_FILTER = next((s.upper() for s in _segs[1:] if s in ("a", "b", "c")), "")
 CCAA_FILTER = next((s for s in _segs[1:] if s not in _FLAGS), "")
-API_KEY = os.getenv("HEIR_TEST_KEY", "")
+# A CI checkout is fresh, so a repo-root .env never survives into a workflow run.
+# Also honour a persistent .env kept NEXT TO THE DB (e.g. ~/nadia-ai-data/.env) so the
+# key can be set once on the runner and outlive every checkout.
+try:
+    from dotenv import load_dotenv  # noqa: E402
+
+    _persistent_env = os.path.join(os.path.dirname(os.path.abspath(DB_PATH)), ".env")
+    if os.path.exists(_persistent_env):
+        load_dotenv(_persistent_env, override=False)
+except Exception:  # pragma: no cover - dotenv optional
+    pass
+
+# Accept whichever name the key is stored under: the explicit test override, or the
+# PDL_API_KEY / PDL_KEY that a .env or a repo secret would normally carry.
+API_KEY = (os.getenv("HEIR_TEST_KEY") or os.getenv("PDL_API_KEY")
+           or os.getenv("PDL_KEY") or "").strip()
 SAMPLE = int(os.getenv("HEIR_TEST_SAMPLE", "50"))
 COUNTRY = os.getenv("HEIR_TEST_COUNTRY", "Spain")
 
@@ -561,7 +576,8 @@ def main() -> int:
     except Exception:
         pass
     if not API_KEY and not (DRY_RUN or AUDIT):
-        print("ERROR: set HEIR_TEST_KEY", file=sys.stderr)
+        print("ERROR: no PDL key. Set the PDL_API_KEY repo secret, or put PDL_API_KEY=... "
+              "in a .env next to the DB, or export HEIR_TEST_KEY.", file=sys.stderr)
         return 2
     if PROVIDER != "pdl":
         print(f"ERROR: provider {PROVIDER!r} not implemented yet (only 'pdl')", file=sys.stderr)

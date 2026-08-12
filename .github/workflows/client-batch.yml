@@ -16,8 +16,9 @@ on:
   workflow_dispatch:
     inputs:
       pdl_key:
-        description: "PDL API key (reroll after the run)"
-        required: true
+        description: "Optional one-off override. Leave BLANK to use the PDL_API_KEY secret."
+        required: false
+        default: ""
       max_credits:
         description: "Budget guard PER PASS. The real limit is your PDL balance."
         required: false
@@ -37,7 +38,11 @@ jobs:
     timeout-minutes: 180
 
     env:
-      HEIR_TEST_KEY: ${{ inputs.pdl_key }}
+      # Key resolution, in order: the optional dispatch input, then the PDL_API_KEY repo
+      # secret, then a PDL_API_KEY in a .env kept next to the DB on the runner. Set it
+      # once as a secret and this workflow never asks for it again.
+      PDL_API_KEY: ${{ secrets.PDL_API_KEY }}
+      PDL_KEY_INPUT: ${{ inputs.pdl_key }}
       # No sample cap — take every qualifying lead; the credit guard is the real limit.
       HEIR_TEST_SAMPLE: "100000"
       HEIR_MAX_MATCHES: ${{ inputs.max_credits }}
@@ -58,6 +63,7 @@ jobs:
           DRY: ${{ inputs.dry }}
         run: |
           $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
+          if ($env:PDL_KEY_INPUT) { $env:HEIR_TEST_KEY = $env:PDL_KEY_INPUT }
           $p = @("pdl", "zaragoza"); if ($env:DRY -eq "1") { $p += "dry" }
           $env:HEIR_TEST_PROVIDER = ($p -join ":")
           Write-Host "provider=$($env:HEIR_TEST_PROVIDER)  cap=$env:HEIR_MAX_MATCHES"
@@ -71,6 +77,7 @@ jobs:
           DRY: ${{ inputs.dry }}
         run: |
           $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
+          if ($env:PDL_KEY_INPUT) { $env:HEIR_TEST_KEY = $env:PDL_KEY_INPUT }
           $p = @("pdl", "aragon"); if ($env:DRY -eq "1") { $p += "dry" }
           $env:HEIR_TEST_PROVIDER = ($p -join ":")
           Write-Host "provider=$($env:HEIR_TEST_PROVIDER)  cap=$env:HEIR_MAX_MATCHES"
@@ -85,6 +92,7 @@ jobs:
           DRY: ${{ inputs.dry }}
         run: |
           $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
+          if ($env:PDL_KEY_INPUT) { $env:HEIR_TEST_KEY = $env:PDL_KEY_INPUT }
           $p = @("pdl"); if ($env:DRY -eq "1") { $p += "dry" }
           $env:HEIR_TEST_PROVIDER = ($p -join ":")
           Write-Host "provider=$($env:HEIR_TEST_PROVIDER)  cap=$env:HEIR_MAX_MATCHES"
