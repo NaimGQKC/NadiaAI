@@ -95,8 +95,8 @@ def _fetch(conn: sqlite3.Connection, cols: list) -> list:
         return k in r.keys()
 
     def _keep(r) -> bool:
-        if CCAA and not tp._in_ccaa(r["region"] if _has(r, "region") else "",
-                                    r["localidad"] if _has(r, "localidad") else "", CCAA):
+        if CCAA and not tp._in_scope(r["region"] if _has(r, "region") else "",
+                                     r["localidad"] if _has(r, "localidad") else "", CCAA):
             return False
         if not tp._good_heir_name(r["heir_name"] if _has(r, "heir_name") else ""):
             return False

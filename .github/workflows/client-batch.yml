@@ -1,0 +1,101 @@
+name: Client batch (enrich emails + export Excel)
+
+# THE one-click client deliverable. In a single job:
+#   1. PDL email enrichment, scoped (default Zaragoza), ranked BEST-FIRST by lead
+#      completeness, skipping every lead that already has an email (no overlap with
+#      what the client already received).
+#   2. Read-only DB coverage stats to the log (no PII, 0 credits).
+#   3. Export the scoped leads to a formatted Excel and upload it as an artifact.
+#
+# Self-hosted (the persistent DB lives on the runner). Credits are spent ONLY by
+# step 1, and only up to `max_credits`. Set dry=1 for a free preview of exactly
+# which heirs would be queried.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pdl_key:
+        description: "PDL API key (reroll after the run)"
+        required: true
+      scope:
+        description: 'Geographic scope: "zaragoza", "aragon", or blank for all'
+        required: false
+        default: "zaragoza"
+      tier:
+        description: 'Tier filter: "a", "b", or blank for A+B'
+        required: false
+        default: ""
+      sample:
+        description: "Max heirs to query (upper bound on credits)"
+        required: false
+        default: "120"
+      max_credits:
+        description: "Hard budget guard — stop after this many billable matches"
+        required: false
+        default: "150"
+      dry:
+        description: '"1" = free preview (lists the ranked heirs, 0 credits); "0" = live'
+        required: false
+        default: "0"
+      emailed_only:
+        description: '"1" = Excel contains ONLY leads with an email; "0" = full list'
+        required: false
+        default: "1"
+
+jobs:
+  client-batch:
+    runs-on: [self-hosted, nadia]
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          pip install -e .
+          pip install openpyxl
+
+      - name: Enrich emails (PDL, best-first, no overlap)
+        shell: powershell
+        env:
+          HEIR_TEST_KEY: ${{ inputs.pdl_key }}
+          HEIR_TEST_SAMPLE: ${{ inputs.sample }}
+          HEIR_MAX_MATCHES: ${{ inputs.max_credits }}
+          SCOPE: ${{ inputs.scope }}
+          TIER: ${{ inputs.tier }}
+          DRY: ${{ inputs.dry }}
+        run: |
+          $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
+          $parts = @("pdl")
+          if ($env:SCOPE) { $parts += $env:SCOPE }
+          if ($env:TIER)  { $parts += $env:TIER }
+          if ($env:DRY -eq "1") { $parts += "dry" }
+          $prov = ($parts -join ":")
+          $env:HEIR_TEST_PROVIDER = $prov
+          Write-Host "DB=$env:NADIA_DB_PATH  provider=$prov  sample=$env:HEIR_TEST_SAMPLE  cap=$env:HEIR_MAX_MATCHES"
+          python tools/test_heir_phones.py
+
+      - name: DB coverage stats (read-only)
+        shell: powershell
+        run: |
+          $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
+          python tools/db_stats.py
+
+      - name: Export Excel for the client
+        shell: powershell
+        env:
+          HEIR_EXPORT_CCAA: ${{ inputs.scope }}
+          HEIR_EXPORT_EMAILED_ONLY: ${{ inputs.emailed_only }}
+        run: |
+          $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
+          $env:HEIR_EXPORT_OUT = "$env:GITHUB_WORKSPACE\nadia_leads_export.xlsx"
+          python tools/export_leads.py
+
+      - name: Upload Excel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nadia-client-batch
+          path: |
+            nadia_leads_export.xlsx
+            nadia_leads_export.csv
+          if-no-files-found: error
