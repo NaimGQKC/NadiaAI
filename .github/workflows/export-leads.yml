@@ -37,6 +37,12 @@ jobs:
           pip install -e .
           pip install openpyxl
 
+      - name: DB coverage stats (read-only, to log)
+        shell: powershell
+        run: |
+          $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
+          python tools/db_stats.py
+
       - name: Export leads to Excel
         shell: powershell
         env:

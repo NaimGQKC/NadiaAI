@@ -9,9 +9,14 @@ name: Aragón full re-run (re-extract + enrich)
 on:
   workflow_dispatch:
     inputs:
+      enrich:
+        description: '"1" = re-extract + PDL email enrichment (spends credits); "0" = re-extract ONLY (0 credits)'
+        required: false
+        default: "0"
       pdl_key:
-        description: "PDL API key (for Phase 3 email enrichment). Reroll after."
-        required: true
+        description: "PDL API key (only needed when enrich=1). Reroll after."
+        required: false
+        default: ""
       dry:
         description: '"1" = dry run (counts only, no reset/extract/spend); "0" = live'
         required: false
@@ -43,6 +48,7 @@ jobs:
           HEIR_TEST_KEY: ${{ inputs.pdl_key }}
           HEIR_TEST_SAMPLE: ${{ inputs.sample }}
           ARAGON_DRY: ${{ inputs.dry }}
+          ARAGON_ENRICH: ${{ inputs.enrich }}
           # Optional proxy (unused on a Spanish IP, kept for parity)
           BOE_PROXY_URL: ${{ secrets.BOE_PROXY_URL }}
         run: |

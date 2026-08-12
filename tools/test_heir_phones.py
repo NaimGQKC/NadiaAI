@@ -283,6 +283,68 @@ def _quality_flags(name: str, localidad: str, direccion: str, seen: dict) -> lis
     return flags
 
 
+def _in_scope(region: str, localidad: str, scope: str) -> bool:
+    """Geographic scope filter — accepts a CCAA ('aragon') OR a province/municipality
+    ('zaragoza', 'huesca'). _in_ccaa alone can't express 'Zaragoza' because ccaa_for
+    maps it to 'Aragón', so a province scope would match nothing. Here a province/
+    municipality scope matches when its name appears in the lead's region or localidad
+    (obituary leads store the province in `region`; edict leads store the town)."""
+    if not scope:
+        return True
+    s = _norm(scope)
+    if s in ("aragon", "aragón"):
+        return _in_ccaa(region, localidad, s)
+    blob = f"{_norm(region)} {_norm(localidad)}"
+    if s and s in blob:
+        return True
+    return _in_ccaa(region, localidad, scope)
+
+
+def _coheirs(r) -> list:
+    """The other heirs named in the same estate (the family cluster minus this heir).
+    Feeds the family-surname corroboration in _verify_identity — 0 extra cost, it's
+    already stored on the lead."""
+    keys = r.keys()
+    if "heir_names_json" not in keys:
+        return []
+    try:
+        cluster = json.loads(r["heir_names_json"] or "[]")
+    except (TypeError, ValueError):
+        return []
+    me = _norm(r["heir_name"] if "heir_name" in keys else "")
+    return [c for c in cluster if _norm(c) != me]
+
+
+def _completeness(r, coheirs) -> int:
+    """How much corroborating information a lead carries — the best-first order for
+    spending credits. Deliberately double-purposed: the signals that make a lead more
+    valuable to the client (real street address, catastral ref, Tier A) are largely the
+    same ones _verify_identity needs to confirm the person (co-heirs, two surnames, a
+    town), so ranking by this raises BOTH deliverable quality and verified-hit rate."""
+    keys = r.keys()
+    score = 0
+    direccion = (r["direccion"] or "") if "direccion" in keys else ""
+    if any(ch.isdigit() for ch in direccion):
+        score += 3                                    # real street-level address
+    elif direccion.strip():
+        score += 1                                    # at least some location string
+    for c in ("referencia_catastral", "ref_catastral"):
+        if c in keys and (r[c] or "").strip():
+            score += 2                                # Catastro-resolved parcel
+            break
+    if coheirs:
+        score += 2                                    # enables family-graph corroboration
+    if len(_surnames(r["heir_name"])) >= 2:
+        score += 2                                    # two surnames -> precise match
+    if "date_of_death" in keys and (r["date_of_death"] or "").strip():
+        score += 1
+    if (r["tier"] or "") == "A":
+        score += 1
+    if (r["localidad"] or "").strip():
+        score += 1                                    # enables location corroboration
+    return score
+
+
 def _in_ccaa(region: str, localidad: str, target: str) -> bool:
     """True if this lead belongs to the target CCAA (accent-insensitive)."""
     if not target:
@@ -518,47 +580,61 @@ def main() -> int:
         _all = conn.execute(
             "SELECT id, region, localidad FROM leads WHERE contact_source = 'pdl'"
         ).fetchall()
-        _clr = [r["id"] for r in _all if _in_ccaa(r["region"], r["localidad"], CCAA_FILTER)]
+        _clr = [r["id"] for r in _all if _in_scope(r["region"], r["localidad"], CCAA_FILTER)]
         if _clr:
             conn.execute(f"UPDATE leads SET contact_email = '' WHERE id IN ({','.join(map(str, _clr))})")
             conn.commit()
         print(f"[reclear: cleared {len(_clr)} existing PDL emails in scope for re-verification]")
 
-    # Fetch a broad candidate set (address-first, no email yet), then filter by tier /
-    # CCAA / name-quality in Python so credits are only ever spent on genuine target
-    # heirs. Only PDL calls cost — this DB scan is free.
+    # Fetch a broad candidate set, then filter by tier / scope / name-quality in Python
+    # so credits are only ever spent on genuine target heirs. Only PDL calls cost — this
+    # DB scan is free. `contact_email = ''` is the NO-OVERLAP guard: any lead that already
+    # carries an email (i.e. already delivered to the client) is never re-queried.
+    have = {r[1] for r in conn.execute("PRAGMA table_info(leads)").fetchall()}
+    want = ["id", "heir_name", "heir_names_json", "localidad", "region", "direccion",
+            "tier", "date_of_death", "referencia_catastral", "ref_catastral"]
+    sel = ", ".join(c for c in want if c in have)
     tier_sql = "tier = ?" if TIER_FILTER else "tier IN ('A','B')"
     params = (TIER_FILTER,) if TIER_FILTER else ()
     candidates = conn.execute(
         f"""
-        SELECT id, heir_name, heir_names_json, localidad, region, direccion, tier FROM leads
+        SELECT {sel} FROM leads
         WHERE heir_name IS NOT NULL AND heir_name != ''
           AND {tier_sql}
           AND (contact_email IS NULL OR contact_email = '')
-        ORDER BY (CASE WHEN direccion IS NOT NULL AND direccion != '' THEN 0 ELSE 1 END),
-                 first_seen_at DESC
+        ORDER BY first_seen_at DESC
         """,
         params,
     ).fetchall()
 
-    # Region + name-quality filters (heir_name is the HEIR, never causante/notary).
-    rows = [
+    # Scope + name-quality filters (heir_name is the HEIR, never causante/notary).
+    pool = [
         r for r in candidates
-        if _in_ccaa(r["region"], r["localidad"], CCAA_FILTER) and _good_heir_name(r["heir_name"])
-    ][:SAMPLE]
+        if _in_scope(r["region"], r["localidad"], CCAA_FILTER) and _good_heir_name(r["heir_name"])
+    ]
+    # BEST-FIRST: rank by completeness so the limited credit budget lands on the leads
+    # with the most information — the ones the client can actually act on, and the ones
+    # most likely to verify to a confident match. Ties keep the recency order above.
+    scored = sorted(
+        ((_completeness(r, _coheirs(r)), i, r) for i, r in enumerate(pool)),
+        key=lambda t: (-t[0], t[1]),
+    )
+    rows = [r for _s, _i, r in scored][:SAMPLE]
 
     if not rows:
-        scope = f" (tier={TIER_FILTER or 'A/B'}, ccaa={CCAA_FILTER or 'all'})"
+        scope = f" (tier={TIER_FILTER or 'A/B'}, scope={CCAA_FILTER or 'all'})"
         print(f"No qualifying heirs in DB{scope}.")
         return 0
-    print(f"[filters: tier={TIER_FILTER or 'A/B'} | ccaa={CCAA_FILTER or 'all'} | good-name -> "
-          f"{len(rows)} heirs selected (of {len(candidates)} candidates)]")
+    print(f"[filters: tier={TIER_FILTER or 'A/B'} | scope={CCAA_FILTER or 'all'} | good-name | "
+          f"no existing email -> {len(rows)} heirs selected (of {len(candidates)} candidates), "
+          f"ranked best-first by completeness]")
 
     if DRY_RUN:
         print("\n=== DRY RUN — heirs that WOULD be queried (0 credits, no PDL calls) ===")
-        for i, row in enumerate(rows, 1):
-            print(f"{i:>3}. [{row['tier']}] {row['heir_name'][:38]:38} | "
-                  f"{(row['localidad'] or '')[:16]:16} | {(row['direccion'] or '')[:34]}")
+        print("    score = completeness (address/RC/co-heirs/surnames/tier/town)")
+        for i, (s, _i, row) in enumerate(scored[:SAMPLE], 1):
+            print(f"{i:>3}. [{row['tier']}] score={s:>2} {row['heir_name'][:32]:32} | "
+                  f"{(row['localidad'] or '')[:16]:16} | {(row['direccion'] or '')[:30]}")
         print(f"\nTotal: {len(rows)} heirs. Re-run without ':dry' to enrich (~{len(rows)} credits max).")
         return 0
 
@@ -594,11 +670,7 @@ def main() -> int:
             matched += 1
         # Co-heir cluster (everyone in the estate except this heir) — feeds the
         # family-surname corroboration in _verify_identity.
-        try:
-            _cluster = json.loads(row["heir_names_json"] or "[]")
-        except (TypeError, ValueError):
-            _cluster = []
-        coheirs = [c for c in _cluster if _norm(c) != _norm(name)]
+        coheirs = _coheirs(row)
         # Rigorous identity verification (surname-set containment + location + co-heir + lk).
         keep, conf = _verify_identity(name, loc, reg, r, coheirs) if r["email_value"] else (False, "none")
         if r["email_value"] and keep:

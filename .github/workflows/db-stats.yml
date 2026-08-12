@@ -1,0 +1,26 @@
+name: DB coverage stats (read-only)
+
+# Runs a read-only, AGGREGATE-COUNTS-ONLY analysis of the live leads DB and prints
+# it to the job log. No PII in the output, never writes to the DB, spends no credits.
+# Self-hosted (the persistent DB lives on the runner).
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  db-stats:
+    runs-on: [self-hosted, nadia]
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: DB coverage stats
+        shell: powershell
+        run: |
+          $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
+          Write-Host "Using persistent DB at $env:NADIA_DB_PATH"
+          python tools/db_stats.py
