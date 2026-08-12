@@ -1,15 +1,16 @@
 name: Client batch (enrich emails + export Excel)
 
 # THE one-click client deliverable. In a single job:
-#   1. PDL email enrichment, scoped (default Zaragoza), ranked BEST-FIRST by lead
-#      completeness, skipping every lead that already has an email (no overlap with
-#      what the client already received).
-#   2. Read-only DB coverage stats to the log (no PII, 0 credits).
-#   3. Export the scoped leads to a formatted Excel and upload it as an artifact.
+#   1-3. PDL email enrichment in PRIORITY PASSES — Zaragoza first, then the rest of
+#        Aragón, then the rest of Spain. Each pass is ranked BEST-FIRST by lead
+#        completeness and skips every lead that already has an email, so passes never
+#        double-spend and the best leads always get credits first. Runs until the
+#        PDL balance is exhausted.
+#   4.   Read-only DB coverage stats to the log (no PII, 0 credits).
+#   5-6. Two Excel exports: the contactable list (heir email only) and the full list.
 #
-# Self-hosted (the persistent DB lives on the runner). Credits are spent ONLY by
-# step 1, and only up to `max_credits`. Set dry=1 for a free preview of exactly
-# which heirs would be queried.
+# Self-hosted (the persistent DB lives on the runner). Only the enrich passes spend
+# credits. Set dry=1 for a free preview of exactly which heirs would be queried.
 
 on:
   workflow_dispatch:
@@ -17,35 +18,29 @@ on:
       pdl_key:
         description: "PDL API key (reroll after the run)"
         required: true
-      scope:
-        description: 'Geographic scope: "zaragoza", "aragon", or blank for all'
-        required: false
-        default: "zaragoza"
-      tier:
-        description: 'Tier filter: "a", "b", or blank for A+B'
-        required: false
-        default: ""
-      sample:
-        description: "Max heirs to query (upper bound on credits)"
-        required: false
-        default: "120"
       max_credits:
-        description: "Hard budget guard — stop after this many billable matches"
+        description: "Budget guard PER PASS. The real limit is your PDL balance."
         required: false
-        default: "150"
+        default: "400"
       dry:
         description: '"1" = free preview (lists the ranked heirs, 0 credits); "0" = live'
         required: false
         default: "0"
-      emailed_only:
-        description: '"1" = Excel contains ONLY leads with an email; "0" = full list'
+      spain_wide:
+        description: '"1" = after Aragón, spend leftover credits on the rest of Spain'
         required: false
         default: "1"
 
 jobs:
   client-batch:
     runs-on: [self-hosted, nadia]
-    timeout-minutes: 60
+    timeout-minutes: 180
+
+    env:
+      HEIR_TEST_KEY: ${{ inputs.pdl_key }}
+      # No sample cap — take every qualifying lead; the credit guard is the real limit.
+      HEIR_TEST_SAMPLE: "100000"
+      HEIR_MAX_MATCHES: ${{ inputs.max_credits }}
 
     steps:
       - uses: actions/checkout@v4
@@ -55,47 +50,81 @@ jobs:
           pip install -e .
           pip install openpyxl
 
-      - name: Enrich emails (PDL, best-first, no overlap)
+      # ── Pass 1: Zaragoza (the client's home market) ──────────────────────────
+      - name: "Enrich · pass 1 · Zaragoza"
         shell: powershell
+        continue-on-error: true
         env:
-          HEIR_TEST_KEY: ${{ inputs.pdl_key }}
-          HEIR_TEST_SAMPLE: ${{ inputs.sample }}
-          HEIR_MAX_MATCHES: ${{ inputs.max_credits }}
-          SCOPE: ${{ inputs.scope }}
-          TIER: ${{ inputs.tier }}
           DRY: ${{ inputs.dry }}
         run: |
           $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
-          $parts = @("pdl")
-          if ($env:SCOPE) { $parts += $env:SCOPE }
-          if ($env:TIER)  { $parts += $env:TIER }
-          if ($env:DRY -eq "1") { $parts += "dry" }
-          $prov = ($parts -join ":")
-          $env:HEIR_TEST_PROVIDER = $prov
-          Write-Host "DB=$env:NADIA_DB_PATH  provider=$prov  sample=$env:HEIR_TEST_SAMPLE  cap=$env:HEIR_MAX_MATCHES"
+          $p = @("pdl", "zaragoza"); if ($env:DRY -eq "1") { $p += "dry" }
+          $env:HEIR_TEST_PROVIDER = ($p -join ":")
+          Write-Host "provider=$($env:HEIR_TEST_PROVIDER)  cap=$env:HEIR_MAX_MATCHES"
+          python tools/test_heir_phones.py
+
+      # ── Pass 2: rest of Aragón (already-emailed leads are skipped) ───────────
+      - name: "Enrich · pass 2 · rest of Aragón"
+        shell: powershell
+        continue-on-error: true
+        env:
+          DRY: ${{ inputs.dry }}
+        run: |
+          $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
+          $p = @("pdl", "aragon"); if ($env:DRY -eq "1") { $p += "dry" }
+          $env:HEIR_TEST_PROVIDER = ($p -join ":")
+          Write-Host "provider=$($env:HEIR_TEST_PROVIDER)  cap=$env:HEIR_MAX_MATCHES"
+          python tools/test_heir_phones.py
+
+      # ── Pass 3: rest of Spain, to use up whatever balance remains ────────────
+      - name: "Enrich · pass 3 · rest of Spain"
+        if: ${{ inputs.spain_wide == '1' }}
+        shell: powershell
+        continue-on-error: true
+        env:
+          DRY: ${{ inputs.dry }}
+        run: |
+          $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
+          $p = @("pdl"); if ($env:DRY -eq "1") { $p += "dry" }
+          $env:HEIR_TEST_PROVIDER = ($p -join ":")
+          Write-Host "provider=$($env:HEIR_TEST_PROVIDER)  cap=$env:HEIR_MAX_MATCHES"
           python tools/test_heir_phones.py
 
       - name: DB coverage stats (read-only)
         shell: powershell
+        continue-on-error: true
         run: |
           $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
           python tools/db_stats.py
 
-      - name: Export Excel for the client
+      # ── Deliverables ─────────────────────────────────────────────────────────
+      - name: "Export · contactable list (heir emails only)"
         shell: powershell
         env:
-          HEIR_EXPORT_CCAA: ${{ inputs.scope }}
-          HEIR_EXPORT_EMAILED_ONLY: ${{ inputs.emailed_only }}
+          HEIR_EXPORT_CCAA: ""
+          HEIR_EXPORT_EMAILED_ONLY: "1"
         run: |
           $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
-          $env:HEIR_EXPORT_OUT = "$env:GITHUB_WORKSPACE\nadia_leads_export.xlsx"
+          $env:HEIR_EXPORT_OUT = "$env:GITHUB_WORKSPACE\nadia_contactable.xlsx"
           python tools/export_leads.py
 
-      - name: Upload Excel artifact
+      - name: "Export · full lead list"
+        shell: powershell
+        env:
+          HEIR_EXPORT_CCAA: ""
+          HEIR_EXPORT_EMAILED_ONLY: "0"
+        run: |
+          $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
+          $env:HEIR_EXPORT_OUT = "$env:GITHUB_WORKSPACE\nadia_all_leads.xlsx"
+          python tools/export_leads.py
+
+      - name: Upload Excel artifacts
         uses: actions/upload-artifact@v4
         with:
           name: nadia-client-batch
           path: |
-            nadia_leads_export.xlsx
-            nadia_leads_export.csv
+            nadia_contactable.xlsx
+            nadia_all_leads.xlsx
+            nadia_contactable.csv
+            nadia_all_leads.csv
           if-no-files-found: error
