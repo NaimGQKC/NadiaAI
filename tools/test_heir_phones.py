@@ -478,7 +478,8 @@ def _lookup_pdl(name: str, locality: str, region: str, street: str = "") -> dict
                 time.sleep(2 * (attempt + 1))
                 continue
             return {"phone": f"http_{r.status_code}", "email": "none", "email_value": "",
-                    "phone_value": "", "linkedin": "", "matched": "", "lk": 0, "billable": False}
+                    "phone_value": "", "linkedin": "", "matched": "", "lk": 0,
+                    "billable": False, "status": r.status_code}
         except (requests.RequestException, ValueError):
             if attempt < 2:
                 time.sleep(1.5 * (attempt + 1))
@@ -487,6 +488,35 @@ def _lookup_pdl(name: str, locality: str, region: str, street: str = "") -> dict
                     "linkedin": "", "matched": "", "lk": 0, "billable": False}
     return {"phone": "none", "email": "none", "email_value": "", "phone_value": "",
             "linkedin": "", "matched": "", "lk": 0, "billable": False}
+
+
+def _pdl_preflight() -> tuple[bool, str]:
+    """Free liveness check for the key BEFORE spending a run on it.
+
+    Why this exists: a 401 (bad key) or 402 (no credits) makes every lookup return
+    'no match' — indistinguishable from 'PDL genuinely has nobody'. A whole run then
+    reports 0/775 and looks like a data problem when it is an auth problem. We ask for
+    a deliberately unmatchable name: PDL answers 404 (never billed) when the key is
+    good, and 401/402/403 when it is not.
+    """
+    try:
+        r = requests.get(
+            "https://api.peopledatalabs.com/v5/person/enrich",
+            params={"first_name": "Zzqx", "last_name": "Vqxwzzy",
+                    "country": COUNTRY, "min_likelihood": 10},
+            headers={"X-Api-Key": API_KEY}, timeout=25,
+        )
+    except requests.RequestException as e:
+        return False, f"network error ({e.__class__.__name__})"
+    if r.status_code in (200, 404):
+        return True, "key OK"
+    detail = ""
+    try:
+        body = r.json()
+        detail = (body.get("error") or {}).get("message") or str(body)[:160]
+    except ValueError:
+        detail = (r.text or "")[:160]
+    return False, f"HTTP {r.status_code} — {detail}"
 
 
 def _ensure_email_column(conn: sqlite3.Connection) -> None:
@@ -654,6 +684,19 @@ def main() -> int:
         print(f"\nTotal: {len(rows)} heirs. Re-run without ':dry' to enrich (~{len(rows)} credits max).")
         return 0
 
+    # Fail LOUD, not silently: without this a dead/exhausted key produces a full run of
+    # "(no match)" lines and a 0/N result that reads as "the provider has no data".
+    ok, why = _pdl_preflight()
+    if not ok:
+        print("\n" + "!" * 66)
+        print(f"  PDL KEY CHECK FAILED — {why}")
+        print("  Every lookup would report '(no match)' and nothing would be written,")
+        print("  so this is aborted rather than reported as a 0% data result.")
+        print("  Check the key and the credit balance, then re-run. Nothing was spent.")
+        print("!" * 66)
+        return 2
+    print(f"  [preflight: {why}]")
+
     max_matches = int(os.getenv("HEIR_MAX_MATCHES", "330"))  # credit safety cap (<350)
 
     region = (CCAA_FILTER or COUNTRY).title()
@@ -680,6 +723,12 @@ def main() -> int:
         reg = (row["region"] or "").strip()
         street = (row["direccion"] or "").strip()
         r = _lookup_pdl(name, loc, reg, street)
+        # Credits can run out mid-run; stop immediately instead of logging hundreds of
+        # misleading "(no match)" lines for calls the API never actually answered.
+        if r.get("status") in (401, 402, 403):
+            print(f"\n  [ABORT: PDL returned HTTP {r['status']} — key rejected or out of "
+                  f"credits. Stopped after {i - 1} heirs; {written} emails written so far.]")
+            break
         ph[r["phone"] if r["phone"] in ph else "other"] += 1
         em[r["email"] if r["email"] in em else "other"] += 1
         if r["billable"]:
