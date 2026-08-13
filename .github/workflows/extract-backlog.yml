@@ -1,0 +1,56 @@
+name: Extract heir backlog (all pending, parallel)
+
+# Drains the whole heir-extraction backlog in one run: no 200-lead cap and no time
+# budget, unlike the daily pipeline. Zaragoza is extracted first, then the rest of
+# Aragón, then everywhere else, so the leads that matter most are named even if a
+# later phase is interrupted.
+#
+# Costs extraction-LLM tokens. Spends NO PDL credits.
+
+on:
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: '"all" | "aragon" | "zaragoza" — how far to go'
+        required: false
+        default: "all"
+      workers:
+        description: "Parallel workers. 12 is safe; higher risks provider/source rate limits."
+        required: false
+        default: "12"
+      dry:
+        description: '"1" = just report pending counts per phase (0 tokens)'
+        required: false
+        default: "0"
+
+jobs:
+  extract-backlog:
+    runs-on: [self-hosted, nadia]
+    timeout-minutes: 350   # a full backlog drain can legitimately run for hours
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Extract backlog
+        shell: powershell
+        env:
+          EXTRACTION_API_KEY: ${{ secrets.EXTRACTION_API_KEY }}
+          EXTRACTION_API_URL: https://openrouter.ai/api/v1/chat/completions
+          EXTRACTION_MODEL: deepseek/deepseek-chat
+          EXTRACT_SCOPE: ${{ inputs.scope }}
+          EXTRACTION_WORKERS: ${{ inputs.workers }}
+          EXTRACT_DRY: ${{ inputs.dry }}
+        run: |
+          $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
+          Write-Host "DB=$env:NADIA_DB_PATH  scope=$env:EXTRACT_SCOPE  workers=$env:EXTRACTION_WORKERS"
+          python tools/extract_backlog.py
+
+      - name: DB coverage stats (read-only)
+        shell: powershell
+        if: always()
+        run: |
+          $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
+          python tools/db_stats.py
