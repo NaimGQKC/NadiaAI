@@ -126,6 +126,14 @@ jobs:
           $env:HEIR_EXPORT_OUT = "$env:GITHUB_WORKSPACE\nadia_all_leads.xlsx"
           python tools/export_leads.py
 
+      - name: "Export · Hunter.io bulk CSV"
+        shell: powershell
+        continue-on-error: true
+        run: |
+          $env:NADIA_DB_PATH = "$env:USERPROFILE\nadia-ai-data\nadia_ai.db"
+          $env:HUNTER_OUT = "$env:GITHUB_WORKSPACE\hunter_leads.csv"
+          python tools/export_hunter.py
+
       - name: Upload Excel artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -135,4 +143,5 @@ jobs:
             nadia_all_leads.xlsx
             nadia_contactable.csv
             nadia_all_leads.csv
+            hunter_leads.csv
           if-no-files-found: error
