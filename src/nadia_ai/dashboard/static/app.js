@@ -310,6 +310,15 @@ function renderTable() {
                             <p>${pbLink}</p>
                             <p><strong>Obras Recientes:</strong> ${lead.obras_recientes || 'Ninguna detectada'}</p>
                             <p><strong>Notas IA:</strong> ${lead.outreach_notes || 'OK para contactar'}</p>
+                            <div class="outcome-bar" data-lead="${lead.id}">
+                                <span class="outcome-label">Resultado:</span>
+                                <button class="oc-btn" data-outcome="no_answer">Sin respuesta</button>
+                                <button class="oc-btn oc-good" data-outcome="interested">Interesado</button>
+                                <button class="oc-btn oc-good" data-outcome="listed">Captado</button>
+                                <button class="oc-btn oc-bad" data-outcome="not_interested">No interesado</button>
+                                <button class="oc-btn oc-bad" data-outcome="opted_out">No contactar</button>
+                                <span class="oc-status"></span>
+                            </div>
                         </div>
                         <div class="detail-section">
                             <h4>📋 Fuentes</h4>
@@ -330,8 +339,73 @@ function renderTable() {
             tr.classList.toggle('expanded', !isVisible);
         });
 
+        // Wire outcome buttons (conversion tracking). stopPropagation so a click
+        // records the outcome instead of collapsing the detail row.
+        detailTr.querySelectorAll('.oc-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const bar = btn.closest('.outcome-bar');
+                const leadId = bar.getAttribute('data-lead');
+                const statusEl = bar.querySelector('.oc-status');
+                postOutcome(leadId, btn.getAttribute('data-outcome'), statusEl);
+            });
+        });
+
         tbody.appendChild(tr);
         tbody.appendChild(detailTr);
+    }
+}
+
+/* ── Outcome tracking ─────────────────────────────── */
+const OUTCOME_LABELS = {
+    no_answer: 'Sin respuesta',
+    interested: 'Interesado',
+    listed: 'Captado',
+    not_interested: 'No interesado',
+    opted_out: 'No contactar',
+};
+
+async function postOutcome(leadId, outcome, statusEl) {
+    statusEl.textContent = '…';
+    statusEl.className = 'oc-status';
+    try {
+        const resp = await fetch(`${API_BASE}/api/leads/${leadId}/outcome`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ outcome }),
+        });
+        const data = await resp.json();
+        if (data.ok) {
+            statusEl.textContent = `✓ ${OUTCOME_LABELS[outcome] || outcome}`;
+            statusEl.className = 'oc-status oc-status-ok';
+            fetchStats();  // refresh the funnel readout
+        } else {
+            statusEl.textContent = data.error || 'Error';
+            statusEl.className = 'oc-status oc-status-err';
+        }
+    } catch (err) {
+        statusEl.textContent = 'Error de red';
+        statusEl.className = 'oc-status oc-status-err';
+    }
+}
+
+/* ── Funnel readout (from /api/stats) ─────────────── */
+async function fetchStats() {
+    try {
+        const resp = await fetch(`${API_BASE}/api/stats`);
+        const data = await resp.json();
+        const f = data.funnel || {};
+        const el = document.getElementById('funnel-readout');
+        if (!el) return;
+        if (!f.contacted) {
+            el.textContent = 'Funnel: sin contactos registrados aún';
+        } else {
+            el.textContent =
+                `Funnel: ${f.contacted} contactados · ${f.responded} respondieron · ` +
+                `${f.interested} interesados · ${f.listed} captados`;
+        }
+    } catch (err) {
+        /* non-critical */
     }
 }
 
@@ -347,7 +421,8 @@ function formatUrgency(phase) {
 /* ── Init ─────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
     fetchLeads();
-    
+    fetchStats();
+
     document.getElementById('search-input').addEventListener('input', renderTable);
     document.getElementById('filter-tier').addEventListener('change', () => fetchLeads(false));
     document.getElementById('filter-asset').addEventListener('change', () => fetchLeads(false));

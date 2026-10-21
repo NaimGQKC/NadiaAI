@@ -300,3 +300,37 @@ a:hover { text-decoration: underline; color: #a5b4fc; }
     header { flex-direction: column; gap: 1rem; }
     .pagination-bar { flex-direction: column; gap: 1rem; text-align: center; }
 }
+
+/* ── Outcome buttons + funnel readout ─────────────── */
+.outcome-bar {
+    margin-top: 0.6rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+}
+.outcome-label { font-size: 0.8rem; color: #475569; margin-right: 0.2rem; }
+.oc-btn {
+    font-size: 0.78rem;
+    padding: 0.25rem 0.6rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #f8fafc;
+    color: #334155;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+.oc-btn:hover { background: #eef2f7; }
+.oc-btn.oc-good { border-color: #86c69a; color: #1b7a3d; }
+.oc-btn.oc-good:hover { background: #e7f6ec; }
+.oc-btn.oc-bad { border-color: #e0a3a3; color: #b03535; }
+.oc-btn.oc-bad:hover { background: #fbeaea; }
+.oc-status { font-size: 0.8rem; margin-left: 0.3rem; }
+.oc-status-ok { color: #1b7a3d; font-weight: 600; }
+.oc-status-err { color: #b03535; font-weight: 600; }
+.funnel-readout {
+    font-size: 0.82rem;
+    color: #475569;
+    align-self: center;
+    white-space: nowrap;
+}

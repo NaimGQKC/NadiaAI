@@ -159,6 +159,45 @@ def update_status(lead_id: int):
         conn.close()
 
 
+@app.route("/api/leads/<int:lead_id>/outcome", methods=["POST"])
+def update_outcome(lead_id: int):
+    """Record an outreach outcome for a lead (conversion tracking).
+
+    Drives the `outreach_log` funnel straight from the board: the agent clicks
+    "Interesado" / "Captado" / "No contactar" on a lead and we persist it. If the
+    lead has never been logged as contacted (the common case when she marks an
+    outcome without first generating the outreach pack), we open an outreach row
+    first so `record_outcome` has something to attach to. An `opted_out` outcome
+    also propagates to the suppression list inside `record_outcome`.
+    """
+    from nadia_ai.outreach_log import (
+        VALID_OUTCOMES,
+        init_outreach_log_schema,
+        log_outreach,
+        record_outcome,
+    )
+
+    data = request.get_json(silent=True) or {}
+    outcome = data.get("outcome", "")
+    notes = data.get("notes", "")
+    channel = data.get("channel", "call")
+
+    if outcome not in VALID_OUTCOMES:
+        return jsonify({"error": f"Invalid outcome: {outcome}"}), 400
+
+    conn = _get_conn()
+    try:
+        init_outreach_log_schema(conn)
+        # record_outcome updates the most-recent outreach row; if none exists yet,
+        # open one (idempotent within cooldown) and retry so the click never no-ops.
+        if not record_outcome(conn, lead_id, outcome, notes=notes):
+            log_outreach(conn, lead_id, channel=channel, tipo="dashboard")
+            record_outcome(conn, lead_id, outcome, notes=notes)
+        return jsonify({"ok": True, "lead_id": lead_id, "outcome": outcome})
+    finally:
+        conn.close()
+
+
 @app.route("/api/leads/<int:lead_id>/notes", methods=["POST"])
 def update_notes(lead_id: int):
     """Update agent notes for a lead."""
@@ -192,12 +231,22 @@ def api_stats():
             "SELECT COUNT(*) as c FROM leads WHERE date(first_seen_at) = date('now')"
         ).fetchone()["c"]
 
+        # Conversion funnel (contacted → responded → interested → listed). This is
+        # the pilot's outcome signal — empty until outreach is logged / outcomes
+        # are marked, but live the moment either happens.
+        from nadia_ai.outreach_log import funnel as outreach_funnel
+        from nadia_ai.outreach_log import init_outreach_log_schema
+
+        init_outreach_log_schema(conn)
+        funnel = outreach_funnel(conn)
+
         return jsonify({
             "total_leads": total,
             "tier_a": tier_a,
             "tier_b": tier_b,
             "urgent": urgent,
             "new_today": today,
+            "funnel": funnel,
         })
     finally:
         conn.close()
